@@ -18,50 +18,69 @@ import json
 
 creds = None
 try:
-    # Intentar usar secretos de Streamlit primero
-    if hasattr(st, 'secrets') and 'service_account' in st.secrets:
+    # Intentar usar Service Account primero
+    if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
         try:
             creds = Credentials.from_service_account_info(
-                st.secrets.service_account,
+                st.secrets.gcp_service_account,
                 scopes=SCOPES
             )
+            st.success("Conectado usando Service Account")
         except Exception as e:
-            st.error(f"Error con secretos de Streamlit (Service Account): {str(e)}")
-            
-            # Intentar usar OAuth2 como respaldo
-            try:
-                flow = InstalledAppFlow.from_client_config(
-                    {
-                        "installed": st.secrets.oauth2
-                    },
-                    SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-            except Exception as oauth_error:
-                st.error(f"Error con OAuth2: {str(oauth_error)}")
-                st.stop()
+            st.warning(f"No se pudo usar Service Account: {str(e)}")
+            creds = None
     
-    # Si no hay secretos en Streamlit, intentar archivos locales
-    else:
-        # Intentar Service Account primero
+    # Si Service Account falla, intentar OAuth2
+    if creds is None and hasattr(st, 'secrets') and 'oauth2' in st.secrets:
+        try:
+            flow = InstalledAppFlow.from_client_config(
+                {
+                    "installed": dict(st.secrets.oauth2)
+                },
+                SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+            st.success("Conectado usando OAuth2")
+        except Exception as oauth_error:
+            st.error(f"Error con OAuth2: {str(oauth_error)}")
+            st.stop()
+    
+    # Si no hay credenciales en secrets.toml, intentar archivos locales
+    if creds is None:
+        # Intentar Service Account local
         service_account_path = 'secrets/credentials.json'
         if os.path.exists(service_account_path):
-            creds = Credentials.from_service_account_file(
-                service_account_path,
-                scopes=SCOPES
-            )
-        # Si no hay Service Account, intentar OAuth2
-        else:
+            try:
+                creds = Credentials.from_service_account_file(
+                    service_account_path,
+                    scopes=SCOPES
+                )
+                st.success("Conectado usando archivo local de Service Account")
+            except Exception as e:
+                st.warning(f"No se pudo usar archivo local de Service Account: {str(e)}")
+                creds = None
+        
+        # Si todo lo anterior falla, intentar OAuth2 local
+        if creds is None:
             client_secret_path = 'secrets/client_secret.json'
             if os.path.exists(client_secret_path):
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    client_secret_path,
-                    SCOPES
-                )
-                creds = flow.run_local_server(port=0)
+                try:
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        client_secret_path,
+                        SCOPES
+                    )
+                    creds = flow.run_local_server(port=0)
+                    st.success("Conectado usando archivo local de OAuth2")
+                except Exception as e:
+                    st.error(f"Error con archivo local de OAuth2: {str(e)}")
+                    st.stop()
             else:
-                st.error("No se encontraron credenciales")
+                st.error("No se encontraron credenciales válidas")
                 st.stop()
+
+    if creds is None:
+        st.error("No se pudo establecer conexión con ningún método de autenticación")
+        st.stop()
 
 except Exception as e:
     st.error(f"Error al configurar credenciales: {str(e)}")
@@ -69,8 +88,8 @@ except Exception as e:
 client = gspread.authorize(creds)
 drive_service = build('drive', 'v3', credentials=creds)
 
-# Reemplaza con el nombre de tu hoja de cálculo
-SHEET_NAME = 'dispatch_tekpro'
+# Obtener configuración de Drive y Sheets
+SHEET_NAME = st.secrets.drive_config.SHEET_NAME
 sheet = client.open(SHEET_NAME).sheet1
 
 st.title("Despacho de Guacales - Tekpro")
@@ -109,7 +128,7 @@ if submitted:
             str(fecha), nombre_proyecto, orden_pedido,
             encargado_ensamblador, encargado_almacen, encargado_ingenieria
         ]
-        FOLDER_ID = "1btIvJTu0Nn7U_8H9i9aKOKxjHXYuldAF"
+        folder_id = st.secrets.drive_config.FOLDER_ID
         for idx, guacal in enumerate(guacales, start=1):
             row.append(guacal["desc"])
             foto = guacal["foto"]
@@ -120,7 +139,7 @@ if submitted:
                 media = MediaIoBaseUpload(file_stream, mimetype=foto.type, resumable=True)
                 file_metadata = {
                     'name': file_name,
-                    'parents': [FOLDER_ID],
+                    'parents': [folder_id],
                 }
                 uploaded_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
                 # Hacer el archivo público
