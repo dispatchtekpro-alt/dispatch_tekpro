@@ -18,26 +18,51 @@ import json
 
 creds = None
 try:
-    # Intentar cargar credenciales desde archivo local
-    service_account_path = 'secrets/client_secret.json'
-    if os.path.exists(service_account_path):
-        creds = Credentials.from_service_account_file(
-            service_account_path,
-            scopes=SCOPES
-        )
-    # Si no hay archivo local, intentar usar secretos de Streamlit
-    elif hasattr(st, 'secrets'):
+    # Intentar usar secretos de Streamlit primero
+    if hasattr(st, 'secrets') and 'service_account' in st.secrets:
         try:
             creds = Credentials.from_service_account_info(
-                st.secrets,
+                st.secrets.service_account,
                 scopes=SCOPES
             )
         except Exception as e:
-            st.error(f"Error con secretos de Streamlit: {str(e)}")
-            st.stop()
+            st.error(f"Error con secretos de Streamlit (Service Account): {str(e)}")
+            
+            # Intentar usar OAuth2 como respaldo
+            try:
+                flow = InstalledAppFlow.from_client_config(
+                    {
+                        "installed": st.secrets.oauth2
+                    },
+                    SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+            except Exception as oauth_error:
+                st.error(f"Error con OAuth2: {str(oauth_error)}")
+                st.stop()
+    
+    # Si no hay secretos en Streamlit, intentar archivos locales
     else:
-        st.error("No se encontraron credenciales")
-        st.stop()
+        # Intentar Service Account primero
+        service_account_path = 'secrets/credentials.json'
+        if os.path.exists(service_account_path):
+            creds = Credentials.from_service_account_file(
+                service_account_path,
+                scopes=SCOPES
+            )
+        # Si no hay Service Account, intentar OAuth2
+        else:
+            client_secret_path = 'secrets/client_secret.json'
+            if os.path.exists(client_secret_path):
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    client_secret_path,
+                    SCOPES
+                )
+                creds = flow.run_local_server(port=0)
+            else:
+                st.error("No se encontraron credenciales")
+                st.stop()
+
 except Exception as e:
     st.error(f"Error al configurar credenciales: {str(e)}")
     st.stop()
