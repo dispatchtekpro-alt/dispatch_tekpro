@@ -85,8 +85,42 @@ try:
 except Exception as e:
     st.error(f"Error al configurar credenciales: {str(e)}")
     st.stop()
-client = gspread.authorize(creds)
-drive_service = build('drive', 'v3', credentials=creds)
+# Verificar y establecer la conexión con Google Services
+try:
+    client = gspread.authorize(creds)
+    drive_service = build('drive', 'v3', credentials=creds)
+    
+    # Verificar que podemos acceder a Drive y Sheets
+    try:
+        # Verificar acceso a la carpeta de destino
+        folder_id = st.secrets.drive_config.FOLDER_ID
+        drive_service.files().get(
+            fileId=folder_id,
+            supportsAllDrives=True
+        ).execute()
+        st.success("Conexión con Google Drive establecida correctamente")
+    except Exception as folder_error:
+        st.warning(f"No se pudo acceder a la carpeta de destino: {str(folder_error)}")
+        st.warning("Intentando cambiar a OAuth2...")
+        
+        # Cambiar a OAuth2
+        if 'oauth2' in st.secrets:
+            flow = InstalledAppFlow.from_client_config(
+                {
+                    "installed": dict(st.secrets.oauth2)
+                },
+                SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+            client = gspread.authorize(creds)
+            drive_service = build('drive', 'v3', credentials=creds)
+            st.success("Conexión establecida usando OAuth2")
+        else:
+            raise Exception("No se encontró configuración OAuth2 disponible")
+            
+except Exception as conn_error:
+    st.error(f"Error al conectar con Google Services: {str(conn_error)}")
+    st.stop()
 
 # Obtener configuración de Drive y Sheets
 SHEET_NAME = st.secrets.drive_config.SHEET_NAME
@@ -133,23 +167,73 @@ if submitted:
             row.append(guacal["desc"])
             foto = guacal["foto"]
             if foto:
-                # Subir foto a Google Drive en la carpeta especificada
-                file_name = f"Guacal_{idx}_{orden_pedido}.jpg"
-                file_stream = io.BytesIO(foto.read())
-                media = MediaIoBaseUpload(file_stream, mimetype=foto.type, resumable=True)
-                file_metadata = {
-                    'name': file_name,
-                    'parents': [folder_id],
-                }
-                uploaded_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                # Hacer el archivo público
-                drive_service.permissions().create(
-                    fileId=uploaded_file['id'],
-                    body={'type': 'anyone', 'role': 'reader'}
-                ).execute()
-                # Obtener el enlace público
-                public_url = f"https://drive.google.com/uc?id={uploaded_file['id']}"
-                row.append(public_url)
+                try:
+                    # Subir foto a Google Drive en la carpeta especificada
+                    file_name = f"Guacal_{idx}_{orden_pedido}.jpg"
+                    file_stream = io.BytesIO(foto.read())
+                    media = MediaIoBaseUpload(file_stream, mimetype=foto.type, resumable=True)
+                    
+                    # Intentar primero con unidad compartida
+                    file_metadata = {
+                        'name': file_name,
+                        'parents': [folder_id],
+                        'driveId': folder_id  # Especificar que es una unidad compartida
+                    }
+                    
+                    try:
+                        uploaded_file = drive_service.files().create(
+                            body=file_metadata,
+                            media_body=media,
+                            fields='id',
+                            supportsAllDrives=True,
+                            includePermissionsForView='true'
+                        ).execute()
+                    except Exception as shared_drive_error:
+                        # Si falla con unidad compartida, intentar con OAuth2
+                        if isinstance(creds, Credentials):
+                            st.warning("La cuenta de servicio no tiene permisos. Cambiando a OAuth2...")
+                            # Intentar cambiar a OAuth2
+                            try:
+                                flow = InstalledAppFlow.from_client_config(
+                                    {
+                                        "installed": dict(st.secrets.oauth2)
+                                    },
+                                    SCOPES
+                                )
+                                oauth_creds = flow.run_local_server(port=0)
+                                drive_service = build('drive', 'v3', credentials=oauth_creds)
+                                
+                                # Intentar subir nuevamente con OAuth2
+                                uploaded_file = drive_service.files().create(
+                                    body={'name': file_name, 'parents': [folder_id]},
+                                    media_body=media,
+                                    fields='id'
+                                ).execute()
+                            except Exception as oauth_error:
+                                raise Exception(f"Error con OAuth2: {str(oauth_error)}")
+                        else:
+                            raise shared_drive_error
+                    
+                    # Hacer el archivo público
+                    try:
+                        drive_service.permissions().create(
+                            fileId=uploaded_file['id'],
+                            body={'type': 'anyone', 'role': 'reader'},
+                            fields='id',
+                            supportsAllDrives=True
+                        ).execute()
+                    except Exception as perm_error:
+                        st.warning(f"No se pudieron establecer permisos públicos: {str(perm_error)}")
+                    
+                    # Obtener el enlace público
+                    public_url = f"https://drive.google.com/uc?id={uploaded_file['id']}"
+                    row.append(public_url)
+                    st.success(f"Foto del Guacal {idx} subida correctamente")
+                except Exception as upload_error:
+                    st.error(f"Error al subir la foto del Guacal {idx}: {str(upload_error)}")
+                    row.append("Error al subir foto")
+                    if "PERMISSION_DENIED" in str(upload_error):
+                        st.error("Error de permisos. Asegúrate de que la cuenta tenga acceso a la carpeta de destino.")
             else:
                 row.append("Sin foto")
         sheet.append_row(row)
