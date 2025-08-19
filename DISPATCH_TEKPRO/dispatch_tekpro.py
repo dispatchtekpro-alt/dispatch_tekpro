@@ -13,29 +13,34 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
+from google.oauth2.service_account import Credentials
+import json
+
 creds = None
-if os.path.exists('token.pickle'):
-    with open('token.pickle', 'rb') as token:
-        creds = pickle.load(token)
-if not creds or not creds.valid:
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+try:
+    # Intentar cargar credenciales desde archivo local
+    service_account_path = 'secrets/client_secret.json'
+    if os.path.exists(service_account_path):
+        creds = Credentials.from_service_account_file(
+            service_account_path,
+            scopes=SCOPES
+        )
+    # Si no hay archivo local, intentar usar secretos de Streamlit
+    elif hasattr(st, 'secrets'):
+        try:
+            creds = Credentials.from_service_account_info(
+                st.secrets,
+                scopes=SCOPES
+            )
+        except Exception as e:
+            st.error(f"Error con secretos de Streamlit: {str(e)}")
+            st.stop()
     else:
-        client_config = {
-            "installed": {
-                "client_id": st.secrets["client_id"],
-                "client_secret": st.secrets["client_secret"],
-                "project_id": st.secrets["project_id"],
-                "auth_uri": st.secrets["auth_uri"],
-                "token_uri": st.secrets["token_uri"],
-                "auth_provider_x509_cert_url": st.secrets["auth_provider_x509_cert_url"],
-                "redirect_uris": [st.secrets["redirect_uris"]],
-            }
-        }
-        flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-        creds = flow.run_console()
-    with open('token.pickle', 'wb') as token:
-        pickle.dump(creds, token)
+        st.error("No se encontraron credenciales")
+        st.stop()
+except Exception as e:
+    st.error(f"Error al configurar credenciales: {str(e)}")
+    st.stop()
 client = gspread.authorize(creds)
 drive_service = build('drive', 'v3', credentials=creds)
 
@@ -106,4 +111,3 @@ if submitted:
         sheet.append_row(row)
         st.success("Despacho guardado correctamente.")
         st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
-
