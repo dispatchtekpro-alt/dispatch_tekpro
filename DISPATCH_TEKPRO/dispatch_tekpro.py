@@ -33,7 +33,7 @@ if not creds or not creds.valid:
             }
         }
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-        creds = flow.run_local_server(port=0)
+        creds = flow.run_console()
     with open('token.pickle', 'wb') as token:
         pickle.dump(creds, token)
 client = gspread.authorize(creds)
@@ -106,3 +106,4 @@ if submitted:
         sheet.append_row(row)
         st.success("Despacho guardado correctamente.")
         st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+
