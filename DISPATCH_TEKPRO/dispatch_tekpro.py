@@ -151,7 +151,7 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
 
 def main():
 
-    # Logo, título principal y subtítulo con estilo corporativo
+    # Título principal y subtítulo con estilo corporativo
     st.markdown(
         """
         <div style="margin-bottom: 0.5em;">
