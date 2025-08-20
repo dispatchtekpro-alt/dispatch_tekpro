@@ -1,60 +1,57 @@
 import streamlit as st
 
 # Incluir CSS corporativo Tekpro
-def set_tekpro_style():
-    st.markdown('''
-    <style>
-    /* Tekpro corporate style for Streamlit */
-    body, .stApp {
-        background-color: #f7fafb;
-    }
-    h1, .stApp h1, .stMarkdown h1 {
-        font-family: 'Montserrat', 'Arial', sans-serif;
-        color: #1db6b6;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-    h2, h3, .stApp h2, .stApp h3 {
-        font-family: 'Montserrat', 'Arial', sans-serif;
-        color: #1db6b6;
-        font-weight: 600;
-    }
-    .stForm, .stTextInput, .stSelectbox, .stTextArea, .stFileUploader, .stDateInput {
-        background-color: #e6f7f7 !important;
-        border-radius: 8px !important;
-    }
-    .stButton > button {
-        background-color: #1db6b6;
-        color: #fff;
-        border-radius: 8px;
-        font-family: 'Montserrat', 'Arial', sans-serif;
-        font-weight: 600;
-        border: none;
-        padding: 0.5em 1.5em;
-        transition: background 0.2s;
-    }
-    .stButton > button:hover {
-        background-color: #0e7c7b;
-        color: #fff;
-    }
-    .stAlert-success {
-        background-color: #e6f7f7;
-        color: #1db6b6;
-        border-left: 5px solid #1db6b6;
-    }
-    .stAlert-info {
-        background-color: #e6f7f7;
-        color: #1db6b6;
-        border-left: 5px solid #1db6b6;
-    }
-    .stFileUploader {
-        border: 2px dashed #1db6b6 !important;
-    }
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
-    </style>
-    ''', unsafe_allow_html=True)
-
-set_tekpro_style()
+st.markdown('''
+<style>
+/* Tekpro corporate style for Streamlit */
+body, .stApp {
+    background-color: #e6f7f7 !important;
+}
+h1, .stApp h1, .stMarkdown h1 {
+    font-family: 'Montserrat', 'Arial', sans-serif;
+    color: #1db6b6;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+h2, h3, .stApp h2, .stApp h3 {
+    font-family: 'Montserrat', 'Arial', sans-serif;
+    color: #1db6b6;
+    font-weight: 600;
+}
+.stForm, .stTextInput, .stSelectbox, .stTextArea, .stFileUploader, .stDateInput {
+    background-color: #f7fafb !important;
+    border-radius: 8px !important;
+}
+.stButton > button {
+    background-color: #1db6b6;
+    color: #fff;
+    border-radius: 8px;
+    font-family: 'Montserrat', 'Arial', sans-serif;
+    font-weight: 600;
+    border: none;
+    padding: 0.5em 1.5em;
+    transition: background 0.2s;
+}
+.stButton > button:hover {
+    background-color: #0e7c7b;
+    color: #fff;
+}
+.stAlert-success {
+    background-color: #f7fafb;
+    color: #1db6b6;
+    border-left: 5px solid #1db6b6;
+}
+.stAlert-info {
+    background-color: #f7fafb;
+    color: #1db6b6;
+    border-left: 5px solid #1db6b6;
+}
+.stFileUploader {
+    border: 2px dashed #1db6b6 !important;
+}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+</style>
+''', unsafe_allow_html=True)
 import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -157,12 +154,12 @@ def main():
     with open(".streamlit/tekpro_style.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    # Logo y título con fuente y color corporativo
+    # Logo, título principal y subtítulo con estilo corporativo
     st.markdown(
         """
-        <div style="display: flex; align-items: center; gap: 1.2em; margin-bottom: 0.5em;">
-            <img src="https://i.imgur.com/0Q9QZpA.png" alt="Tekpro Logo" style="height: 60px; margin-right: 10px;">
-            <h1 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;">Acta de entrega y lista de empaque</h1>
+        <div style="margin-bottom: 0.5em;">
+            <h1 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;">DISPATCH TEKPRO</h1>
+            <h2 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 600; font-size: 1.5em;">Acta de entrega y lista de empaque</h2>
         </div>
         <hr style="border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;">
         """,
