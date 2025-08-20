@@ -97,7 +97,7 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
-    st.title("Despacho de Guacales - Tekpro")
+    st.title("Acta de entrega y lista de empaque - Tekpro")
 
     # Configuración: carpeta y sheet
     folder_id = st.secrets.drive_config.FOLDER_ID
@@ -119,15 +119,37 @@ def main():
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
         nombre_proyecto = st.text_input("Nombre de proyecto")
         orden_pedido = st.text_input("Orden de pedido")
-        encargado_ensamblador = st.text_input("Encargado ensamblador")
-        encargado_almacen = st.text_input("Encargado almacén")
-        encargado_ingenieria = st.text_input("Encargado ingeniería y diseño")
+        encargado_ensamblador = st.selectbox(
+            "Encargado ensamblador",
+            [
+                "Jaime Ramos",
+                "Jaime Rincon",
+                "Lewis",
+                "Kate",
+                "Jefferson",
+                "Yeison",
+                "Gabriel"
+            ]
+        )
+        encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
+        encargado_ingenieria = st.selectbox(
+            "Encargado ingeniería y diseño",
+            [
+                "Daniel Valbuena",
+                "Alejandro Diaz",
+                "Juan Andres Zapata",
+                "Juan David Martinez",
+                "Jose Perez",
+                "Diomer Arbelaez",
+                "Victor Baena"
+            ]
+        )
 
         guacales = []
         for i in range(st.session_state["num_guacales"]):
-            st.subheader(f"Guacal {i+1}")
-            desc = st.text_area(f"Descripción Guacal {i+1}", key=f"desc_{i+1}")
-            foto = st.file_uploader(f"Foto Guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"foto_{i+1}")
+            st.subheader(f"PAQUETE {i+1}")
+            desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
+            foto = st.file_uploader(f"Foto PAQUETE {i+1}", type=["jpg", "jpeg", "png"], key=f"foto_{i+1}")
             guacales.append({
                 "desc": desc,
                 "foto": foto
@@ -135,7 +157,7 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             if st.session_state["num_guacales"] < 10:
-                if st.form_submit_button("Agregar guacal"):
+                if st.form_submit_button("Agregar paquete"):
                     st.session_state["num_guacales"] += 1
                     st.experimental_rerun()
         with col2:
@@ -143,7 +165,7 @@ def main():
 
     if submitted:
         if not guacales[0]["desc"]:
-            st.error("La descripción del Guacal 1 es obligatoria.")
+            st.error("La descripción del PAQUETE 1 es obligatoria.")
         else:
             row = [
                 str(fecha), nombre_proyecto, orden_pedido,
