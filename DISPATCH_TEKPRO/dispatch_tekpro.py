@@ -124,11 +124,11 @@ def main():
             [
                 "Jaime Ramos",
                 "Jaime Rincon",
-                "Lewis",
-                "Kate",
-                "Jefferson",
-                "Yeison",
-                "Gabriel"
+                "Leudys Castillo",
+                "Katerine Padilla",
+                "Jefferson Galindez",
+                "Jeison Arboleda",
+                "Gabriel Garcia"
             ]
         )
         encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
@@ -149,10 +149,15 @@ def main():
         for i in range(st.session_state["num_guacales"]):
             st.subheader(f"PAQUETE {i+1}")
             desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
-            foto = st.file_uploader(f"Foto PAQUETE {i+1}", type=["jpg", "jpeg", "png"], key=f"foto_{i+1}")
+            fotos = st.file_uploader(
+                f"Fotos PAQUETE {i+1}",
+                type=["jpg", "jpeg", "png"],
+                key=f"foto_{i+1}",
+                accept_multiple_files=True
+            )
             guacales.append({
                 "desc": desc,
-                "foto": foto
+                "fotos": fotos
             })
         col1, col2 = st.columns(2)
         with col1:
@@ -174,16 +179,21 @@ def main():
             # Subir fotos y agregar descripciones y links
             for idx, guacal in enumerate(guacales, start=1):
                 row.append(guacal["desc"])
-                foto = guacal["foto"]
-                if foto:
-                    try:
-                        image_filename = f"Guacal_{idx}_{orden_pedido}.jpg"
-                        file_stream = io.BytesIO(foto.read())
-                        public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                        row.append(public_url)
-                        st.success(f"Foto del Guacal {idx} subida correctamente")
-                    except Exception as upload_error:
-                        st.error(f"Error al subir la foto del Guacal {idx}: {str(upload_error)}")
+                fotos = guacal["fotos"]
+                enlaces = []
+                if fotos:
+                    for n, foto in enumerate(fotos, start=1):
+                        try:
+                            image_filename = f"Guacal_{idx}_{orden_pedido}_{n}.jpg"
+                            file_stream = io.BytesIO(foto.read())
+                            public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                            enlaces.append(public_url)
+                            st.success(f"Foto {n} del Guacal {idx} subida correctamente")
+                        except Exception as upload_error:
+                            st.error(f"Error al subir la foto {n} del Guacal {idx}: {str(upload_error)}")
+                    if enlaces:
+                        row.append(", ".join(enlaces))
+                    else:
                         row.append("Error al subir foto")
                 else:
                     row.append("Sin foto")
