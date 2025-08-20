@@ -150,9 +150,6 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
-    # Cargar estilos corporativos Tekpro
-    with open(".streamlit/tekpro_style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
     # Logo, título principal y subtítulo con estilo corporativo
     st.markdown(
