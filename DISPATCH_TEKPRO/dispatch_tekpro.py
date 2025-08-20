@@ -1,4 +1,60 @@
 import streamlit as st
+
+# Incluir CSS corporativo Tekpro
+def set_tekpro_style():
+    st.markdown('''
+    <style>
+    /* Tekpro corporate style for Streamlit */
+    body, .stApp {
+        background-color: #f7fafb;
+    }
+    h1, .stApp h1, .stMarkdown h1 {
+        font-family: 'Montserrat', 'Arial', sans-serif;
+        color: #1db6b6;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    h2, h3, .stApp h2, .stApp h3 {
+        font-family: 'Montserrat', 'Arial', sans-serif;
+        color: #1db6b6;
+        font-weight: 600;
+    }
+    .stForm, .stTextInput, .stSelectbox, .stTextArea, .stFileUploader, .stDateInput {
+        background-color: #e6f7f7 !important;
+        border-radius: 8px !important;
+    }
+    .stButton > button {
+        background-color: #1db6b6;
+        color: #fff;
+        border-radius: 8px;
+        font-family: 'Montserrat', 'Arial', sans-serif;
+        font-weight: 600;
+        border: none;
+        padding: 0.5em 1.5em;
+        transition: background 0.2s;
+    }
+    .stButton > button:hover {
+        background-color: #0e7c7b;
+        color: #fff;
+    }
+    .stAlert-success {
+        background-color: #e6f7f7;
+        color: #1db6b6;
+        border-left: 5px solid #1db6b6;
+    }
+    .stAlert-info {
+        background-color: #e6f7f7;
+        color: #1db6b6;
+        border-left: 5px solid #1db6b6;
+    }
+    .stFileUploader {
+        border: 2px dashed #1db6b6 !important;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+    </style>
+    ''', unsafe_allow_html=True)
+
+set_tekpro_style()
 import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -97,7 +153,21 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
-    st.title("Acta de entrega y lista de empaque - Tekpro")
+    # Cargar estilos corporativos Tekpro
+    with open(".streamlit/tekpro_style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+    # Logo y título con fuente y color corporativo
+    st.markdown(
+        """
+        <div style="display: flex; align-items: center; gap: 1.2em; margin-bottom: 0.5em;">
+            <img src="https://i.imgur.com/0Q9QZpA.png" alt="Tekpro Logo" style="height: 60px; margin-right: 10px;">
+            <h1 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;">Acta de entrega y lista de empaque</h1>
+        </div>
+        <hr style="border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;">
+        """,
+        unsafe_allow_html=True
+    )
 
     # Configuración: carpeta y sheet
     folder_id = st.secrets.drive_config.FOLDER_ID
@@ -124,11 +194,11 @@ def main():
             [
                 "Jaime Ramos",
                 "Jaime Rincon",
-                "Leudys Castillo",
-                "Katerine Padilla",
-                "Jefferson Galindez",
-                "Jeison Arboleda",
-                "Gabriel Garcia"
+                "Lewis",
+                "Kate",
+                "Jefferson",
+                "Yeison",
+                "Gabriel"
             ]
         )
         encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
@@ -137,11 +207,11 @@ def main():
             [
                 "Daniel Valbuena",
                 "Alejandro Diaz",
-                "Juan Andres Zapata",
-                "Juan David Martinez",
-                "Jose Perez",
-                "Diomer Arbelaez",
-                "Victor Baena"
+                "Juan Andres",
+                "Juan David",
+                "Jose",
+                "Diomer",
+                "Victor"
             ]
         )
 
