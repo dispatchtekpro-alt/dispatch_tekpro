@@ -43,16 +43,32 @@ def get_drive_service_oauth():
     )
     auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
     st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
-    auth_code = st.text_input("Pega aquí el código de autorización que recibiste tras autorizar:")
+    if 'oauth_code' not in st.session_state:
+        st.session_state['oauth_code'] = ''
+    if 'oauth_valid' not in st.session_state:
+        st.session_state['oauth_valid'] = False
+    auth_code = st.text_input("Pega aquí el código de autorización que recibiste tras autorizar:", value=st.session_state['oauth_code'], key="oauth_code_input")
+    validar = st.button("Validar código")
     creds = None
-    if auth_code:
+    if validar and auth_code:
         try:
             flow.fetch_token(code=auth_code)
             creds = flow.credentials
+            st.session_state['oauth_code'] = auth_code
+            st.session_state['oauth_valid'] = True
             st.success("¡Autorización exitosa!")
         except Exception as e:
+            st.session_state['oauth_valid'] = False
             st.error(f"Error al intercambiar el código: {e}")
-    if creds:
+    if st.session_state.get('oauth_valid', False):
+        # Si ya está validado, reconstruir las credenciales
+        if not creds:
+            try:
+                flow.fetch_token(code=st.session_state['oauth_code'])
+                creds = flow.credentials
+            except Exception:
+                st.session_state['oauth_valid'] = False
+                st.stop()
         return build('drive', 'v3', credentials=creds)
     else:
         st.stop()
