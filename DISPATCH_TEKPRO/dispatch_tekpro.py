@@ -30,12 +30,11 @@ def get_service_account_creds():
 # Subir imagen a Drive y hacerla pública
 
 # Subir imagen a Drive usando OAuth2 (usuario)
-def get_drive_service_oauth():
+def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
     from google_auth_oauthlib.flow import Flow
     redirect_uri = "https://dispatchtekpro.streamlit.app/"
     st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
-    print(f"[LOG] Usando redirect_uri: {redirect_uri}")
     flow = Flow.from_client_config(
         {"web": dict(st.secrets.oauth2)},
         scopes=SCOPES,
@@ -43,35 +42,30 @@ def get_drive_service_oauth():
     )
     auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
     st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
-    if 'oauth_code' not in st.session_state:
-        st.session_state['oauth_code'] = ''
-    if 'oauth_valid' not in st.session_state:
-        st.session_state['oauth_valid'] = False
-    auth_code = st.text_input("Pega aquí el código de autorización que recibiste tras autorizar:", value=st.session_state['oauth_code'], key="oauth_code_input")
-    validar = st.button("Validar código")
-    creds = None
-    if validar and auth_code:
-        try:
-            flow.fetch_token(code=auth_code)
-            creds = flow.credentials
-            st.session_state['oauth_code'] = auth_code
-            st.session_state['oauth_valid'] = True
-            st.success("¡Autorización exitosa!")
-        except Exception as e:
-            st.session_state['oauth_valid'] = False
-            st.error(f"Error al intercambiar el código: {e}")
-    if st.session_state.get('oauth_valid', False):
-        # Si ya está validado, reconstruir las credenciales
-        if not creds:
+    auth_code = st.text_input("Pega aquí el código de autorización que recibiste tras autorizar:", key="oauth_code_input")
+    if st.button("Validar código"):
+        if auth_code:
             try:
-                flow.fetch_token(code=st.session_state['oauth_code'])
+                flow.fetch_token(code=auth_code)
                 creds = flow.credentials
-            except Exception:
-                st.session_state['oauth_valid'] = False
-                st.stop()
+                st.session_state['drive_oauth_token'] = creds.to_json()
+                st.success("¡Autorización exitosa! Puedes continuar con el formulario.")
+            except Exception as e:
+                st.error(f"Error al intercambiar el código: {e}")
+        else:
+            st.warning("Debes pegar el código de autorización.")
+    st.stop()
+
+def get_drive_service_oauth():
+    from google.oauth2.credentials import Credentials as UserCreds
+    import json
+    creds = None
+    if 'drive_oauth_token' in st.session_state:
+        creds = UserCreds.from_authorized_user_info(json.loads(st.session_state['drive_oauth_token']))
+    if creds:
         return build('drive', 'v3', credentials=creds)
     else:
-        st.stop()
+        authorize_drive_oauth()
 
 def upload_image_to_drive_oauth(file, filename, folder_id):
     drive_service = get_drive_service_oauth()
@@ -112,6 +106,10 @@ def main():
 
     creds = get_service_account_creds()
     sheet_client = gspread.authorize(creds)
+
+    # Autorizar Drive solo si no hay token
+    if 'drive_oauth_token' not in st.session_state:
+        authorize_drive_oauth()
 
     if "num_guacales" not in st.session_state:
         st.session_state["num_guacales"] = 1
