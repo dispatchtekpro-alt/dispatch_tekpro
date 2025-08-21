@@ -215,25 +215,22 @@ def main():
         import datetime
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
 
-        # Orden de pedido: selectbox con opción de escribir nueva
-        orden_pedido = st.selectbox(
-            "Orden de pedido (elige una existente o escribe una nueva)",
-            ordenes_list + ["Nueva orden..."],
-            index=0 if ordenes_list else None
-        )
-        nueva_orden = ""
-        if orden_pedido == "Nueva orden..." or not orden_pedido:
-            nueva_orden = st.text_input("Nueva orden de pedido")
-            orden_pedido_val = nueva_orden
-        else:
-            orden_pedido_val = orden_pedido
+
+        # Orden de pedido: campo editable con sugerencias
+        st.markdown("<b>Orden de pedido</b> (elige una existente o escribe una nueva)", unsafe_allow_html=True)
+        orden_pedido_val = st.text_input("", value="", key="orden_pedido_input")
+        # Sugerencias si hay órdenes existentes y el usuario empieza a escribir
+        if ordenes_list and orden_pedido_val:
+            sugerencias = [o for o in ordenes_list if orden_pedido_val.lower() in o.lower()]
+            if sugerencias:
+                st.markdown("<small><i>Sugerencias:</i> " + ", ".join(sugerencias) + "</small>", unsafe_allow_html=True)
 
         # Autocompletar nombre de proyecto y encargado de ingeniería si existe
         nombre_proyecto_default = ""
         encargado_ingenieria_default = ""
-        if orden_pedido and orden_pedido in ordenes_existentes:
-            nombre_proyecto_default = ordenes_existentes[orden_pedido]["nombre_proyecto"]
-            encargado_ingenieria_default = ordenes_existentes[orden_pedido]["encargado_ingenieria"]
+        if orden_pedido_val and orden_pedido_val in ordenes_existentes:
+            nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
+            encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
 
         nombre_proyecto = st.text_input("Nombre de proyecto", value=nombre_proyecto_default)
         encargado_ensamblador = st.selectbox(
@@ -307,7 +304,7 @@ def main():
             st.error("La descripción del PAQUETE 1 es obligatoria.")
         else:
             row = [
-                str(fecha), nombre_proyecto, orden_pedido,
+                str(fecha), nombre_proyecto, orden_pedido_val,
                 encargado_ensamblador, encargado_almacen, encargado_ingenieria
             ]
             # Subir fotos y agregar descripciones y links
@@ -318,7 +315,7 @@ def main():
                 if fotos:
                     for n, foto in enumerate(fotos, start=1):
                         try:
-                            image_filename = f"Guacal_{idx}_{orden_pedido}_{n}.jpg"
+                            image_filename = f"Guacal_{idx}_{orden_pedido_val}_{n}.jpg"
                             file_stream = io.BytesIO(foto.read())
                             public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
                             enlaces.append(public_url)
