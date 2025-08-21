@@ -56,8 +56,7 @@ h2, h3, .stApp h2, .stApp h3 {
 import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2.service_account import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+#
 import io
 import os
 
