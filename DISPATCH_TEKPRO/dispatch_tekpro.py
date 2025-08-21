@@ -239,7 +239,11 @@ def main():
             nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
             encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
 
-        nombre_proyecto = st.text_input("Nombre de proyecto", value=nombre_proyecto_default)
+        nombre_proyecto = st.text_input(
+            "Nombre de proyecto",
+            value=nombre_proyecto_default,
+            key=f"nombre_proyecto_{orden_pedido_val}"
+        )
         encargado_ensamblador = st.selectbox(
             "Encargado ensamblador",
             [
@@ -280,7 +284,8 @@ def main():
                 "Jose",
                 "Diomer",
                 "Victor"
-            ] else 0
+            ] else 0,
+            key=f"encargado_ingenieria_{orden_pedido_val}"
         )
 
         guacales = []
