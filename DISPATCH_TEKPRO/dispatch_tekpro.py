@@ -199,457 +199,290 @@ def main():
         try:
             sheet = sheet_client.open(file_name).worksheet(worksheet_name)
             all_rows = sheet.get_all_values()
-            ordenes_existentes = {}
-            for row in all_rows[1:]:
-                if len(row) >= 6:
-                    orden = row[2]
-                    ordenes_existentes[orden] = {
-                        "nombre_proyecto": row[1],
-                        "encargado_ingenieria": row[5]
-                    }
-            ordenes_list = list(ordenes_existentes.keys())
-        except Exception:
-            ordenes_existentes = {}
-            ordenes_list = []
 
-        if 'drive_oauth_token' not in st.session_state:
-            authorize_drive_oauth()
+            with st.form("acta_entrega_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    cliente = st.text_input("Cliente")
+                    op = st.text_input("OP (Orden de pedido)")
+                    item = st.text_input("Item")
+                with col2:
+                    equipo = st.text_input("Equipo")
+                    cantidad = st.number_input("Cantidad", min_value=1, step=1)
+                    import datetime
+                    fecha_solicitud = st.date_input("Fecha de solicitud", value=datetime.date.today())
 
-        if "num_guacales" not in st.session_state:
-            st.session_state["num_guacales"] = 1
+                # Variables condicionales para cada sección
+                motores = []
+                num_motores = 0
+                if st.session_state.get('mostrar_motores', False):
+                    num_motores = st.number_input("¿Cuántos motores?", min_value=1, max_value=4, value=1, step=1, key="num_motores")
+                    for i in range(int(num_motores)):
+                        st.markdown(f"**Motor {i+1}**")
+                        voltaje = st.text_input(f"Voltaje Motor {i+1}", key=f"voltaje_motor_{i+1}")
+                        foto = st.file_uploader(f"Foto Motor {i+1}", type=["jpg","jpeg","png"], key=f"foto_motor_{i+1}")
+                        motores.append({"voltaje": voltaje, "foto": foto})
+                # Reductor
+                voltaje_reductor = ""
+                foto_reductor = None
+                if st.session_state.get('mostrar_reductor', False):
+                    st.markdown("**Reductor**")
+                    voltaje_reductor = st.text_input("Voltaje Reductor")
+                    foto_reductor = st.file_uploader("Foto Reductor", type=["jpg","jpeg","png"], key="foto_reductor")
+                # Bomba
+                voltaje_bomba = ""
+                foto_bomba = None
+                if st.session_state.get('mostrar_bomba', False):
+                    st.markdown("**Bomba**")
+                    voltaje_bomba = st.text_input("Voltaje Bomba")
+                    foto_bomba = st.file_uploader("Foto Bomba", type=["jpg","jpeg","png"], key="foto_bomba")
+                # Turbina
+                voltaje_turbina = ""
+                foto_turbina = None
+                if st.session_state.get('mostrar_turbina', False):
+                    st.markdown("**Turbina**")
+                    voltaje_turbina = st.text_input("Voltaje Turbina")
+                    foto_turbina = st.file_uploader("Foto Turbina", type=["jpg","jpeg","png"], key="foto_turbina")
+                # Quemador
+                voltaje_quemador = ""
+                foto_quemador = None
+                if st.session_state.get('mostrar_quemador', False):
+                    st.markdown("**Quemador**")
+                    voltaje_quemador = st.text_input("Voltaje Quemador")
+                    foto_quemador = st.file_uploader("Foto Quemador", type=["jpg","jpeg","png"], key="foto_quemador")
+                # Bomba de vacío
+                voltaje_bomba_vacio = ""
+                foto_bomba_vacio = None
+                if st.session_state.get('mostrar_bomba_vacio', False):
+                    st.markdown("**Bomba de vacío**")
+                    voltaje_bomba_vacio = st.text_input("Voltaje Bomba de vacío")
+                    foto_bomba_vacio = st.file_uploader("Foto Bomba de vacío", type=["jpg","jpeg","png"], key="foto_bomba_vacio")
+                # Compresor
+                voltaje_compresor = ""
+                foto_compresor = None
+                if st.session_state.get('mostrar_compresor', False):
+                    st.markdown("**Compresor**")
+                    voltaje_compresor = st.text_input("Voltaje Compresor")
+                    foto_compresor = st.file_uploader("Foto Compresor", type=["jpg","jpeg","png"], key="foto_compresor")
+                # Manómetros
+                cantidad_manometros = 0
+                foto_manometros = None
+                if st.session_state.get('mostrar_manometros', False):
+                    cantidad_manometros = st.number_input("Cantidad de manómetros", min_value=1, step=1)
+                    foto_manometros = st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], key="foto_manometros")
+                # Vacuómetros
+                cantidad_vacuometros = 0
+                foto_vacuometros = None
+                if st.session_state.get('mostrar_vacuometros', False):
+                    cantidad_vacuometros = st.number_input("Cantidad de vacuómetros", min_value=1, step=1)
+                    foto_vacuometros = st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], key="foto_vacuometros")
+                # Válvulas
+                cantidad_valvulas = 0
+                foto_valvulas = None
+                if st.session_state.get('mostrar_valvulas', False):
+                    cantidad_valvulas = st.number_input("Cantidad de válvulas", min_value=1, step=1)
+                    foto_valvulas = st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], key="foto_valvulas")
+                # Mangueras
+                cantidad_mangueras = 0
+                foto_mangueras = None
+                if st.session_state.get('mostrar_mangueras', False):
+                    cantidad_mangueras = st.number_input("Cantidad de mangueras", min_value=1, step=1)
+                    foto_mangueras = st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], key="foto_mangueras")
+                # Boquillas
+                cantidad_boquillas = 0
+                foto_boquillas = None
+                if st.session_state.get('mostrar_boquillas', False):
+                    cantidad_boquillas = st.number_input("Cantidad de boquillas", min_value=1, step=1)
+                    foto_boquillas = st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], key="foto_boquillas")
+                # Reguladores
+                cantidad_reguladores = 0
+                foto_reguladores = None
+                if st.session_state.get('mostrar_reguladores', False):
+                    cantidad_reguladores = st.number_input("Cantidad de reguladores aire/gas", min_value=1, step=1)
+                    foto_reguladores = st.file_uploader("Foto reguladores aire/gas", type=["jpg","jpeg","png"], key="foto_reguladores")
+                # Piñón 1
+                tension_pinon1 = ""
+                foto_pinon1 = None
+                if st.session_state.get('mostrar_pinon1', False):
+                    tension_pinon1 = st.text_input("Tensión Piñón 1")
+                    foto_pinon1 = st.file_uploader("Foto Piñón 1", type=["jpg","jpeg","png"], key="foto_pinon1")
+                # Piñón 2
+                tension_pinon2 = ""
+                foto_pinon2 = None
+                if st.session_state.get('mostrar_pinon2', False):
+                    tension_pinon2 = st.text_input("Tensión Piñón 2")
+                    foto_pinon2 = st.file_uploader("Foto Piñón 2", type=["jpg","jpeg","png"], key="foto_pinon2")
+                # Polea 1
+                tension_polea1 = ""
+                foto_polea1 = None
+                if st.session_state.get('mostrar_polea1', False):
+                    tension_polea1 = st.text_input("Tensión Polea 1")
+                    foto_polea1 = st.file_uploader("Foto Polea 1", type=["jpg","jpeg","png"], key="foto_polea1")
+                # Polea 2
+                tension_polea2 = ""
+                foto_polea2 = None
+                if st.session_state.get('mostrar_polea2', False):
+                    tension_polea2 = st.text_input("Tensión Polea 2")
+                    foto_polea2 = st.file_uploader("Foto Polea 2", type=["jpg","jpeg","png"], key="foto_polea2")
+                # Gabinete eléctrico
+                foto_gabinete = None
+                if st.session_state.get('mostrar_gabinete', False):
+                    foto_gabinete = st.file_uploader("Foto gabinete eléctrico", type=["jpg","jpeg","png"], key="foto_gabinete")
+                # Arrancador
+                foto_arrancador = None
+                if st.session_state.get('mostrar_arrancador', False):
+                    foto_arrancador = st.file_uploader("Foto arrancador", type=["jpg","jpeg","png"], key="foto_arrancador")
+                # Control de nivel
+                foto_control_nivel = None
+                if st.session_state.get('mostrar_control_nivel', False):
+                    foto_control_nivel = st.file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], key="foto_control_nivel")
+                # Variador de velocidad
+                foto_variador = None
+                if st.session_state.get('mostrar_variador', False):
+                    foto_variador = st.file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], key="foto_variador")
+                # Sensor de temperatura
+                foto_sensor_temp = None
+                if st.session_state.get('mostrar_sensor_temp', False):
+                    foto_sensor_temp = st.file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], key="foto_sensor_temp")
+                # Toma corriente
+                foto_toma_corriente = None
+                if st.session_state.get('mostrar_toma_corriente', False):
+                    foto_toma_corriente = st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], key="foto_toma_corriente")
 
-        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
-        orden_pedido_val = st.selectbox(
-            "Selecciona una orden de pedido existente:",
-            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
-            key="orden_pedido_selectbox"
-        )
-        if 'mostrar_nueva_op' not in st.session_state:
-            st.session_state['mostrar_nueva_op'] = False
-        if st.button("Agregar nueva OP"):
-            st.session_state['mostrar_nueva_op'] = True
-        nueva_op = ""
-        if st.session_state['mostrar_nueva_op']:
-            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
-            if nueva_op:
-                orden_pedido_val = nueva_op
+                # Otros elementos
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.subheader("Otros elementos")
+                otros_elementos = st.text_area("Describa otros elementos relevantes ")
 
-        with st.form("dispatch_form"):
-            import datetime
-            fecha = st.date_input("Fecha del día", value=datetime.date.today())
+                # Inspección visual
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.subheader("INSPECCION VISUAL")
+                col1v, col2v = st.columns(2)
+                with col1v:
+                    soldadura = st.selectbox("Revisión de soldadura", ["Sí", "No"])
+                    sentidos = st.selectbox("Revisión de sentidos de giro/entrada/salida", ["Sí", "No"])
+                    manual = st.selectbox("Manual de funcionamiento", ["Sí", "No"])
+                    filos = st.selectbox("Revisión de filos y acabados", ["Sí", "No"])
+                with col2v:
+                    tratamientos = st.selectbox("Revisión de tratamientos superficiales", ["Sí", "No"])
+                    tornilleria = st.selectbox("Revisión de tornillería/tuercas de seguridad/guasas", ["Sí", "No"])
+                    ruidos = st.selectbox("Revisión de ruidos y vibraciones", ["Sí", "No"])
+                    ensayo = st.selectbox("Ensayo del equipo", ["Sí", "No"])
 
-            nombre_proyecto_default = ""
-            encargado_ingenieria_default = ""
-            if orden_pedido_val and orden_pedido_val in ordenes_existentes:
-                nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
-                encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
+                # Observaciones generales
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.subheader("OBSERVACIONES GENERALES")
+                observaciones_generales = st.text_area("Observaciones generales ")
 
-            nombre_proyecto = st.text_input(
-                "Nombre de proyecto",
-                value=nombre_proyecto_default,
-                key=f"nombre_proyecto_{orden_pedido_val}"
-            )
-            encargado_ensamblador = st.selectbox(
-                "Encargado ensamblador",
-                [
-                    "Jaime Ramos",
-                    "Jaime Rincon",
-                    "Lewis",
-                    "Kate",
-                    "Jefferson",
-                    "Yeison",
-                    "Gabriel"
-                ]
-            )
-            encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
-            encargado_ingenieria = st.selectbox(
-                "Encargado ingeniería y diseño",
-                [
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ],
-                index=[
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ].index(encargado_ingenieria_default) if encargado_ingenieria_default in [
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ] else 0,
-                key=f"encargado_ingenieria_{orden_pedido_val}"
-            )
+                # Responsables
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.subheader("RESPONSABLES")
+                col1r, col2r = st.columns(2)
+                with col1r:
+                    lider_inspeccion = st.text_input("Líder de la inspección")
+                    disenador = st.text_input("Diseñador")
+                with col2r:
+                    recibe = st.text_input("Recibe")
+                    fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today())
 
-            guacales = []
-            for i in range(st.session_state["num_guacales"]):
-                st.subheader(f"PAQUETE {i+1}")
-                desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
-                fotos = st.file_uploader(
-                    f"Fotos PAQUETE {i+1}",
-                    type=["jpg", "jpeg", "png"],
-                    key=f"foto_{i+1}",
-                    accept_multiple_files=True
-                )
-                guacales.append({
-                    "desc": desc,
-                    "fotos": fotos
-                })
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.session_state["num_guacales"] < 10:
-                    if st.form_submit_button("Agregar paquete"):
-                        st.session_state["num_guacales"] += 1
-                        st.experimental_rerun()
-            with col2:
-                submitted = st.form_submit_button("Guardar despacho")
+                submitted = st.form_submit_button("Guardar acta de entrega")
 
-        if submitted:
-            if not guacales[0]["desc"]:
-                st.error("La descripción del PAQUETE 1 es obligatoria.")
-            else:
-                row = [
-                    str(fecha), nombre_proyecto, orden_pedido_val,
-                    encargado_ensamblador, encargado_almacen, encargado_ingenieria
-                ]
-                for idx, guacal in enumerate(guacales, start=1):
-                    row.append(guacal["desc"])
-                    fotos = guacal["fotos"]
-                    enlaces = []
-                    if fotos:
-                        for n, foto in enumerate(fotos, start=1):
-                            try:
-                                image_filename = f"Guacal_{idx}_{orden_pedido_val}_{n}.jpg"
-                                file_stream = io.BytesIO(foto.read())
-                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                                enlaces.append(public_url)
-                                st.success(f"Foto {n} del Guacal {idx} subida correctamente")
-                            except Exception as upload_error:
-                                st.error(f"Error al subir la foto {n} del Guacal {idx}: {str(upload_error)}")
-                        if enlaces:
-                            row.append(", ".join(enlaces))
-                        else:
-                            row.append("Error al subir foto")
+                # Validación: solo encabezado y responsables son obligatorios
+                encabezado_completo = all([
+                    cliente.strip(),
+                    op.strip(),
+                    item.strip(),
+                    equipo.strip(),
+                    lider_inspeccion.strip(),
+                    disenador.strip(),
+                    recibe.strip()
+                ])
+
+                if submitted:
+                    if not encabezado_completo:
+                        st.error("Por favor complete todos los campos obligatorios del encabezado y responsables.")
                     else:
-                        row.append("Sin foto")
-                write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
-                st.success("Despacho guardado correctamente.")
-                st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+                        def subir_foto(foto, nombre, label=None):
+                            if foto:
+                                import io
+                                file_stream = io.BytesIO(foto.read())
+                                url = upload_image_to_drive_oauth(file_stream, nombre, folder_id)
+                                st.success(f"{label or nombre} subida correctamente")
+                                st.markdown(f"[Ver foto]({url})")
+                                return url
+                            return ""
 
+                        motores_links = []
+                        motores_voltajes = []
+                        motores_fotos = []
+                        num_motores_val = 0
+                        if st.session_state.get('mostrar_motores', False):
+                            num_motores_val = int(num_motores)
+                            for idx, m in enumerate(motores, start=1):
+                                link = subir_foto(m["foto"], f"Motor_{op}_{idx}.jpg", label=f"Foto Motor {idx}") if m["foto"] else ""
+                                motores_links.append(link)
+                                motores_voltajes.append(m["voltaje"])
+                                motores_fotos.append(link)
 
-    elif opcion_menu == "ACTA DE ENTREGA":
-        st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
-        st.markdown("<b>Encabezado del acta de entrega</b>", unsafe_allow_html=True)
-        creds = get_service_account_creds()
-        sheet_client = gspread.authorize(creds)
-        folder_id = st.secrets.drive_config.FOLDER_ID
-        file_name = st.secrets.drive_config.FILE_NAME
-        worksheet_name = "Acta de entrega"
+                        foto_reductor_link = subir_foto(foto_reductor, f"Reductor_{op}.jpg", label="Foto Reductor") if st.session_state.get('mostrar_reductor', False) else ""
+                        foto_bomba_link = subir_foto(foto_bomba, f"Bomba_{op}.jpg", label="Foto Bomba") if st.session_state.get('mostrar_bomba', False) else ""
+                        foto_turbina_link = subir_foto(foto_turbina, f"Turbina_{op}.jpg", label="Foto Turbina") if st.session_state.get('mostrar_turbina', False) else ""
+                        foto_quemador_link = subir_foto(foto_quemador, f"Quemador_{op}.jpg", label="Foto Quemador") if st.session_state.get('mostrar_quemador', False) else ""
+                        foto_bomba_vacio_link = subir_foto(foto_bomba_vacio, f"BombaVacio_{op}.jpg", label="Foto Bomba de vacío") if st.session_state.get('mostrar_bomba_vacio', False) else ""
+                        foto_compresor_link = subir_foto(foto_compresor, f"Compresor_{op}.jpg", label="Foto Compresor") if st.session_state.get('mostrar_compresor', False) else ""
+                        foto_manometros_link = subir_foto(foto_manometros, f"Manometros_{op}.jpg", label="Foto manómetros") if st.session_state.get('mostrar_manometros', False) else ""
+                        foto_vacuometros_link = subir_foto(foto_vacuometros, f"Vacuometros_{op}.jpg", label="Foto vacuómetros") if st.session_state.get('mostrar_vacuometros', False) else ""
+                        foto_valvulas_link = subir_foto(foto_valvulas, f"Valvulas_{op}.jpg", label="Foto válvulas") if st.session_state.get('mostrar_valvulas', False) else ""
+                        foto_mangueras_link = subir_foto(foto_mangueras, f"Mangueras_{op}.jpg", label="Foto mangueras") if st.session_state.get('mostrar_mangueras', False) else ""
+                        foto_boquillas_link = subir_foto(foto_boquillas, f"Boquillas_{op}.jpg", label="Foto boquillas") if st.session_state.get('mostrar_boquillas', False) else ""
+                        foto_reguladores_link = subir_foto(foto_reguladores, f"Reguladores_{op}.jpg", label="Foto reguladores") if st.session_state.get('mostrar_reguladores', False) else ""
+                        foto_pinon1_link = subir_foto(foto_pinon1, f"Pinon1_{op}.jpg", label="Foto Piñón 1") if st.session_state.get('mostrar_pinon1', False) else ""
+                        foto_pinon2_link = subir_foto(foto_pinon2, f"Pinon2_{op}.jpg", label="Foto Piñón 2") if st.session_state.get('mostrar_pinon2', False) else ""
+                        foto_polea1_link = subir_foto(foto_polea1, f"Polea1_{op}.jpg", label="Foto Polea 1") if st.session_state.get('mostrar_polea1', False) else ""
+                        foto_polea2_link = subir_foto(foto_polea2, f"Polea2_{op}.jpg", label="Foto Polea 2") if st.session_state.get('mostrar_polea2', False) else ""
+                        foto_gabinete_link = subir_foto(foto_gabinete, f"Gabinete_{op}.jpg", label="Foto gabinete eléctrico") if st.session_state.get('mostrar_gabinete', False) else ""
+                        foto_arrancador_link = subir_foto(foto_arrancador, f"Arrancador_{op}.jpg", label="Foto arrancador") if st.session_state.get('mostrar_arrancador', False) else ""
+                        foto_control_nivel_link = subir_foto(foto_control_nivel, f"ControlNivel_{op}.jpg", label="Foto control de nivel") if st.session_state.get('mostrar_control_nivel', False) else ""
+                        foto_variador_link = subir_foto(foto_variador, f"Variador_{op}.jpg", label="Foto variador de velocidad") if st.session_state.get('mostrar_variador', False) else ""
+                        foto_sensor_temp_link = subir_foto(foto_sensor_temp, f"SensorTemp_{op}.jpg", label="Foto sensor de temperatura") if st.session_state.get('mostrar_sensor_temp', False) else ""
+                        foto_toma_corriente_link = subir_foto(foto_toma_corriente, f"TomaCorriente_{op}.jpg", label="Foto toma corriente") if st.session_state.get('mostrar_toma_corriente', False) else ""
 
-        # --- Botones de mostrar/ocultar secciones (fuera del form) ---
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Lista de chequeo general elementos electromecánicos")
-        if 'mostrar_motores' not in st.session_state:
-            st.session_state['mostrar_motores'] = False
-        if st.button("¿Hay motores?"):
-            st.session_state['mostrar_motores'] = not st.session_state['mostrar_motores']
-        if 'mostrar_reductor' not in st.session_state:
-            st.session_state['mostrar_reductor'] = False
-        if st.button("¿Hay reductor?"):
-            st.session_state['mostrar_reductor'] = not st.session_state['mostrar_reductor']
-        if 'mostrar_bomba' not in st.session_state:
-            st.session_state['mostrar_bomba'] = False
-        if st.button("¿Hay bomba?"):
-            st.session_state['mostrar_bomba'] = not st.session_state['mostrar_bomba']
-        if 'mostrar_turbina' not in st.session_state:
-            st.session_state['mostrar_turbina'] = False
-        if st.button("¿Hay turbina?"):
-            st.session_state['mostrar_turbina'] = not st.session_state['mostrar_turbina']
-        if 'mostrar_quemador' not in st.session_state:
-            st.session_state['mostrar_quemador'] = False
-        if st.button("¿Hay quemador?"):
-            st.session_state['mostrar_quemador'] = not st.session_state['mostrar_quemador']
-        if 'mostrar_bomba_vacio' not in st.session_state:
-            st.session_state['mostrar_bomba_vacio'] = False
-        if st.button("¿Hay bomba de vacío?"):
-            st.session_state['mostrar_bomba_vacio'] = not st.session_state['mostrar_bomba_vacio']
-        if 'mostrar_compresor' not in st.session_state:
-            st.session_state['mostrar_compresor'] = False
-        if st.button("¿Hay compresor?"):
-            st.session_state['mostrar_compresor'] = not st.session_state['mostrar_compresor']
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Lista de chequeo general accesorios")
-        if 'mostrar_manometros' not in st.session_state:
-            st.session_state['mostrar_manometros'] = False
-        if st.button("¿Hay manómetros?"):
-            st.session_state['mostrar_manometros'] = not st.session_state['mostrar_manometros']
-        if 'mostrar_vacuometros' not in st.session_state:
-            st.session_state['mostrar_vacuometros'] = False
-        if st.button("¿Hay vacuómetros?"):
-            st.session_state['mostrar_vacuometros'] = not st.session_state['mostrar_vacuometros']
-        if 'mostrar_valvulas' not in st.session_state:
-            st.session_state['mostrar_valvulas'] = False
-        if st.button("¿Hay válvulas?"):
-            st.session_state['mostrar_valvulas'] = not st.session_state['mostrar_valvulas']
-        if 'mostrar_mangueras' not in st.session_state:
-            st.session_state['mostrar_mangueras'] = False
-        if st.button("¿Hay mangueras?"):
-            st.session_state['mostrar_mangueras'] = not st.session_state['mostrar_mangueras']
-        if 'mostrar_boquillas' not in st.session_state:
-            st.session_state['mostrar_boquillas'] = False
-        if st.button("¿Hay boquillas?"):
-            st.session_state['mostrar_boquillas'] = not st.session_state['mostrar_boquillas']
-        if 'mostrar_reguladores' not in st.session_state:
-            st.session_state['mostrar_reguladores'] = False
-        if st.button("¿Hay reguladores aire/gas?"):
-            st.session_state['mostrar_reguladores'] = not st.session_state['mostrar_reguladores']
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Lista de chequeo general elementos mecánicos")
-        if 'mostrar_pinon1' not in st.session_state:
-            st.session_state['mostrar_pinon1'] = False
-        if st.button("¿Hay piñón 1?"):
-            st.session_state['mostrar_pinon1'] = not st.session_state['mostrar_pinon1']
-        if 'mostrar_pinon2' not in st.session_state:
-            st.session_state['mostrar_pinon2'] = False
-        if st.button("¿Hay piñón 2?"):
-            st.session_state['mostrar_pinon2'] = not st.session_state['mostrar_pinon2']
-        if 'mostrar_polea1' not in st.session_state:
-            st.session_state['mostrar_polea1'] = False
-        if st.button("¿Hay polea 1?"):
-            st.session_state['mostrar_polea1'] = not st.session_state['mostrar_polea1']
-        if 'mostrar_polea2' not in st.session_state:
-            st.session_state['mostrar_polea2'] = False
-        if st.button("¿Hay polea 2?"):
-            st.session_state['mostrar_polea2'] = not st.session_state['mostrar_polea2']
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Lista de chequeo general elementos eléctricos")
-        if 'mostrar_gabinete' not in st.session_state:
-            st.session_state['mostrar_gabinete'] = False
-        if st.button("¿Hay gabinete eléctrico?"):
-            st.session_state['mostrar_gabinete'] = not st.session_state['mostrar_gabinete']
-        if 'mostrar_arrancador' not in st.session_state:
-            st.session_state['mostrar_arrancador'] = False
-        if st.button("¿Hay arrancador?"):
-            st.session_state['mostrar_arrancador'] = not st.session_state['mostrar_arrancador']
-        if 'mostrar_control_nivel' not in st.session_state:
-            st.session_state['mostrar_control_nivel'] = False
-        if st.button("¿Hay control de nivel?"):
-            st.session_state['mostrar_control_nivel'] = not st.session_state['mostrar_control_nivel']
-        if 'mostrar_variador' not in st.session_state:
-            st.session_state['mostrar_variador'] = False
-        if st.button("¿Hay variador de velocidad?"):
-            st.session_state['mostrar_variador'] = not st.session_state['mostrar_variador']
-        if 'mostrar_sensor_temp' not in st.session_state:
-            st.session_state['mostrar_sensor_temp'] = False
-        if st.button("¿Hay sensor de temperatura?"):
-            st.session_state['mostrar_sensor_temp'] = not st.session_state['mostrar_sensor_temp']
-        if 'mostrar_toma_corriente' not in st.session_state:
-            st.session_state['mostrar_toma_corriente'] = False
-        if st.button("¿Hay toma corriente?"):
-            st.session_state['mostrar_toma_corriente'] = not st.session_state['mostrar_toma_corriente']
-
-        # --- Formulario principal ---
-        with st.form("acta_entrega_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                cliente = st.text_input("Cliente")
-                op = st.text_input("OP (Orden de pedido)")
-                item = st.text_input("Item")
-            with col2:
-                equipo = st.text_input("Equipo")
-                cantidad = st.number_input("Cantidad", min_value=1, step=1)
-                import datetime
-                fecha_solicitud = st.date_input("Fecha de solicitud", value=datetime.date.today())
-
-            # Variables condicionales para cada sección
-            motores = []
-            num_motores = 0
-            if st.session_state.get('mostrar_motores', False):
-                num_motores = st.number_input("¿Cuántos motores?", min_value=1, max_value=4, value=1, step=1, key="num_motores")
-                for i in range(int(num_motores)):
-                    st.markdown(f"**Motor {i+1}**")
-                    voltaje = st.text_input(f"Voltaje Motor {i+1}", key=f"voltaje_motor_{i+1}")
-                    foto = st.file_uploader(f"Foto Motor {i+1}", type=["jpg","jpeg","png"], key=f"foto_motor_{i+1}")
-                    motores.append({"voltaje": voltaje, "foto": foto})
-            # Reductor
-            voltaje_reductor = ""
-            foto_reductor = None
-            if st.session_state.get('mostrar_reductor', False):
-                st.markdown("**Reductor**")
-                voltaje_reductor = st.text_input("Voltaje Reductor")
-                foto_reductor = st.file_uploader("Foto Reductor", type=["jpg","jpeg","png"], key="foto_reductor")
-            # Bomba
-            voltaje_bomba = ""
-            foto_bomba = None
-            if st.session_state.get('mostrar_bomba', False):
-                st.markdown("**Bomba**")
-                voltaje_bomba = st.text_input("Voltaje Bomba")
-                foto_bomba = st.file_uploader("Foto Bomba", type=["jpg","jpeg","png"], key="foto_bomba")
-            # Turbina
-            voltaje_turbina = ""
-            foto_turbina = None
-            if st.session_state.get('mostrar_turbina', False):
-                st.markdown("**Turbina**")
-                voltaje_turbina = st.text_input("Voltaje Turbina")
-                foto_turbina = st.file_uploader("Foto Turbina", type=["jpg","jpeg","png"], key="foto_turbina")
-            # Quemador
-            voltaje_quemador = ""
-            foto_quemador = None
-            if st.session_state.get('mostrar_quemador', False):
-                st.markdown("**Quemador**")
-                voltaje_quemador = st.text_input("Voltaje Quemador")
-                foto_quemador = st.file_uploader("Foto Quemador", type=["jpg","jpeg","png"], key="foto_quemador")
-            # Bomba de vacío
-            voltaje_bomba_vacio = ""
-            foto_bomba_vacio = None
-            if st.session_state.get('mostrar_bomba_vacio', False):
-                st.markdown("**Bomba de vacío**")
-                voltaje_bomba_vacio = st.text_input("Voltaje Bomba de vacío")
-                foto_bomba_vacio = st.file_uploader("Foto Bomba de vacío", type=["jpg","jpeg","png"], key="foto_bomba_vacio")
-            # Compresor
-            voltaje_compresor = ""
-            foto_compresor = None
-            if st.session_state.get('mostrar_compresor', False):
-                st.markdown("**Compresor**")
-                voltaje_compresor = st.text_input("Voltaje Compresor")
-                foto_compresor = st.file_uploader("Foto Compresor", type=["jpg","jpeg","png"], key="foto_compresor")
-            # Manómetros
-            cantidad_manometros = 0
-            foto_manometros = None
-            if st.session_state.get('mostrar_manometros', False):
-                cantidad_manometros = st.number_input("Cantidad de manómetros", min_value=1, step=1)
-                foto_manometros = st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], key="foto_manometros")
-            # Vacuómetros
-            cantidad_vacuometros = 0
-            foto_vacuometros = None
-            if st.session_state.get('mostrar_vacuometros', False):
-                cantidad_vacuometros = st.number_input("Cantidad de vacuómetros", min_value=1, step=1)
-                foto_vacuometros = st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], key="foto_vacuometros")
-            # Válvulas
-            cantidad_valvulas = 0
-            foto_valvulas = None
-            if st.session_state.get('mostrar_valvulas', False):
-                cantidad_valvulas = st.number_input("Cantidad de válvulas", min_value=1, step=1)
-                foto_valvulas = st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], key="foto_valvulas")
-            # Mangueras
-            cantidad_mangueras = 0
-            foto_mangueras = None
-            if st.session_state.get('mostrar_mangueras', False):
-                cantidad_mangueras = st.number_input("Cantidad de mangueras", min_value=1, step=1)
-                foto_mangueras = st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], key="foto_mangueras")
-            # Boquillas
-            cantidad_boquillas = 0
-            foto_boquillas = None
-            if st.session_state.get('mostrar_boquillas', False):
-                cantidad_boquillas = st.number_input("Cantidad de boquillas", min_value=1, step=1)
-                foto_boquillas = st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], key="foto_boquillas")
-            # Reguladores
-            cantidad_reguladores = 0
-            foto_reguladores = None
-            if st.session_state.get('mostrar_reguladores', False):
-                cantidad_reguladores = st.number_input("Cantidad de reguladores aire/gas", min_value=1, step=1)
-                foto_reguladores = st.file_uploader("Foto reguladores aire/gas", type=["jpg","jpeg","png"], key="foto_reguladores")
-            # Piñón 1
-            tension_pinon1 = ""
-            foto_pinon1 = None
-            if st.session_state.get('mostrar_pinon1', False):
-                tension_pinon1 = st.text_input("Tensión Piñón 1")
-                foto_pinon1 = st.file_uploader("Foto Piñón 1", type=["jpg","jpeg","png"], key="foto_pinon1")
-            # Piñón 2
-            tension_pinon2 = ""
-            foto_pinon2 = None
-            if st.session_state.get('mostrar_pinon2', False):
-                tension_pinon2 = st.text_input("Tensión Piñón 2")
-                foto_pinon2 = st.file_uploader("Foto Piñón 2", type=["jpg","jpeg","png"], key="foto_pinon2")
-            # Polea 1
-            tension_polea1 = ""
-            foto_polea1 = None
-            if st.session_state.get('mostrar_polea1', False):
-                tension_polea1 = st.text_input("Tensión Polea 1")
-                foto_polea1 = st.file_uploader("Foto Polea 1", type=["jpg","jpeg","png"], key="foto_polea1")
-            # Polea 2
-            tension_polea2 = ""
-            foto_polea2 = None
-            if st.session_state.get('mostrar_polea2', False):
-                tension_polea2 = st.text_input("Tensión Polea 2")
-                foto_polea2 = st.file_uploader("Foto Polea 2", type=["jpg","jpeg","png"], key="foto_polea2")
-            # Gabinete eléctrico
-            foto_gabinete = None
-            if st.session_state.get('mostrar_gabinete', False):
-                foto_gabinete = st.file_uploader("Foto gabinete eléctrico", type=["jpg","jpeg","png"], key="foto_gabinete")
-            # Arrancador
-            foto_arrancador = None
-            if st.session_state.get('mostrar_arrancador', False):
-                foto_arrancador = st.file_uploader("Foto arrancador", type=["jpg","jpeg","png"], key="foto_arrancador")
-            # Control de nivel
-            foto_control_nivel = None
-            if st.session_state.get('mostrar_control_nivel', False):
-                foto_control_nivel = st.file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], key="foto_control_nivel")
-            # Variador de velocidad
-            foto_variador = None
-            if st.session_state.get('mostrar_variador', False):
-                foto_variador = st.file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], key="foto_variador")
-            # Sensor de temperatura
-            foto_sensor_temp = None
-            if st.session_state.get('mostrar_sensor_temp', False):
-                foto_sensor_temp = st.file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], key="foto_sensor_temp")
-            # Toma corriente
-            foto_toma_corriente = None
-            if st.session_state.get('mostrar_toma_corriente', False):
-                foto_toma_corriente = st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], key="foto_toma_corriente")
-
-            # Otros elementos
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("Otros elementos")
-            otros_elementos = st.text_area("Describa otros elementos relevantes ")
-
-            # Inspección visual
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("INSPECCION VISUAL")
-            col1v, col2v = st.columns(2)
-            with col1v:
-                soldadura = st.selectbox("Revisión de soldadura", ["Sí", "No"])
-                sentidos = st.selectbox("Revisión de sentidos de giro/entrada/salida", ["Sí", "No"])
-                manual = st.selectbox("Manual de funcionamiento", ["Sí", "No"])
-                filos = st.selectbox("Revisión de filos y acabados", ["Sí", "No"])
-            with col2v:
-                tratamientos = st.selectbox("Revisión de tratamientos superficiales", ["Sí", "No"])
-                tornilleria = st.selectbox("Revisión de tornillería/tuercas de seguridad/guasas", ["Sí", "No"])
-                ruidos = st.selectbox("Revisión de ruidos y vibraciones", ["Sí", "No"])
-                ensayo = st.selectbox("Ensayo del equipo", ["Sí", "No"])
-
-            # Observaciones generales
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("OBSERVACIONES GENERALES")
-            observaciones_generales = st.text_area("Observaciones generales ")
-
-            # Responsables
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("RESPONSABLES")
-            col1r, col2r = st.columns(2)
-            with col1r:
-                lider_inspeccion = st.text_input("Líder de la inspección")
-                disenador = st.text_input("Diseñador")
-            with col2r:
-                recibe = st.text_input("Recibe")
-                fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today())
-
-            submitted = st.form_submit_button("Guardar acta de entrega")
+                        row = [
+                            cliente, op, item, equipo, cantidad, str(fecha_solicitud),
+                            num_motores_val,
+                            *motores_voltajes,
+                            *motores_fotos,
+                            voltaje_reductor, foto_reductor_link, voltaje_bomba, foto_bomba_link,
+                            voltaje_turbina, foto_turbina_link, voltaje_quemador, foto_quemador_link, voltaje_bomba_vacio, foto_bomba_vacio_link, voltaje_compresor, foto_compresor_link,
+                            cantidad_manometros, foto_manometros_link, cantidad_vacuometros, foto_vacuometros_link, cantidad_valvulas, foto_valvulas_link, cantidad_mangueras, foto_mangueras_link, cantidad_boquillas, foto_boquillas_link, cantidad_reguladores, foto_reguladores_link,
+                            tension_pinon1, foto_pinon1_link, tension_pinon2, foto_pinon2_link, tension_polea1, foto_polea1_link, tension_polea2, foto_polea2_link,
+                            foto_gabinete_link, foto_arrancador_link, foto_control_nivel_link, foto_variador_link, foto_sensor_temp_link, foto_toma_corriente_link,
+                            otros_elementos,
+                            soldadura, sentidos, manual, filos, tratamientos, tornilleria, ruidos, ensayo,
+                            observaciones_generales,
+                            lider_inspeccion, disenador, recibe, str(fecha_entrega)
+                        ]
+                        headers = [
+                            "Cliente", "OP (Orden de pedido)", "Item", "Equipo", "Cantidad", "Fecha de solicitud",
+                            "Cantidad de motores",
+                            "Voltaje Motor 1", "Voltaje Motor 2", "Voltaje Motor 3", "Voltaje Motor 4",
+                            "Foto Motor 1", "Foto Motor 2", "Foto Motor 3", "Foto Motor 4",
+                            "Voltaje Reductor", "Foto Reductor", "Voltaje Bomba", "Foto Bomba",
+                            "Voltaje Turbina", "Foto Turbina", "Voltaje Quemador", "Foto Quemador", "Voltaje Bomba de vacío", "Foto Bomba de vacío", "Voltaje Compresor", "Foto Compresor",
+                            "Cantidad manómetros", "Foto manómetros", "Cantidad vacuómetros", "Foto vacuómetros", "Cantidad válvulas", "Foto válvulas", "Cantidad mangueras", "Foto mangueras", "Cantidad boquillas", "Foto boquillas", "Cantidad reguladores", "Foto reguladores",
+                            "Tensión Piñón 1", "Foto Piñón 1", "Tensión Piñón 2", "Foto Piñón 2", "Tensión Polea 1", "Foto Polea 1", "Tensión Polea 2", "Foto Polea 2",
+                            "Foto gabinete eléctrico", "Foto arrancador", "Foto control de nivel", "Foto variador de velocidad", "Foto sensor de temperatura", "Foto toma corriente",
+                            "Otros elementos",
+                            "Revisión de soldadura", "Revisión de sentidos de giro/entrada/salida", "Manual de funcionamiento", "Revisión de filos y acabados", "Revisión de tratamientos superficiales", "Revisión de tornillería/tuercas de seguridad/guasas", "Revisión de ruidos y vibraciones", "Ensayo del equipo",
+                            "Observaciones generales",
+                            "Líder de la inspección", "Diseñador", "Recibe", "Fecha de entrega"
+                        ]
+                        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                        if not sheet.get_all_values():
+                            sheet.append_row(headers)
+                        sheet.append_row(row)
+                        st.success("Acta de entrega guardada correctamente en Google Sheets.")
+            # ...existing code...
 
             # Validación: solo encabezado y responsables son obligatorios
             encabezado_completo = all([
