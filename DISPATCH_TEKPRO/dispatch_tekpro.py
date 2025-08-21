@@ -195,12 +195,11 @@ def main():
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
 
-        # Leer órdenes de pedido existentes y sus datos
-        try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
+    # Leer órdenes de pedido existentes y sus datos
+    sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+    all_rows = sheet.get_all_values()
 
-            with st.form("acta_entrega_form"):
+    with st.form("acta_entrega_form"):
                 col1, col2 = st.columns(2)
                 with col1:
                     cliente = st.text_input("Cliente")
