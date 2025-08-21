@@ -185,6 +185,25 @@ def main():
     creds = get_service_account_creds()
     sheet_client = gspread.authorize(creds)
 
+    # Leer órdenes de pedido existentes y sus datos
+    try:
+        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+        all_rows = sheet.get_all_values()
+        # Suponiendo que la primera fila es encabezado y las columnas son:
+        # Fecha, Nombre Proyecto, Orden Pedido, Encargado Ensamblador, Encargado Almacen, Encargado Ingenieria, ...
+        ordenes_existentes = {}
+        for row in all_rows[1:]:
+            if len(row) >= 6:
+                orden = row[2]
+                ordenes_existentes[orden] = {
+                    "nombre_proyecto": row[1],
+                    "encargado_ingenieria": row[5]
+                }
+        ordenes_list = list(ordenes_existentes.keys())
+    except Exception:
+        ordenes_existentes = {}
+        ordenes_list = []
+
     # Autorizar Drive solo si no hay token
     if 'drive_oauth_token' not in st.session_state:
         authorize_drive_oauth()
@@ -195,8 +214,28 @@ def main():
     with st.form("dispatch_form"):
         import datetime
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
-        nombre_proyecto = st.text_input("Nombre de proyecto")
-        orden_pedido = st.text_input("Orden de pedido")
+
+        # Orden de pedido: selectbox con opción de escribir nueva
+        orden_pedido = st.selectbox(
+            "Orden de pedido (elige una existente o escribe una nueva)",
+            ordenes_list + ["Nueva orden..."],
+            index=0 if ordenes_list else None
+        )
+        nueva_orden = ""
+        if orden_pedido == "Nueva orden..." or not orden_pedido:
+            nueva_orden = st.text_input("Nueva orden de pedido")
+            orden_pedido_val = nueva_orden
+        else:
+            orden_pedido_val = orden_pedido
+
+        # Autocompletar nombre de proyecto y encargado de ingeniería si existe
+        nombre_proyecto_default = ""
+        encargado_ingenieria_default = ""
+        if orden_pedido and orden_pedido in ordenes_existentes:
+            nombre_proyecto_default = ordenes_existentes[orden_pedido]["nombre_proyecto"]
+            encargado_ingenieria_default = ordenes_existentes[orden_pedido]["encargado_ingenieria"]
+
+        nombre_proyecto = st.text_input("Nombre de proyecto", value=nombre_proyecto_default)
         encargado_ensamblador = st.selectbox(
             "Encargado ensamblador",
             [
@@ -216,11 +255,28 @@ def main():
                 "Daniel Valbuena",
                 "Alejandro Diaz",
                 "Juan Andres",
-                "Juan David Martinez",
-                "Jose Perez",
-                "Diomer Arbelaez",
-                "Victor Baena"
-            ]
+                "Juan David",
+                "Jose",
+                "Diomer",
+                "Victor"
+            ],
+            index=[
+                "Daniel Valbuena",
+                "Alejandro Diaz",
+                "Juan Andres",
+                "Juan David",
+                "Jose",
+                "Diomer",
+                "Victor"
+            ].index(encargado_ingenieria_default) if encargado_ingenieria_default in [
+                "Daniel Valbuena",
+                "Alejandro Diaz",
+                "Juan Andres",
+                "Juan David",
+                "Jose",
+                "Diomer",
+                "Victor"
+            ] else 0
         )
 
         guacales = []
