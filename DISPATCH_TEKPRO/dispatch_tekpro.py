@@ -60,8 +60,7 @@ from google.oauth2.service_account import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 import io
 import os
-# Para combobox editable
-from streamlit_autocomplete import st_autocomplete
+
 
 # Configuración
 SCOPES = [
@@ -219,14 +218,20 @@ def main():
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
 
 
-        # Orden de pedido: combobox editable con streamlit-autocomplete
+
+        # Orden de pedido: selectbox nativo con opción para escribir nueva
         st.markdown("<b>Orden de pedido</b> (elige una existente o escribe una nueva)", unsafe_allow_html=True)
-        orden_pedido_val = st_autocomplete(
-            label="Orden de pedido",
-            options=ordenes_list,
-            placeholder="Escribe o selecciona una orden...",
-            key="orden_pedido_autocomplete"
+        opciones_orden = ordenes_list + ["Otra (escribir nueva)"] if ordenes_list else ["Otra (escribir nueva)"]
+        seleccion_orden = st.selectbox(
+            "Selecciona una orden existente o elige 'Otra (escribir nueva)' para ingresar una nueva:",
+            opciones_orden,
+            index=0 if ordenes_list else 0,
+            key="orden_pedido_selectbox"
         )
+        if seleccion_orden == "Otra (escribir nueva)":
+            orden_pedido_val = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
+        else:
+            orden_pedido_val = seleccion_orden
 
         # Autocompletar nombre de proyecto y encargado de ingeniería si existe
         nombre_proyecto_default = ""
