@@ -52,6 +52,7 @@ h2, h3, .stApp h2, .stApp h3 {
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 </style>
 ''', unsafe_allow_html=True)
+
 import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -59,6 +60,8 @@ from google.oauth2.service_account import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 import io
 import os
+# Para combobox editable
+from streamlit_autocomplete import st_autocomplete
 
 # Configuración
 SCOPES = [
@@ -216,14 +219,14 @@ def main():
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
 
 
-        # Orden de pedido: campo editable con sugerencias
+        # Orden de pedido: combobox editable con streamlit-autocomplete
         st.markdown("<b>Orden de pedido</b> (elige una existente o escribe una nueva)", unsafe_allow_html=True)
-        orden_pedido_val = st.text_input("", value="", key="orden_pedido_input")
-        # Sugerencias si hay órdenes existentes y el usuario empieza a escribir
-        if ordenes_list and orden_pedido_val:
-            sugerencias = [o for o in ordenes_list if orden_pedido_val.lower() in o.lower()]
-            if sugerencias:
-                st.markdown("<small><i>Sugerencias:</i> " + ", ".join(sugerencias) + "</small>", unsafe_allow_html=True)
+        orden_pedido_val = st_autocomplete(
+            label="Orden de pedido",
+            options=ordenes_list,
+            placeholder="Escribe o selecciona una orden...",
+            key="orden_pedido_autocomplete"
+        )
 
         # Autocompletar nombre de proyecto y encargado de ingeniería si existe
         nombre_proyecto_default = ""
