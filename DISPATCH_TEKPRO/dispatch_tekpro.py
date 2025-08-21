@@ -112,7 +112,10 @@ def authorize_drive_oauth():
             st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
         else:
             st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
-    if st.button("Validar código"):
+
+    # Botón fuera de cualquier formulario
+    validar = st.button("Validar código", key="validar_codigo_oauth")
+    if validar:
         if auth_code:
             try:
                 flow.fetch_token(code=auth_code)
