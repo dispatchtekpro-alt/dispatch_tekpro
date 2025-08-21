@@ -93,9 +93,23 @@ def authorize_drive_oauth():
         scopes=SCOPES,
         redirect_uri=redirect_uri
     )
+    import urllib.parse
     auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
     st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
-    auth_code = st.text_input("Pega aquí el código de autorización que recibiste tras autorizar:", key="oauth_code_input")
+    st.markdown("""
+    <small>Después de autorizar, copia y pega aquí la URL completa a la que fuiste redirigido.<br>
+    El sistema extraerá el código automáticamente.</small>
+    """, unsafe_allow_html=True)
+    url_input = st.text_input("Pega aquí la URL de redirección:", key="oauth_url_input")
+    auth_code = ""
+    if url_input:
+        parsed = urllib.parse.urlparse(url_input)
+        params = urllib.parse.parse_qs(parsed.query)
+        auth_code = params.get("code", [""])[0]
+        if auth_code:
+            st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
+        else:
+            st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
     if st.button("Validar código"):
         if auth_code:
             try:
@@ -106,7 +120,7 @@ def authorize_drive_oauth():
             except Exception as e:
                 st.error(f"Error al intercambiar el código: {e}")
         else:
-            st.warning("Debes pegar el código de autorización.")
+            st.warning("Debes pegar la URL de redirección que contiene el código.")
     st.stop()
 
 def get_drive_service_oauth():
@@ -202,10 +216,10 @@ def main():
                 "Daniel Valbuena",
                 "Alejandro Diaz",
                 "Juan Andres",
-                "Juan David",
-                "Jose",
-                "Diomer",
-                "Victor"
+                "Juan David Martinez",
+                "Jose Perez",
+                "Diomer Arbelaez",
+                "Victor Baena"
             ]
         )
 
