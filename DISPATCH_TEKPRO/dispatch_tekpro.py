@@ -219,19 +219,20 @@ def main():
 
 
 
-        # Orden de pedido: selectbox nativo con opción para escribir nueva
-        st.markdown("<b>Orden de pedido</b> (elige una existente o escribe una nueva)", unsafe_allow_html=True)
-        opciones_orden = ordenes_list + ["Otra (escribir nueva)"] if ordenes_list else ["Otra (escribir nueva)"]
-        seleccion_orden = st.selectbox(
-            "Selecciona una orden existente o elige 'Otra (escribir nueva)' para ingresar una nueva:",
-            opciones_orden,
-            index=0 if ordenes_list else 0,
+        # Orden de pedido: selectbox solo con las existentes y botón para agregar nueva
+        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
+        orden_pedido_val = st.selectbox(
+            "Selecciona una orden de pedido existente:",
+            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
             key="orden_pedido_selectbox"
         )
-        if seleccion_orden == "Otra (escribir nueva)":
-            orden_pedido_val = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
-        else:
-            orden_pedido_val = seleccion_orden
+        agregar_nueva = st.button("Agregar nueva OP")
+        nueva_op = ""
+        if agregar_nueva or st.session_state.get("mostrar_nueva_op"):
+            st.session_state["mostrar_nueva_op"] = True
+            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
+            if nueva_op:
+                orden_pedido_val = nueva_op
 
         # Autocompletar nombre de proyecto y encargado de ingeniería si existe
         nombre_proyecto_default = ""
