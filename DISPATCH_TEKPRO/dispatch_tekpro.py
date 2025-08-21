@@ -345,6 +345,7 @@ def main():
                 st.success("Despacho guardado correctamente.")
                 st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
 
+
     elif opcion_menu == "ACTA DE ENTREGA":
         st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
         st.markdown("<b>Encabezado del acta de entrega</b>", unsafe_allow_html=True)
@@ -354,6 +355,112 @@ def main():
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
 
+        # --- Botones de mostrar/ocultar secciones (fuera del form) ---
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos electromecánicos")
+        if 'mostrar_motores' not in st.session_state:
+            st.session_state['mostrar_motores'] = False
+        if st.button("¿Hay motores?"):
+            st.session_state['mostrar_motores'] = not st.session_state['mostrar_motores']
+        if 'mostrar_reductor' not in st.session_state:
+            st.session_state['mostrar_reductor'] = False
+        if st.button("¿Hay reductor?"):
+            st.session_state['mostrar_reductor'] = not st.session_state['mostrar_reductor']
+        if 'mostrar_bomba' not in st.session_state:
+            st.session_state['mostrar_bomba'] = False
+        if st.button("¿Hay bomba?"):
+            st.session_state['mostrar_bomba'] = not st.session_state['mostrar_bomba']
+        if 'mostrar_turbina' not in st.session_state:
+            st.session_state['mostrar_turbina'] = False
+        if st.button("¿Hay turbina?"):
+            st.session_state['mostrar_turbina'] = not st.session_state['mostrar_turbina']
+        if 'mostrar_quemador' not in st.session_state:
+            st.session_state['mostrar_quemador'] = False
+        if st.button("¿Hay quemador?"):
+            st.session_state['mostrar_quemador'] = not st.session_state['mostrar_quemador']
+        if 'mostrar_bomba_vacio' not in st.session_state:
+            st.session_state['mostrar_bomba_vacio'] = False
+        if st.button("¿Hay bomba de vacío?"):
+            st.session_state['mostrar_bomba_vacio'] = not st.session_state['mostrar_bomba_vacio']
+        if 'mostrar_compresor' not in st.session_state:
+            st.session_state['mostrar_compresor'] = False
+        if st.button("¿Hay compresor?"):
+            st.session_state['mostrar_compresor'] = not st.session_state['mostrar_compresor']
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general accesorios")
+        if 'mostrar_manometros' not in st.session_state:
+            st.session_state['mostrar_manometros'] = False
+        if st.button("¿Hay manómetros?"):
+            st.session_state['mostrar_manometros'] = not st.session_state['mostrar_manometros']
+        if 'mostrar_vacuometros' not in st.session_state:
+            st.session_state['mostrar_vacuometros'] = False
+        if st.button("¿Hay vacuómetros?"):
+            st.session_state['mostrar_vacuometros'] = not st.session_state['mostrar_vacuometros']
+        if 'mostrar_valvulas' not in st.session_state:
+            st.session_state['mostrar_valvulas'] = False
+        if st.button("¿Hay válvulas?"):
+            st.session_state['mostrar_valvulas'] = not st.session_state['mostrar_valvulas']
+        if 'mostrar_mangueras' not in st.session_state:
+            st.session_state['mostrar_mangueras'] = False
+        if st.button("¿Hay mangueras?"):
+            st.session_state['mostrar_mangueras'] = not st.session_state['mostrar_mangueras']
+        if 'mostrar_boquillas' not in st.session_state:
+            st.session_state['mostrar_boquillas'] = False
+        if st.button("¿Hay boquillas?"):
+            st.session_state['mostrar_boquillas'] = not st.session_state['mostrar_boquillas']
+        if 'mostrar_reguladores' not in st.session_state:
+            st.session_state['mostrar_reguladores'] = False
+        if st.button("¿Hay reguladores aire/gas?"):
+            st.session_state['mostrar_reguladores'] = not st.session_state['mostrar_reguladores']
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos mecánicos")
+        if 'mostrar_pinon1' not in st.session_state:
+            st.session_state['mostrar_pinon1'] = False
+        if st.button("¿Hay piñón 1?"):
+            st.session_state['mostrar_pinon1'] = not st.session_state['mostrar_pinon1']
+        if 'mostrar_pinon2' not in st.session_state:
+            st.session_state['mostrar_pinon2'] = False
+        if st.button("¿Hay piñón 2?"):
+            st.session_state['mostrar_pinon2'] = not st.session_state['mostrar_pinon2']
+        if 'mostrar_polea1' not in st.session_state:
+            st.session_state['mostrar_polea1'] = False
+        if st.button("¿Hay polea 1?"):
+            st.session_state['mostrar_polea1'] = not st.session_state['mostrar_polea1']
+        if 'mostrar_polea2' not in st.session_state:
+            st.session_state['mostrar_polea2'] = False
+        if st.button("¿Hay polea 2?"):
+            st.session_state['mostrar_polea2'] = not st.session_state['mostrar_polea2']
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos eléctricos")
+        if 'mostrar_gabinete' not in st.session_state:
+            st.session_state['mostrar_gabinete'] = False
+        if st.button("¿Hay gabinete eléctrico?"):
+            st.session_state['mostrar_gabinete'] = not st.session_state['mostrar_gabinete']
+        if 'mostrar_arrancador' not in st.session_state:
+            st.session_state['mostrar_arrancador'] = False
+        if st.button("¿Hay arrancador?"):
+            st.session_state['mostrar_arrancador'] = not st.session_state['mostrar_arrancador']
+        if 'mostrar_control_nivel' not in st.session_state:
+            st.session_state['mostrar_control_nivel'] = False
+        if st.button("¿Hay control de nivel?"):
+            st.session_state['mostrar_control_nivel'] = not st.session_state['mostrar_control_nivel']
+        if 'mostrar_variador' not in st.session_state:
+            st.session_state['mostrar_variador'] = False
+        if st.button("¿Hay variador de velocidad?"):
+            st.session_state['mostrar_variador'] = not st.session_state['mostrar_variador']
+        if 'mostrar_sensor_temp' not in st.session_state:
+            st.session_state['mostrar_sensor_temp'] = False
+        if st.button("¿Hay sensor de temperatura?"):
+            st.session_state['mostrar_sensor_temp'] = not st.session_state['mostrar_sensor_temp']
+        if 'mostrar_toma_corriente' not in st.session_state:
+            st.session_state['mostrar_toma_corriente'] = False
+        if st.button("¿Hay toma corriente?"):
+            st.session_state['mostrar_toma_corriente'] = not st.session_state['mostrar_toma_corriente']
+
+        # --- Formulario principal ---
         with st.form("acta_entrega_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -366,17 +473,10 @@ def main():
                 import datetime
                 fecha_solicitud = st.date_input("Fecha de solicitud", value=datetime.date.today())
 
-            # ...listas de chequeo electromecánicos...
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("Lista de chequeo general elementos electromecánicos")
-            if 'mostrar_motores' not in st.session_state:
-                st.session_state['mostrar_motores'] = False
-            if st.button("¿Hay motores?"):
-                st.session_state['mostrar_motores'] = not st.session_state['mostrar_motores']
-
+            # Variables condicionales para cada sección
             motores = []
             num_motores = 0
-            if st.session_state['mostrar_motores']:
+            if st.session_state.get('mostrar_motores', False):
                 num_motores = st.number_input("¿Cuántos motores?", min_value=1, max_value=4, value=1, step=1, key="num_motores")
                 for i in range(int(num_motores)):
                     st.markdown(f"**Motor {i+1}**")
@@ -384,251 +484,130 @@ def main():
                     foto = st.file_uploader(f"Foto Motor {i+1}", type=["jpg","jpeg","png"], key=f"foto_motor_{i+1}")
                     motores.append({"voltaje": voltaje, "foto": foto})
             # Reductor
-            if 'mostrar_reductor' not in st.session_state:
-                st.session_state['mostrar_reductor'] = False
-            if st.button("¿Hay reductor?"):
-                st.session_state['mostrar_reductor'] = not st.session_state['mostrar_reductor']
             voltaje_reductor = ""
             foto_reductor = None
-            if st.session_state['mostrar_reductor']:
+            if st.session_state.get('mostrar_reductor', False):
                 st.markdown("**Reductor**")
                 voltaje_reductor = st.text_input("Voltaje Reductor")
                 foto_reductor = st.file_uploader("Foto Reductor", type=["jpg","jpeg","png"], key="foto_reductor")
-
             # Bomba
-            if 'mostrar_bomba' not in st.session_state:
-                st.session_state['mostrar_bomba'] = False
-            if st.button("¿Hay bomba?"):
-                st.session_state['mostrar_bomba'] = not st.session_state['mostrar_bomba']
             voltaje_bomba = ""
             foto_bomba = None
-            if st.session_state['mostrar_bomba']:
+            if st.session_state.get('mostrar_bomba', False):
                 st.markdown("**Bomba**")
                 voltaje_bomba = st.text_input("Voltaje Bomba")
                 foto_bomba = st.file_uploader("Foto Bomba", type=["jpg","jpeg","png"], key="foto_bomba")
-
             # Turbina
-            if 'mostrar_turbina' not in st.session_state:
-                st.session_state['mostrar_turbina'] = False
-            if st.button("¿Hay turbina?"):
-                st.session_state['mostrar_turbina'] = not st.session_state['mostrar_turbina']
             voltaje_turbina = ""
             foto_turbina = None
-            if st.session_state['mostrar_turbina']:
+            if st.session_state.get('mostrar_turbina', False):
                 st.markdown("**Turbina**")
                 voltaje_turbina = st.text_input("Voltaje Turbina")
                 foto_turbina = st.file_uploader("Foto Turbina", type=["jpg","jpeg","png"], key="foto_turbina")
-
             # Quemador
-            if 'mostrar_quemador' not in st.session_state:
-                st.session_state['mostrar_quemador'] = False
-            if st.button("¿Hay quemador?"):
-                st.session_state['mostrar_quemador'] = not st.session_state['mostrar_quemador']
             voltaje_quemador = ""
             foto_quemador = None
-            if st.session_state['mostrar_quemador']:
+            if st.session_state.get('mostrar_quemador', False):
                 st.markdown("**Quemador**")
                 voltaje_quemador = st.text_input("Voltaje Quemador")
                 foto_quemador = st.file_uploader("Foto Quemador", type=["jpg","jpeg","png"], key="foto_quemador")
-
             # Bomba de vacío
-            if 'mostrar_bomba_vacio' not in st.session_state:
-                st.session_state['mostrar_bomba_vacio'] = False
-            if st.button("¿Hay bomba de vacío?"):
-                st.session_state['mostrar_bomba_vacio'] = not st.session_state['mostrar_bomba_vacio']
             voltaje_bomba_vacio = ""
             foto_bomba_vacio = None
-            if st.session_state['mostrar_bomba_vacio']:
+            if st.session_state.get('mostrar_bomba_vacio', False):
                 st.markdown("**Bomba de vacío**")
                 voltaje_bomba_vacio = st.text_input("Voltaje Bomba de vacío")
                 foto_bomba_vacio = st.file_uploader("Foto Bomba de vacío", type=["jpg","jpeg","png"], key="foto_bomba_vacio")
-
             # Compresor
-            if 'mostrar_compresor' not in st.session_state:
-                st.session_state['mostrar_compresor'] = False
-            if st.button("¿Hay compresor?"):
-                st.session_state['mostrar_compresor'] = not st.session_state['mostrar_compresor']
             voltaje_compresor = ""
             foto_compresor = None
-            if st.session_state['mostrar_compresor']:
+            if st.session_state.get('mostrar_compresor', False):
                 st.markdown("**Compresor**")
                 voltaje_compresor = st.text_input("Voltaje Compresor")
                 foto_compresor = st.file_uploader("Foto Compresor", type=["jpg","jpeg","png"], key="foto_compresor")
-
-            # ...accesorios...
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("Lista de chequeo general accesorios")
-
             # Manómetros
-            if 'mostrar_manometros' not in st.session_state:
-                st.session_state['mostrar_manometros'] = False
-            if st.button("¿Hay manómetros?"):
-                st.session_state['mostrar_manometros'] = not st.session_state['mostrar_manometros']
             cantidad_manometros = 0
             foto_manometros = None
-            if st.session_state['mostrar_manometros']:
+            if st.session_state.get('mostrar_manometros', False):
                 cantidad_manometros = st.number_input("Cantidad de manómetros", min_value=1, step=1)
                 foto_manometros = st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], key="foto_manometros")
-
             # Vacuómetros
-            if 'mostrar_vacuometros' not in st.session_state:
-                st.session_state['mostrar_vacuometros'] = False
-            if st.button("¿Hay vacuómetros?"):
-                st.session_state['mostrar_vacuometros'] = not st.session_state['mostrar_vacuometros']
             cantidad_vacuometros = 0
             foto_vacuometros = None
-            if st.session_state['mostrar_vacuometros']:
+            if st.session_state.get('mostrar_vacuometros', False):
                 cantidad_vacuometros = st.number_input("Cantidad de vacuómetros", min_value=1, step=1)
                 foto_vacuometros = st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], key="foto_vacuometros")
-
             # Válvulas
-            if 'mostrar_valvulas' not in st.session_state:
-                st.session_state['mostrar_valvulas'] = False
-            if st.button("¿Hay válvulas?"):
-                st.session_state['mostrar_valvulas'] = not st.session_state['mostrar_valvulas']
             cantidad_valvulas = 0
             foto_valvulas = None
-            if st.session_state['mostrar_valvulas']:
+            if st.session_state.get('mostrar_valvulas', False):
                 cantidad_valvulas = st.number_input("Cantidad de válvulas", min_value=1, step=1)
                 foto_valvulas = st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], key="foto_valvulas")
-
             # Mangueras
-            if 'mostrar_mangueras' not in st.session_state:
-                st.session_state['mostrar_mangueras'] = False
-            if st.button("¿Hay mangueras?"):
-                st.session_state['mostrar_mangueras'] = not st.session_state['mostrar_mangueras']
             cantidad_mangueras = 0
             foto_mangueras = None
-            if st.session_state['mostrar_mangueras']:
+            if st.session_state.get('mostrar_mangueras', False):
                 cantidad_mangueras = st.number_input("Cantidad de mangueras", min_value=1, step=1)
                 foto_mangueras = st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], key="foto_mangueras")
-
             # Boquillas
-            if 'mostrar_boquillas' not in st.session_state:
-                st.session_state['mostrar_boquillas'] = False
-            if st.button("¿Hay boquillas?"):
-                st.session_state['mostrar_boquillas'] = not st.session_state['mostrar_boquillas']
             cantidad_boquillas = 0
             foto_boquillas = None
-            if st.session_state['mostrar_boquillas']:
+            if st.session_state.get('mostrar_boquillas', False):
                 cantidad_boquillas = st.number_input("Cantidad de boquillas", min_value=1, step=1)
                 foto_boquillas = st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], key="foto_boquillas")
-
             # Reguladores
-            if 'mostrar_reguladores' not in st.session_state:
-                st.session_state['mostrar_reguladores'] = False
-            if st.button("¿Hay reguladores aire/gas?"):
-                st.session_state['mostrar_reguladores'] = not st.session_state['mostrar_reguladores']
             cantidad_reguladores = 0
             foto_reguladores = None
-            if st.session_state['mostrar_reguladores']:
+            if st.session_state.get('mostrar_reguladores', False):
                 cantidad_reguladores = st.number_input("Cantidad de reguladores aire/gas", min_value=1, step=1)
                 foto_reguladores = st.file_uploader("Foto reguladores aire/gas", type=["jpg","jpeg","png"], key="foto_reguladores")
-
-            # ...mecánicos...
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("Lista de chequeo general elementos mecánicos")
-
             # Piñón 1
-            if 'mostrar_pinon1' not in st.session_state:
-                st.session_state['mostrar_pinon1'] = False
-            if st.button("¿Hay piñón 1?"):
-                st.session_state['mostrar_pinon1'] = not st.session_state['mostrar_pinon1']
             tension_pinon1 = ""
             foto_pinon1 = None
-            if st.session_state['mostrar_pinon1']:
+            if st.session_state.get('mostrar_pinon1', False):
                 tension_pinon1 = st.text_input("Tensión Piñón 1")
                 foto_pinon1 = st.file_uploader("Foto Piñón 1", type=["jpg","jpeg","png"], key="foto_pinon1")
-
             # Piñón 2
-            if 'mostrar_pinon2' not in st.session_state:
-                st.session_state['mostrar_pinon2'] = False
-            if st.button("¿Hay piñón 2?"):
-                st.session_state['mostrar_pinon2'] = not st.session_state['mostrar_pinon2']
             tension_pinon2 = ""
             foto_pinon2 = None
-            if st.session_state['mostrar_pinon2']:
+            if st.session_state.get('mostrar_pinon2', False):
                 tension_pinon2 = st.text_input("Tensión Piñón 2")
                 foto_pinon2 = st.file_uploader("Foto Piñón 2", type=["jpg","jpeg","png"], key="foto_pinon2")
-
             # Polea 1
-            if 'mostrar_polea1' not in st.session_state:
-                st.session_state['mostrar_polea1'] = False
-            if st.button("¿Hay polea 1?"):
-                st.session_state['mostrar_polea1'] = not st.session_state['mostrar_polea1']
             tension_polea1 = ""
             foto_polea1 = None
-            if st.session_state['mostrar_polea1']:
+            if st.session_state.get('mostrar_polea1', False):
                 tension_polea1 = st.text_input("Tensión Polea 1")
                 foto_polea1 = st.file_uploader("Foto Polea 1", type=["jpg","jpeg","png"], key="foto_polea1")
-
             # Polea 2
-            if 'mostrar_polea2' not in st.session_state:
-                st.session_state['mostrar_polea2'] = False
-            if st.button("¿Hay polea 2?"):
-                st.session_state['mostrar_polea2'] = not st.session_state['mostrar_polea2']
             tension_polea2 = ""
             foto_polea2 = None
-            if st.session_state['mostrar_polea2']:
+            if st.session_state.get('mostrar_polea2', False):
                 tension_polea2 = st.text_input("Tensión Polea 2")
                 foto_polea2 = st.file_uploader("Foto Polea 2", type=["jpg","jpeg","png"], key="foto_polea2")
-
-            # ...eléctricos...
-            st.markdown("<hr>", unsafe_allow_html=True)
-            st.subheader("Lista de chequeo general elementos eléctricos")
-
             # Gabinete eléctrico
-            if 'mostrar_gabinete' not in st.session_state:
-                st.session_state['mostrar_gabinete'] = False
-            if st.button("¿Hay gabinete eléctrico?"):
-                st.session_state['mostrar_gabinete'] = not st.session_state['mostrar_gabinete']
             foto_gabinete = None
-            if st.session_state['mostrar_gabinete']:
+            if st.session_state.get('mostrar_gabinete', False):
                 foto_gabinete = st.file_uploader("Foto gabinete eléctrico", type=["jpg","jpeg","png"], key="foto_gabinete")
-
             # Arrancador
-            if 'mostrar_arrancador' not in st.session_state:
-                st.session_state['mostrar_arrancador'] = False
-            if st.button("¿Hay arrancador?"):
-                st.session_state['mostrar_arrancador'] = not st.session_state['mostrar_arrancador']
             foto_arrancador = None
-            if st.session_state['mostrar_arrancador']:
+            if st.session_state.get('mostrar_arrancador', False):
                 foto_arrancador = st.file_uploader("Foto arrancador", type=["jpg","jpeg","png"], key="foto_arrancador")
-
             # Control de nivel
-            if 'mostrar_control_nivel' not in st.session_state:
-                st.session_state['mostrar_control_nivel'] = False
-            if st.button("¿Hay control de nivel?"):
-                st.session_state['mostrar_control_nivel'] = not st.session_state['mostrar_control_nivel']
             foto_control_nivel = None
-            if st.session_state['mostrar_control_nivel']:
+            if st.session_state.get('mostrar_control_nivel', False):
                 foto_control_nivel = st.file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], key="foto_control_nivel")
-
             # Variador de velocidad
-            if 'mostrar_variador' not in st.session_state:
-                st.session_state['mostrar_variador'] = False
-            if st.button("¿Hay variador de velocidad?"):
-                st.session_state['mostrar_variador'] = not st.session_state['mostrar_variador']
             foto_variador = None
-            if st.session_state['mostrar_variador']:
+            if st.session_state.get('mostrar_variador', False):
                 foto_variador = st.file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], key="foto_variador")
-
             # Sensor de temperatura
-            if 'mostrar_sensor_temp' not in st.session_state:
-                st.session_state['mostrar_sensor_temp'] = False
-            if st.button("¿Hay sensor de temperatura?"):
-                st.session_state['mostrar_sensor_temp'] = not st.session_state['mostrar_sensor_temp']
             foto_sensor_temp = None
-            if st.session_state['mostrar_sensor_temp']:
+            if st.session_state.get('mostrar_sensor_temp', False):
                 foto_sensor_temp = st.file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], key="foto_sensor_temp")
-
             # Toma corriente
-            if 'mostrar_toma_corriente' not in st.session_state:
-                st.session_state['mostrar_toma_corriente'] = False
-            if st.button("¿Hay toma corriente?"):
-                st.session_state['mostrar_toma_corriente'] = not st.session_state['mostrar_toma_corriente']
             foto_toma_corriente = None
-            if st.session_state['mostrar_toma_corriente']:
+            if st.session_state.get('mostrar_toma_corriente', False):
                 foto_toma_corriente = st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], key="foto_toma_corriente")
 
             # Otros elementos
