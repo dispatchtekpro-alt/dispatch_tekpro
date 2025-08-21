@@ -350,6 +350,10 @@ def main():
 
 
     elif opcion_menu == "ACTA DE ENTREGA":
+        # Autorización Google Drive OAuth2 igual que en LISTA DE EMPAQUE
+        if 'drive_oauth_token' not in st.session_state:
+            authorize_drive_oauth()
+
         st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
         st.markdown("<b>Encabezado del acta de entrega</b>", unsafe_allow_html=True)
         creds = get_service_account_creds()
