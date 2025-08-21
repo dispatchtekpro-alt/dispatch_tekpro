@@ -167,185 +167,188 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
 
 def main():
 
-    # Título principal y subtítulo con estilo corporativo
-    st.markdown(
-        """
-        <div style="margin-bottom: 0.5em;">
-            <h1 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;">DISPATCH TEKPRO</h1>
-            <h2 style="margin: 0; font-family: 'Montserrat', Arial, sans-serif; color: #1db6b6; font-weight: 600; font-size: 1.5em;">Acta de entrega y lista de empaque</h2>
-        </div>
-        <hr style="border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;">
-        """,
-        unsafe_allow_html=True
+
+    # Menú de inicio
+    st.markdown("""
+    <div style='margin-bottom: 1em;'>
+        <h1 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;'>DISPATCH TEKPRO</h1>
+        <h2 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 600; font-size: 1.5em;'>Menú principal</h2>
+    </div>
+    <hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>
+    """, unsafe_allow_html=True)
+
+    opcion_menu = st.radio(
+        "Selecciona una opción:",
+        ["ACTA DE ENTREGA", "LISTA DE EMPAQUE"],
+        horizontal=True
     )
 
-    # Configuración: carpeta y sheet
-    folder_id = st.secrets.drive_config.FOLDER_ID
-    file_name = st.secrets.drive_config.FILE_NAME
-    worksheet_name = st.secrets.drive_config.WORKSHEET_NAME
+    if opcion_menu == "LISTA DE EMPAQUE":
+        # ...estructura actual de la app...
+        # Configuración: carpeta y sheet
+        folder_id = st.secrets.drive_config.FOLDER_ID
+        file_name = st.secrets.drive_config.FILE_NAME
+        worksheet_name = st.secrets.drive_config.WORKSHEET_NAME
 
-    creds = get_service_account_creds()
-    sheet_client = gspread.authorize(creds)
+        creds = get_service_account_creds()
+        sheet_client = gspread.authorize(creds)
 
-    # Leer órdenes de pedido existentes y sus datos
-    try:
-        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-        all_rows = sheet.get_all_values()
-        # Suponiendo que la primera fila es encabezado y las columnas son:
-        # Fecha, Nombre Proyecto, Orden Pedido, Encargado Ensamblador, Encargado Almacen, Encargado Ingenieria, ...
-        ordenes_existentes = {}
-        for row in all_rows[1:]:
-            if len(row) >= 6:
-                orden = row[2]
-                ordenes_existentes[orden] = {
-                    "nombre_proyecto": row[1],
-                    "encargado_ingenieria": row[5]
-                }
-        ordenes_list = list(ordenes_existentes.keys())
-    except Exception:
-        ordenes_existentes = {}
-        ordenes_list = []
+        # Leer órdenes de pedido existentes y sus datos
+        try:
+            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+            all_rows = sheet.get_all_values()
+            ordenes_existentes = {}
+            for row in all_rows[1:]:
+                if len(row) >= 6:
+                    orden = row[2]
+                    ordenes_existentes[orden] = {
+                        "nombre_proyecto": row[1],
+                        "encargado_ingenieria": row[5]
+                    }
+            ordenes_list = list(ordenes_existentes.keys())
+        except Exception:
+            ordenes_existentes = {}
+            ordenes_list = []
 
-    # Autorizar Drive solo si no hay token
-    if 'drive_oauth_token' not in st.session_state:
-        authorize_drive_oauth()
+        if 'drive_oauth_token' not in st.session_state:
+            authorize_drive_oauth()
 
-    if "num_guacales" not in st.session_state:
-        st.session_state["num_guacales"] = 1
+        if "num_guacales" not in st.session_state:
+            st.session_state["num_guacales"] = 1
 
-    # Slidebox y botón para nueva OP fuera del form
-    st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
-    orden_pedido_val = st.selectbox(
-        "Selecciona una orden de pedido existente:",
-        ordenes_list if ordenes_list else ["No hay órdenes registradas"],
-        key="orden_pedido_selectbox"
-    )
-    if 'mostrar_nueva_op' not in st.session_state:
-        st.session_state['mostrar_nueva_op'] = False
-    if st.button("Agregar nueva OP"):
-        st.session_state['mostrar_nueva_op'] = True
-    nueva_op = ""
-    if st.session_state['mostrar_nueva_op']:
-        nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
-        if nueva_op:
-            orden_pedido_val = nueva_op
-
-    with st.form("dispatch_form"):
-        import datetime
-        fecha = st.date_input("Fecha del día", value=datetime.date.today())
-
-        # Autocompletar nombre de proyecto y encargado de ingeniería si existe
-        nombre_proyecto_default = ""
-        encargado_ingenieria_default = ""
-        if orden_pedido_val and orden_pedido_val in ordenes_existentes:
-            nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
-            encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
-
-        nombre_proyecto = st.text_input(
-            "Nombre de proyecto",
-            value=nombre_proyecto_default,
-            key=f"nombre_proyecto_{orden_pedido_val}"
+        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
+        orden_pedido_val = st.selectbox(
+            "Selecciona una orden de pedido existente:",
+            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
+            key="orden_pedido_selectbox"
         )
-        encargado_ensamblador = st.selectbox(
-            "Encargado ensamblador",
-            [
-                "Jaime Ramos",
-                "Jaime Rincon",
-                "Lewis",
-                "Kate",
-                "Jefferson",
-                "Yeison",
-                "Gabriel"
-            ]
-        )
-        encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
-        encargado_ingenieria = st.selectbox(
-            "Encargado ingeniería y diseño",
-            [
-                "Daniel Valbuena",
-                "Alejandro Diaz",
-                "Juan Andres",
-                "Juan David",
-                "Jose",
-                "Diomer",
-                "Victor"
-            ],
-            index=[
-                "Daniel Valbuena",
-                "Alejandro Diaz",
-                "Juan Andres",
-                "Juan David",
-                "Jose",
-                "Diomer",
-                "Victor"
-            ].index(encargado_ingenieria_default) if encargado_ingenieria_default in [
-                "Daniel Valbuena",
-                "Alejandro Diaz",
-                "Juan Andres",
-                "Juan David",
-                "Jose",
-                "Diomer",
-                "Victor"
-            ] else 0,
-            key=f"encargado_ingenieria_{orden_pedido_val}"
-        )
+        if 'mostrar_nueva_op' not in st.session_state:
+            st.session_state['mostrar_nueva_op'] = False
+        if st.button("Agregar nueva OP"):
+            st.session_state['mostrar_nueva_op'] = True
+        nueva_op = ""
+        if st.session_state['mostrar_nueva_op']:
+            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
+            if nueva_op:
+                orden_pedido_val = nueva_op
 
-        guacales = []
-        for i in range(st.session_state["num_guacales"]):
-            st.subheader(f"PAQUETE {i+1}")
-            desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
-            fotos = st.file_uploader(
-                f"Fotos PAQUETE {i+1}",
-                type=["jpg", "jpeg", "png"],
-                key=f"foto_{i+1}",
-                accept_multiple_files=True
+        with st.form("dispatch_form"):
+            import datetime
+            fecha = st.date_input("Fecha del día", value=datetime.date.today())
+
+            nombre_proyecto_default = ""
+            encargado_ingenieria_default = ""
+            if orden_pedido_val and orden_pedido_val in ordenes_existentes:
+                nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
+                encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
+
+            nombre_proyecto = st.text_input(
+                "Nombre de proyecto",
+                value=nombre_proyecto_default,
+                key=f"nombre_proyecto_{orden_pedido_val}"
             )
-            guacales.append({
-                "desc": desc,
-                "fotos": fotos
-            })
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.session_state["num_guacales"] < 10:
-                if st.form_submit_button("Agregar paquete"):
-                    st.session_state["num_guacales"] += 1
-                    st.experimental_rerun()
-        with col2:
-            submitted = st.form_submit_button("Guardar despacho")
+            encargado_ensamblador = st.selectbox(
+                "Encargado ensamblador",
+                [
+                    "Jaime Ramos",
+                    "Jaime Rincon",
+                    "Lewis",
+                    "Kate",
+                    "Jefferson",
+                    "Yeison",
+                    "Gabriel"
+                ]
+            )
+            encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
+            encargado_ingenieria = st.selectbox(
+                "Encargado ingeniería y diseño",
+                [
+                    "Daniel Valbuena",
+                    "Alejandro Diaz",
+                    "Juan Andres",
+                    "Juan David",
+                    "Jose",
+                    "Diomer",
+                    "Victor"
+                ],
+                index=[
+                    "Daniel Valbuena",
+                    "Alejandro Diaz",
+                    "Juan Andres",
+                    "Juan David",
+                    "Jose",
+                    "Diomer",
+                    "Victor"
+                ].index(encargado_ingenieria_default) if encargado_ingenieria_default in [
+                    "Daniel Valbuena",
+                    "Alejandro Diaz",
+                    "Juan Andres",
+                    "Juan David",
+                    "Jose",
+                    "Diomer",
+                    "Victor"
+                ] else 0,
+                key=f"encargado_ingenieria_{orden_pedido_val}"
+            )
 
-    if submitted:
-        if not guacales[0]["desc"]:
-            st.error("La descripción del PAQUETE 1 es obligatoria.")
-        else:
-            row = [
-                str(fecha), nombre_proyecto, orden_pedido_val,
-                encargado_ensamblador, encargado_almacen, encargado_ingenieria
-            ]
-            # Subir fotos y agregar descripciones y links
-            for idx, guacal in enumerate(guacales, start=1):
-                row.append(guacal["desc"])
-                fotos = guacal["fotos"]
-                enlaces = []
-                if fotos:
-                    for n, foto in enumerate(fotos, start=1):
-                        try:
-                            image_filename = f"Guacal_{idx}_{orden_pedido_val}_{n}.jpg"
-                            file_stream = io.BytesIO(foto.read())
-                            public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                            enlaces.append(public_url)
-                            st.success(f"Foto {n} del Guacal {idx} subida correctamente")
-                        except Exception as upload_error:
-                            st.error(f"Error al subir la foto {n} del Guacal {idx}: {str(upload_error)}")
-                    if enlaces:
-                        row.append(", ".join(enlaces))
+            guacales = []
+            for i in range(st.session_state["num_guacales"]):
+                st.subheader(f"PAQUETE {i+1}")
+                desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
+                fotos = st.file_uploader(
+                    f"Fotos PAQUETE {i+1}",
+                    type=["jpg", "jpeg", "png"],
+                    key=f"foto_{i+1}",
+                    accept_multiple_files=True
+                )
+                guacales.append({
+                    "desc": desc,
+                    "fotos": fotos
+                })
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.session_state["num_guacales"] < 10:
+                    if st.form_submit_button("Agregar paquete"):
+                        st.session_state["num_guacales"] += 1
+                        st.experimental_rerun()
+            with col2:
+                submitted = st.form_submit_button("Guardar despacho")
+
+        if submitted:
+            if not guacales[0]["desc"]:
+                st.error("La descripción del PAQUETE 1 es obligatoria.")
+            else:
+                row = [
+                    str(fecha), nombre_proyecto, orden_pedido_val,
+                    encargado_ensamblador, encargado_almacen, encargado_ingenieria
+                ]
+                for idx, guacal in enumerate(guacales, start=1):
+                    row.append(guacal["desc"])
+                    fotos = guacal["fotos"]
+                    enlaces = []
+                    if fotos:
+                        for n, foto in enumerate(fotos, start=1):
+                            try:
+                                image_filename = f"Guacal_{idx}_{orden_pedido_val}_{n}.jpg"
+                                file_stream = io.BytesIO(foto.read())
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                enlaces.append(public_url)
+                                st.success(f"Foto {n} del Guacal {idx} subida correctamente")
+                            except Exception as upload_error:
+                                st.error(f"Error al subir la foto {n} del Guacal {idx}: {str(upload_error)}")
+                        if enlaces:
+                            row.append(", ".join(enlaces))
+                        else:
+                            row.append("Error al subir foto")
                     else:
-                        row.append("Error al subir foto")
-                else:
-                    row.append("Sin foto")
-            # Guardar en Sheets
-            write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
-            st.success("Despacho guardado correctamente.")
-            st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+                        row.append("Sin foto")
+                write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
+                st.success("Despacho guardado correctamente.")
+                st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+
+    elif opcion_menu == "ACTA DE ENTREGA":
+        st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
+        st.info("Aquí irá el formulario de acta de entrega. Indícame la estructura o los campos que necesitas y lo implemento.")
 
 if __name__ == "__main__":
     main()
