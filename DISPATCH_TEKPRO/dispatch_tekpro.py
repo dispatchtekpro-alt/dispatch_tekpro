@@ -213,26 +213,26 @@ def main():
     if "num_guacales" not in st.session_state:
         st.session_state["num_guacales"] = 1
 
+    # Slidebox y botón para nueva OP fuera del form
+    st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
+    orden_pedido_val = st.selectbox(
+        "Selecciona una orden de pedido existente:",
+        ordenes_list if ordenes_list else ["No hay órdenes registradas"],
+        key="orden_pedido_selectbox"
+    )
+    if 'mostrar_nueva_op' not in st.session_state:
+        st.session_state['mostrar_nueva_op'] = False
+    if st.button("Agregar nueva OP"):
+        st.session_state['mostrar_nueva_op'] = True
+    nueva_op = ""
+    if st.session_state['mostrar_nueva_op']:
+        nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
+        if nueva_op:
+            orden_pedido_val = nueva_op
+
     with st.form("dispatch_form"):
         import datetime
         fecha = st.date_input("Fecha del día", value=datetime.date.today())
-
-
-
-        # Orden de pedido: selectbox solo con las existentes y botón para agregar nueva
-        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
-        orden_pedido_val = st.selectbox(
-            "Selecciona una orden de pedido existente:",
-            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
-            key="orden_pedido_selectbox"
-        )
-        agregar_nueva = st.button("Agregar nueva OP")
-        nueva_op = ""
-        if agregar_nueva or st.session_state.get("mostrar_nueva_op"):
-            st.session_state["mostrar_nueva_op"] = True
-            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
-            if nueva_op:
-                orden_pedido_val = nueva_op
 
         # Autocompletar nombre de proyecto y encargado de ingeniería si existe
         nombre_proyecto_default = ""
