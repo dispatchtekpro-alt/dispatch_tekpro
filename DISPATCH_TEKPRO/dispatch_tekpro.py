@@ -172,18 +172,15 @@ def main():
 
 
     # Menú de inicio
-    st.markdown(f"""
-    <div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 1em;'>
-        <div style='flex:1;'>
-            <h1 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;'>DISPATCH TEKPRO</h1>
-            <h2 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 600; font-size: 1.5em;'>Menú principal</h2>
-        </div>
-        <div style='flex-shrink:0;'>
-            <img src='logo_tekpro.png' alt='Tekpro Logo' style='height:70px; margin-left: 2em;'/>
-        </div>
-    </div>
-    <hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>
-    """, unsafe_allow_html=True)
+    col1, col2 = st.columns([4,1])
+    with col1:
+        st.markdown("""
+        <h1 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 700; letter-spacing: 1px;'>DISPATCH TEKPRO</h1>
+        <h2 style='margin: 0; font-family: Montserrat, Arial, sans-serif; color: #1db6b6; font-weight: 600; font-size: 1.5em;'>Menú principal</h2>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.image("logo_tekpro.png", width=90)
+    st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
 
     opcion_menu = st.radio(
         "Selecciona una opción:",
