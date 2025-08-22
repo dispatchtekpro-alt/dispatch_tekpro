@@ -470,195 +470,238 @@ def main():
             fecha = st.text_input("fecha")
             st.markdown("</div>", unsafe_allow_html=True)
 
+            # --- Secciones visuales para cada artículo ---
+            def seccion_articulo(nombre, mostrar, campos):
+                if mostrar:
+                    st.markdown(f"""
+                        <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
+                        <b style='font-size:1.1em;color:#1db6b6'>{nombre}</b>
+                    """, unsafe_allow_html=True)
+                    resultados = {}
+                    for campo in campos:
+                        if campo['tipo'] == 'text':
+                            resultados[campo['nombre']] = st.text_input(campo['label'])
+                        elif campo['tipo'] == 'text_area':
+                            resultados[campo['nombre']] = st.text_area(campo['label'])
+                        elif campo['tipo'] == 'file':
+                            resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    return resultados
+                else:
+                    return {campo['nombre']: "" for campo in campos}
+
             # Motores
-            if st.session_state.get('mostrar_motores', False):
-                cantidad_motores = st.text_input("cantidad motores")
-                voltaje_motores = st.text_input("voltaje motores")
-                fotos_motores = st.text_input("fotos motores (URL o nombre)")
-            else:
-                cantidad_motores = ""
-                voltaje_motores = ""
-                fotos_motores = ""
+            motores_campos = [
+                {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'text'},
+                {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
+                {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
+            ]
+            motores = seccion_articulo("Motores", st.session_state.get('mostrar_motores', False), motores_campos)
+            cantidad_motores = motores['cantidad_motores']
+            voltaje_motores = motores['voltaje_motores']
+            fotos_motores = motores['fotos_motores']
 
             # Reductores
-            if st.session_state.get('mostrar_reductor', False):
-                cantidad_reductores = st.text_input("cantidad reductores")
-                voltaje_reductores = st.text_input("voltaje reductores")
-                fotos_reductores = st.text_input("fotos reductores (URL o nombre)")
-            else:
-                cantidad_reductores = ""
-                voltaje_reductores = ""
-                fotos_reductores = ""
+            reductores_campos = [
+                {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'text'},
+                {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
+                {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
+            ]
+            reductores = seccion_articulo("Reductores", st.session_state.get('mostrar_reductor', False), reductores_campos)
+            cantidad_reductores = reductores['cantidad_reductores']
+            voltaje_reductores = reductores['voltaje_reductores']
+            fotos_reductores = reductores['fotos_reductores']
 
             # Bombas
-            if st.session_state.get('mostrar_bomba', False):
-                cantidad_bombas = st.text_input("cantidad bombas")
-                voltaje_bombas = st.text_input("voltaje bombas")
-                fotos_bombas = st.text_input("fotos bombas (URL o nombre)")
-            else:
-                cantidad_bombas = ""
-                voltaje_bombas = ""
-                fotos_bombas = ""
+            bombas_campos = [
+                {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'text'},
+                {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
+                {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
+            ]
+            bombas = seccion_articulo("Bombas", st.session_state.get('mostrar_bomba', False), bombas_campos)
+            cantidad_bombas = bombas['cantidad_bombas']
+            voltaje_bombas = bombas['voltaje_bombas']
+            fotos_bombas = bombas['fotos_bombas']
 
             # Turbina
-            if st.session_state.get('mostrar_turbina', False):
-                voltaje_turbina = st.text_input("voltaje turbina")
-                foto_turbina = st.text_input("foto turbina (URL o nombre)")
-            else:
-                voltaje_turbina = ""
-                foto_turbina = ""
+            turbina_campos = [
+                {'nombre': 'voltaje_turbina', 'label': 'Voltaje turbina', 'tipo': 'text'},
+                {'nombre': 'foto_turbina', 'label': 'Foto turbina', 'tipo': 'file'}
+            ]
+            turbina = seccion_articulo("Turbina", st.session_state.get('mostrar_turbina', False), turbina_campos)
+            voltaje_turbina = turbina['voltaje_turbina']
+            foto_turbina = turbina['foto_turbina']
 
             # Quemador
-            if st.session_state.get('mostrar_quemador', False):
-                voltaje_quemador = st.text_input("voltaje quemador")
-                foto_quemador = st.text_input("foto quemador (URL o nombre)")
-            else:
-                voltaje_quemador = ""
-                foto_quemador = ""
+            quemador_campos = [
+                {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
+                {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
+            ]
+            quemador = seccion_articulo("Quemador", st.session_state.get('mostrar_quemador', False), quemador_campos)
+            voltaje_quemador = quemador['voltaje_quemador']
+            foto_quemador = quemador['foto_quemador']
 
             # Bomba de vacío
-            if st.session_state.get('mostrar_bomba_vacio', False):
-                voltaje_bomba_vacio = st.text_input("voltaje bomba de vacio")
-                foto_bomba_vacio = st.text_input("foto bomba de vacio (URL o nombre)")
-            else:
-                voltaje_bomba_vacio = ""
-                foto_bomba_vacio = ""
+            bomba_vacio_campos = [
+                {'nombre': 'voltaje_bomba_vacio', 'label': 'Voltaje bomba de vacío', 'tipo': 'text'},
+                {'nombre': 'foto_bomba_vacio', 'label': 'Foto bomba de vacío', 'tipo': 'file'}
+            ]
+            bomba_vacio = seccion_articulo("Bomba de vacío", st.session_state.get('mostrar_bomba_vacio', False), bomba_vacio_campos)
+            voltaje_bomba_vacio = bomba_vacio['voltaje_bomba_vacio']
+            foto_bomba_vacio = bomba_vacio['foto_bomba_vacio']
 
             # Compresor
-            if st.session_state.get('mostrar_compresor', False):
-                voltaje_compresor = st.text_input("voltaje compresor")
-                foto_compresor = st.text_input("foto compresor (URL o nombre)")
-            else:
-                voltaje_compresor = ""
-                foto_compresor = ""
+            compresor_campos = [
+                {'nombre': 'voltaje_compresor', 'label': 'Voltaje compresor', 'tipo': 'text'},
+                {'nombre': 'foto_compresor', 'label': 'Foto compresor', 'tipo': 'file'}
+            ]
+            compresor = seccion_articulo("Compresor", st.session_state.get('mostrar_compresor', False), compresor_campos)
+            voltaje_compresor = compresor['voltaje_compresor']
+            foto_compresor = compresor['foto_compresor']
 
             # Manómetros
-            if st.session_state.get('mostrar_manometros', False):
-                cantidad_manometros = st.text_input("cantidad manometros")
-                foto_manometros = st.text_input("foto manometros (URL o nombre)")
-            else:
-                cantidad_manometros = ""
-                foto_manometros = ""
+            manometros_campos = [
+                {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'text'},
+                {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
+            ]
+            manometros = seccion_articulo("Manómetros", st.session_state.get('mostrar_manometros', False), manometros_campos)
+            cantidad_manometros = manometros['cantidad_manometros']
+            foto_manometros = manometros['foto_manometros']
 
             # Vacuómetros
-            if st.session_state.get('mostrar_vacuometros', False):
-                cantidad_vacuometros = st.text_input("cantidad vacuometros")
-                foto_vacuometros = st.text_input("foto vacuometros (URL o nombre)")
-            else:
-                cantidad_vacuometros = ""
-                foto_vacuometros = ""
+            vacuometros_campos = [
+                {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'text'},
+                {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
+            ]
+            vacuometros = seccion_articulo("Vacuómetros", st.session_state.get('mostrar_vacuometros', False), vacuometros_campos)
+            cantidad_vacuometros = vacuometros['cantidad_vacuometros']
+            foto_vacuometros = vacuometros['foto_vacuometros']
 
             # Válvulas
-            if st.session_state.get('mostrar_valvulas', False):
-                cantidad_valvulas = st.text_input("cantidad valvulas")
-                foto_valvulas = st.text_input("foto valvulas (URL o nombre)")
-            else:
-                cantidad_valvulas = ""
-                foto_valvulas = ""
+            valvulas_campos = [
+                {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'text'},
+                {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
+            ]
+            valvulas = seccion_articulo("Válvulas", st.session_state.get('mostrar_valvulas', False), valvulas_campos)
+            cantidad_valvulas = valvulas['cantidad_valvulas']
+            foto_valvulas = valvulas['foto_valvulas']
 
             # Mangueras
-            if st.session_state.get('mostrar_mangueras', False):
-                cantidad_mangueras = st.text_input("cantidad mangueras")
-                foto_mangueras = st.text_input("foto mangueras (URL o nombre)")
-            else:
-                cantidad_mangueras = ""
-                foto_mangueras = ""
+            mangueras_campos = [
+                {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'text'},
+                {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
+            ]
+            mangueras = seccion_articulo("Mangueras", st.session_state.get('mostrar_mangueras', False), mangueras_campos)
+            cantidad_mangueras = mangueras['cantidad_mangueras']
+            foto_mangueras = mangueras['foto_mangueras']
 
             # Boquillas
-            if st.session_state.get('mostrar_boquillas', False):
-                cantidad_boquillas = st.text_input("cantidad boquillas")
-                foto_boquillas = st.text_input("foto boquillas (URL o nombre)")
-            else:
-                cantidad_boquillas = ""
-                foto_boquillas = ""
+            boquillas_campos = [
+                {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'text'},
+                {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
+            ]
+            boquillas = seccion_articulo("Boquillas", st.session_state.get('mostrar_boquillas', False), boquillas_campos)
+            cantidad_boquillas = boquillas['cantidad_boquillas']
+            foto_boquillas = boquillas['foto_boquillas']
 
             # Reguladores
-            if st.session_state.get('mostrar_reguladores', False):
-                cantidad_reguladores = st.text_input("cantidad reguladores aire/gas")
-                foto_reguladores = st.text_input("foto reguladores (URL o nombre)")
-            else:
-                cantidad_reguladores = ""
-                foto_reguladores = ""
+            reguladores_campos = [
+                {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'text'},
+                {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
+            ]
+            reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
+            cantidad_reguladores = reguladores['cantidad_reguladores']
+            foto_reguladores = reguladores['foto_reguladores']
 
             # Piñón 1
-            if st.session_state.get('mostrar_pinon1', False):
-                tension_pinon1 = st.text_input("tension piñon 1")
-                foto_pinon1 = st.text_input("foto piñon 1 (URL o nombre)")
-            else:
-                tension_pinon1 = ""
-                foto_pinon1 = ""
+            pinon1_campos = [
+                {'nombre': 'tension_pinon1', 'label': 'Tensión piñón 1', 'tipo': 'text'},
+                {'nombre': 'foto_pinon1', 'label': 'Foto piñón 1', 'tipo': 'file'}
+            ]
+            pinon1 = seccion_articulo("Piñón 1", st.session_state.get('mostrar_pinon1', False), pinon1_campos)
+            tension_pinon1 = pinon1['tension_pinon1']
+            foto_pinon1 = pinon1['foto_pinon1']
 
             # Piñón 2
-            if st.session_state.get('mostrar_pinon2', False):
-                tension_pinon2 = st.text_input("tension piñon 2")
-                foto_pinon2 = st.text_input("foto piñon 2 (URL o nombre)")
-            else:
-                tension_pinon2 = ""
-                foto_pinon2 = ""
+            pinon2_campos = [
+                {'nombre': 'tension_pinon2', 'label': 'Tensión piñón 2', 'tipo': 'text'},
+                {'nombre': 'foto_pinon2', 'label': 'Foto piñón 2', 'tipo': 'file'}
+            ]
+            pinon2 = seccion_articulo("Piñón 2", st.session_state.get('mostrar_pinon2', False), pinon2_campos)
+            tension_pinon2 = pinon2['tension_pinon2']
+            foto_pinon2 = pinon2['foto_pinon2']
 
             # Polea 1
-            if st.session_state.get('mostrar_polea1', False):
-                tension_polea1 = st.text_input("tension polea 1")
-                foto_polea1 = st.text_input("foto polea 1 (URL o nombre)")
-            else:
-                tension_polea1 = ""
-                foto_polea1 = ""
+            polea1_campos = [
+                {'nombre': 'tension_polea1', 'label': 'Tensión polea 1', 'tipo': 'text'},
+                {'nombre': 'foto_polea1', 'label': 'Foto polea 1', 'tipo': 'file'}
+            ]
+            polea1 = seccion_articulo("Polea 1", st.session_state.get('mostrar_polea1', False), polea1_campos)
+            tension_polea1 = polea1['tension_polea1']
+            foto_polea1 = polea1['foto_polea1']
 
             # Polea 2
-            if st.session_state.get('mostrar_polea2', False):
-                tension_polea2 = st.text_input("tension polea 2")
-                foto_polea2 = st.text_input("foto polea 2 (URL o nombre)")
-            else:
-                tension_polea2 = ""
-                foto_polea2 = ""
+            polea2_campos = [
+                {'nombre': 'tension_polea2', 'label': 'Tensión polea 2', 'tipo': 'text'},
+                {'nombre': 'foto_polea2', 'label': 'Foto polea 2', 'tipo': 'file'}
+            ]
+            polea2 = seccion_articulo("Polea 2", st.session_state.get('mostrar_polea2', False), polea2_campos)
+            tension_polea2 = polea2['tension_polea2']
+            foto_polea2 = polea2['foto_polea2']
 
             # Gabinete electrico
-            if st.session_state.get('mostrar_gabinete', False):
-                cantidad_gabinete = st.text_input("cantidad gabinete electrico")
-                foto_gabinete = st.text_input("foto gabinete (URL o nombre)")
-            else:
-                cantidad_gabinete = ""
-                foto_gabinete = ""
+            gabinete_campos = [
+                {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'text'},
+                {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
+            ]
+            gabinete = seccion_articulo("Gabinete eléctrico", st.session_state.get('mostrar_gabinete', False), gabinete_campos)
+            cantidad_gabinete = gabinete['cantidad_gabinete']
+            foto_gabinete = gabinete['foto_gabinete']
 
             # Arrancadores
-            if st.session_state.get('mostrar_arrancador', False):
-                cantidad_arrancadores = st.text_input("cantidad arrancadores")
-                foto_arrancadores = st.text_input("foto arrancadores (URL o nombre)")
-            else:
-                cantidad_arrancadores = ""
-                foto_arrancadores = ""
+            arrancadores_campos = [
+                {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'text'},
+                {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
+            ]
+            arrancadores = seccion_articulo("Arrancadores", st.session_state.get('mostrar_arrancador', False), arrancadores_campos)
+            cantidad_arrancadores = arrancadores['cantidad_arrancadores']
+            foto_arrancadores = arrancadores['foto_arrancadores']
 
             # Control de nivel
-            if st.session_state.get('mostrar_control_nivel', False):
-                cantidad_control_nivel = st.text_input("cantidad control de nivel")
-                foto_control_nivel = st.text_input("foto control de nivel (URL o nombre)")
-            else:
-                cantidad_control_nivel = ""
-                foto_control_nivel = ""
+            control_nivel_campos = [
+                {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'text'},
+                {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
+            ]
+            control_nivel = seccion_articulo("Control de nivel", st.session_state.get('mostrar_control_nivel', False), control_nivel_campos)
+            cantidad_control_nivel = control_nivel['cantidad_control_nivel']
+            foto_control_nivel = control_nivel['foto_control_nivel']
 
             # Variadores de velocidad
-            if st.session_state.get('mostrar_variador', False):
-                cantidad_variadores = st.text_input("cantidad variadores de velociad")
-                foto_variadores = st.text_input("foto variadores de velocidad (URL o nombre)")
-            else:
-                cantidad_variadores = ""
-                foto_variadores = ""
+            variadores_campos = [
+                {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'text'},
+                {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
+            ]
+            variadores = seccion_articulo("Variadores de velocidad", st.session_state.get('mostrar_variador', False), variadores_campos)
+            cantidad_variadores = variadores['cantidad_variadores']
+            foto_variadores = variadores['foto_variadores']
 
             # Sensores de temperatura
-            if st.session_state.get('mostrar_sensor_temp', False):
-                cantidad_sensores = st.text_input("cantidad sensores de temperatura")
-                foto_sensores = st.text_input("foto sensores de temperatura (URL o nombre)")
-            else:
-                cantidad_sensores = ""
-                foto_sensores = ""
+            sensores_campos = [
+                {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'text'},
+                {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
+            ]
+            sensores = seccion_articulo("Sensores de temperatura", st.session_state.get('mostrar_sensor_temp', False), sensores_campos)
+            cantidad_sensores = sensores['cantidad_sensores']
+            foto_sensores = sensores['foto_sensores']
 
             # Toma corriente
-            if st.session_state.get('mostrar_toma_corriente', False):
-                cantidad_toma_corriente = st.text_input("cantidad toma corriente")
-                foto_toma_corrientes = st.text_input("foto toma corrientes (URL o nombre)")
-            else:
-                cantidad_toma_corriente = ""
-                foto_toma_corrientes = ""
+            toma_corriente_campos = [
+                {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'text'},
+                {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
+            ]
+            toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
+            cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
+            foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
             otros_elementos = st.text_area("otros elementos")
             revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
             revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"])
