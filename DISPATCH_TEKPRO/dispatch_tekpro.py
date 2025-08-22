@@ -196,15 +196,31 @@ def main():
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
 
-        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA
+        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA usando encabezados estándar
         try:
             acta_sheet = sheet_client.open(file_name).worksheet("Acta de entrega")
             acta_rows = acta_sheet.get_all_values()
+            headers = acta_rows[0] if acta_rows else []
+            # Usar encabezados estándar proporcionados por el usuario
+            encabezados_estandar = [
+                "cliente", "OP", "Item", "Equipo", "Cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
+                "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
+                "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
+                "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
+                "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
+                "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
+                "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
+                "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
+                "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos",
+                "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
+                "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "recibe", "fecha de entrega"
+            ]
+            # Buscar índice de OP (exacto)
             op_idx = None
-            if acta_rows:
-                headers = acta_rows[0]
-                if "OP (Orden de pedido)" in headers:
-                    op_idx = headers.index("OP (Orden de pedido)")
+            for idx, h in enumerate(headers):
+                if h.strip().lower() == "op":
+                    op_idx = idx
+                    break
             ordenes_existentes = {}
             for row in acta_rows[1:]:
                 if op_idx is not None and len(row) > op_idx:
@@ -234,27 +250,44 @@ def main():
             if nueva_op:
                 orden_pedido_val = nueva_op
 
-        # Obtener solo los artículos presentes (sin cantidades/voltajes)
+        # Obtener solo los artículos presentes usando encabezados estándar
         articulos_presentes = []
         if orden_pedido_val and orden_pedido_val in ordenes_existentes:
             row = ordenes_existentes[orden_pedido_val]
             headers = acta_rows[0]
-            posibles_articulos = [
-                "Motor", "Reductor", "Bomba", "Turbina", "Quemador", "Bomba de vacío", "Compresor",
-                "Manómetros", "Vacuómetros", "Válvulas", "Mangueras", "Boquillas", "Reguladores",
-                "Piñón 1", "Piñón 2", "Polea 1", "Polea 2", "Gabinete eléctrico", "Arrancador",
-                "Control de nivel", "Variador de velocidad", "Sensor de temperatura", "Toma corriente",
-                "Otros elementos"
-            ]
-            for art in posibles_articulos:
-                encontrado = False
-                for idx, h in enumerate(headers):
-                    if art.lower() in h.lower():
-                        valor = row[idx] if idx < len(row) else ""
-                        if valor and valor.strip().lower() not in ["", "0", "no"]:
-                            articulos_presentes.append(art)
-                            encontrado = True
-                            break
+            # Mapeo de nombre de artículo a columna de cantidad
+            mapeo_articulos = {
+                "Motores": "cantidad motores",
+                "Reductores": "cantidad reductores",
+                "Bombas": "cantidad bombas",
+                "Turbina": "voltaje turbina",
+                "Quemador": "voltaje quemador",
+                "Bomba de vacío": "voltaje bomba de vacio",
+                "Compresor": "voltaje compresor",
+                "Manómetros": "cantidad manometros",
+                "Vacuómetros": "cantidad vacuometros",
+                "Válvulas": "cantidad valvulas",
+                "Mangueras": "cantidad mangueras",
+                "Boquillas": "cantidad boquillas",
+                "Reguladores aire/gas": "cantidad reguladores aire/gas",
+                "Piñón 1": "tension piñon 1",
+                "Piñón 2": "tension piñon 2",
+                "Polea 1": "tension polea 1",
+                "Polea 2": "tension polea 2",
+                "Gabinete eléctrico": "cantidad gabinete electrico",
+                "Arrancadores": "cantidad arrancadores",
+                "Control de nivel": "cantidad control de nivel",
+                "Variadores de velocidad": "cantidad variadores de velociad",
+                "Sensores de temperatura": "cantidad sensores de temperatura",
+                "Toma corriente": "cantidad toma corriente",
+                "Otros elementos": "otros elementos"
+            }
+            for art, col in mapeo_articulos.items():
+                if col in headers:
+                    idx = headers.index(col)
+                    valor = row[idx] if idx < len(row) else ""
+                    if valor and valor.strip().lower() not in ["", "0", "no"]:
+                        articulos_presentes.append(art)
 
         # Estado dinámico para número de paquetes
         if 'num_paquetes' not in st.session_state:
