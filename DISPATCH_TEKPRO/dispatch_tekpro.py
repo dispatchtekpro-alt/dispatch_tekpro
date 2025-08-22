@@ -186,6 +186,7 @@ def main():
         horizontal=True
     )
 
+
     if opcion_menu == "LISTA DE EMPAQUE":
         # Configuración: carpeta y sheet
         folder_id = st.secrets.drive_config.FOLDER_ID
@@ -195,18 +196,20 @@ def main():
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
 
-        # Leer órdenes de pedido existentes y sus datos
+        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA
         try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
+            acta_sheet = sheet_client.open(file_name).worksheet("Acta de entrega")
+            acta_rows = acta_sheet.get_all_values()
+            op_idx = None
+            if acta_rows:
+                headers = acta_rows[0]
+                if "OP (Orden de pedido)" in headers:
+                    op_idx = headers.index("OP (Orden de pedido)")
             ordenes_existentes = {}
-            for row in all_rows[1:]:
-                if len(row) >= 6:
-                    orden = row[2]
-                    ordenes_existentes[orden] = {
-                        "nombre_proyecto": row[1],
-                        "encargado_ingenieria": row[5]
-                    }
+            for row in acta_rows[1:]:
+                if op_idx is not None and len(row) > op_idx:
+                    orden = row[op_idx]
+                    ordenes_existentes[orden] = row
             ordenes_list = list(ordenes_existentes.keys())
         except Exception:
             ordenes_existentes = {}
@@ -214,9 +217,6 @@ def main():
 
         if 'drive_oauth_token' not in st.session_state:
             authorize_drive_oauth()
-
-        if "num_guacales" not in st.session_state:
-            st.session_state["num_guacales"] = 1
 
         st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
         orden_pedido_val = st.selectbox(
@@ -234,116 +234,65 @@ def main():
             if nueva_op:
                 orden_pedido_val = nueva_op
 
+        # Obtener los ítems del acta de entrega para la OP seleccionada
+        acta_items = {}
+        if orden_pedido_val and orden_pedido_val in ordenes_existentes:
+            row = ordenes_existentes[orden_pedido_val]
+            headers = acta_rows[0]
+            # Extraer solo los ítems relevantes (motores, bomba, accesorios, etc.)
+            for idx, h in enumerate(headers):
+                if ("Voltaje" in h or "Cantidad" in h or "Tensión" in h or "Otros elementos" in h) and row[idx]:
+                    acta_items[h] = row[idx]
+
         with st.form("dispatch_form"):
             import datetime
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
 
-            nombre_proyecto_default = ""
-            encargado_ingenieria_default = ""
-            if orden_pedido_val and orden_pedido_val in ordenes_existentes:
-                nombre_proyecto_default = ordenes_existentes[orden_pedido_val]["nombre_proyecto"]
-                encargado_ingenieria_default = ordenes_existentes[orden_pedido_val]["encargado_ingenieria"]
+            # Mostrar los ítems del acta de entrega para empacar
+            st.markdown("<b>Ítems registrados en el acta de entrega para esta OP:</b>", unsafe_allow_html=True)
+            empacar = {}
+            if acta_items:
+                for k, v in acta_items.items():
+                    col1, col2 = st.columns([2,1])
+                    with col1:
+                        st.write(f"{k}: {v}")
+                    with col2:
+                        empacar[k] = st.checkbox(f"Empacar", value=True, key=f"empacar_{k}")
+            else:
+                st.info("No hay ítems registrados en el acta de entrega para esta OP.")
 
-            nombre_proyecto = st.text_input(
-                "Nombre de proyecto",
-                value=nombre_proyecto_default,
-                key=f"nombre_proyecto_{orden_pedido_val}"
-            )
-            encargado_ensamblador = st.selectbox(
-                "Encargado ensamblador",
-                [
-                    "Jaime Ramos",
-                    "Jaime Rincon",
-                    "Lewis",
-                    "Kate",
-                    "Jefferson",
-                    "Yeison",
-                    "Gabriel"
-                ]
-            )
-            encargado_almacen = st.selectbox("Encargado almacén", ["Andrea", "Juan Pablo"])
-            encargado_ingenieria = st.selectbox(
-                "Encargado ingeniería y diseño",
-                [
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ],
-                index=[
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ].index(encargado_ingenieria_default) if encargado_ingenieria_default in [
-                    "Daniel Valbuena",
-                    "Alejandro Diaz",
-                    "Juan Andres",
-                    "Juan David",
-                    "Jose",
-                    "Diomer",
-                    "Victor"
-                ] else 0,
-                key=f"encargado_ingenieria_{orden_pedido_val}"
-            )
-
-            guacales = []
-            for i in range(st.session_state["num_guacales"]):
-                st.subheader(f"PAQUETE {i+1}")
-                desc = st.text_area(f"Descripción PAQUETE {i+1}", key=f"desc_{i+1}")
-                fotos = st.file_uploader(
-                    f"Fotos PAQUETE {i+1}",
-                    type=["jpg", "jpeg", "png"],
-                    key=f"foto_{i+1}",
-                    accept_multiple_files=True
-                )
-                guacales.append({
-                    "desc": desc,
-                    "fotos": fotos
-                })
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.session_state["num_guacales"] < 10:
-                    if st.form_submit_button("Agregar paquete"):
-                        st.session_state["num_guacales"] += 1
-                        st.experimental_rerun()
-            with col2:
-                submitted = st.form_submit_button("Guardar despacho")
+            observaciones = st.text_area("Observaciones adicionales")
+            fotos = st.file_uploader("Fotos del empaque", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+            submitted = st.form_submit_button("Guardar despacho")
 
         if submitted:
-            if not guacales[0]["desc"]:
-                st.error("La descripción del PAQUETE 1 es obligatoria.")
+            if not acta_items:
+                st.error("No hay ítems para empacar en esta OP.")
             else:
                 row = [
-                    str(fecha), nombre_proyecto, orden_pedido_val,
-                    encargado_ensamblador, encargado_almacen, encargado_ingenieria
+                    str(fecha), orden_pedido_val
                 ]
-                for idx, guacal in enumerate(guacales, start=1):
-                    row.append(guacal["desc"])
-                    fotos = guacal["fotos"]
-                    enlaces = []
-                    if fotos:
-                        for n, foto in enumerate(fotos, start=1):
-                            try:
-                                image_filename = f"Guacal_{idx}_{orden_pedido_val}_{n}.jpg"
-                                file_stream = io.BytesIO(foto.read())
-                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                                enlaces.append(public_url)
-                                st.success(f"Foto {n} del Guacal {idx} subida correctamente")
-                            except Exception as upload_error:
-                                st.error(f"Error al subir la foto {n} del Guacal {idx}: {str(upload_error)}")
-                        if enlaces:
-                            row.append(", ".join(enlaces))
-                        else:
-                            row.append("Error al subir foto")
+                for k, v in acta_items.items():
+                    if empacar.get(k):
+                        row.append(f"{k}: {v}")
+                row.append(observaciones)
+                enlaces = []
+                if fotos:
+                    for n, foto in enumerate(fotos, start=1):
+                        try:
+                            image_filename = f"Empaque_{orden_pedido_val}_{n}.jpg"
+                            file_stream = io.BytesIO(foto.read())
+                            public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                            enlaces.append(public_url)
+                            st.success(f"Foto {n} subida correctamente")
+                        except Exception as upload_error:
+                            st.error(f"Error al subir la foto {n}: {str(upload_error)}")
+                    if enlaces:
+                        row.append(", ".join(enlaces))
                     else:
-                        row.append("Sin foto")
+                        row.append("Error al subir foto")
+                else:
+                    row.append("Sin foto")
                 write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
                 st.success("Despacho guardado correctamente.")
                 st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
