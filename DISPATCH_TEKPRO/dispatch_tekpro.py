@@ -469,240 +469,230 @@ def main():
             cantidad = st.text_input("cantidad")
             fecha = st.text_input("fecha")
             st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
 
             # --- Secciones visuales para cada artículo ---
             def seccion_articulo(nombre, mostrar, campos):
                 if mostrar:
-                    st.markdown(f"""
-                        <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
-                        <b style='font-size:1.1em;color:#1db6b6'>{nombre}</b>
-                    """, unsafe_allow_html=True)
-                    resultados = {}
-                    for campo in campos:
-                        if campo['tipo'] == 'text':
-                            resultados[campo['nombre']] = st.text_input(campo['label'])
-                        elif campo['tipo'] == 'text_area':
-                            resultados[campo['nombre']] = st.text_area(campo['label'])
-                        elif campo['tipo'] == 'file':
-                            resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    return resultados
+                    with st.expander(f"{nombre}", expanded=False):
+                        st.markdown(f"""
+                            <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                            <b style='font-size:1.1em;color:#1db6b6'>{nombre}</b>
+                        """, unsafe_allow_html=True)
+                        resultados = {}
+                        for campo in campos:
+                            if campo['tipo'] == 'text':
+                                resultados[campo['nombre']] = st.text_input(campo['label'])
+                            elif campo['tipo'] == 'text_area':
+                                resultados[campo['nombre']] = st.text_area(campo['label'])
+                            elif campo['tipo'] == 'file':
+                                resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        return resultados
                 else:
                     return {campo['nombre']: "" for campo in campos}
 
-            # Motores
-            motores_campos = [
-                {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'text'},
-                {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
-                {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
-            ]
-            motores = seccion_articulo("Motores", st.session_state.get('mostrar_motores', False), motores_campos)
-            cantidad_motores = motores['cantidad_motores']
-            voltaje_motores = motores['voltaje_motores']
-            fotos_motores = motores['fotos_motores']
+            # --- Agrupación por listas de chequeo principales ---
+            # 1. Elementos electromecánicos
+            with st.expander("Lista de chequeo general elementos electromecánicos", expanded=False):
+                motores_campos = [
+                    {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'text'},
+                    {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
+                    {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
+                ]
+                motores = seccion_articulo("Motores", st.session_state.get('mostrar_motores', False), motores_campos)
+                cantidad_motores = motores['cantidad_motores']
+                voltaje_motores = motores['voltaje_motores']
+                fotos_motores = motores['fotos_motores']
 
-            # Reductores
-            reductores_campos = [
-                {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'text'},
-                {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
-                {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
-            ]
-            reductores = seccion_articulo("Reductores", st.session_state.get('mostrar_reductor', False), reductores_campos)
-            cantidad_reductores = reductores['cantidad_reductores']
-            voltaje_reductores = reductores['voltaje_reductores']
-            fotos_reductores = reductores['fotos_reductores']
+                reductores_campos = [
+                    {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'text'},
+                    {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
+                    {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
+                ]
+                reductores = seccion_articulo("Reductores", st.session_state.get('mostrar_reductor', False), reductores_campos)
+                cantidad_reductores = reductores['cantidad_reductores']
+                voltaje_reductores = reductores['voltaje_reductores']
+                fotos_reductores = reductores['fotos_reductores']
 
-            # Bombas
-            bombas_campos = [
-                {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'text'},
-                {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
-                {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
-            ]
-            bombas = seccion_articulo("Bombas", st.session_state.get('mostrar_bomba', False), bombas_campos)
-            cantidad_bombas = bombas['cantidad_bombas']
-            voltaje_bombas = bombas['voltaje_bombas']
-            fotos_bombas = bombas['fotos_bombas']
+                bombas_campos = [
+                    {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'text'},
+                    {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
+                    {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
+                ]
+                bombas = seccion_articulo("Bombas", st.session_state.get('mostrar_bomba', False), bombas_campos)
+                cantidad_bombas = bombas['cantidad_bombas']
+                voltaje_bombas = bombas['voltaje_bombas']
+                fotos_bombas = bombas['fotos_bombas']
 
-            # Turbina
-            turbina_campos = [
-                {'nombre': 'voltaje_turbina', 'label': 'Voltaje turbina', 'tipo': 'text'},
-                {'nombre': 'foto_turbina', 'label': 'Foto turbina', 'tipo': 'file'}
-            ]
-            turbina = seccion_articulo("Turbina", st.session_state.get('mostrar_turbina', False), turbina_campos)
-            voltaje_turbina = turbina['voltaje_turbina']
-            foto_turbina = turbina['foto_turbina']
+                turbina_campos = [
+                    {'nombre': 'voltaje_turbina', 'label': 'Voltaje turbina', 'tipo': 'text'},
+                    {'nombre': 'foto_turbina', 'label': 'Foto turbina', 'tipo': 'file'}
+                ]
+                turbina = seccion_articulo("Turbina", st.session_state.get('mostrar_turbina', False), turbina_campos)
+                voltaje_turbina = turbina['voltaje_turbina']
+                foto_turbina = turbina['foto_turbina']
 
-            # Quemador
-            quemador_campos = [
-                {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
-                {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
-            ]
-            quemador = seccion_articulo("Quemador", st.session_state.get('mostrar_quemador', False), quemador_campos)
-            voltaje_quemador = quemador['voltaje_quemador']
-            foto_quemador = quemador['foto_quemador']
+                quemador_campos = [
+                    {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
+                    {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
+                ]
+                quemador = seccion_articulo("Quemador", st.session_state.get('mostrar_quemador', False), quemador_campos)
+                voltaje_quemador = quemador['voltaje_quemador']
+                foto_quemador = quemador['foto_quemador']
 
-            # Bomba de vacío
-            bomba_vacio_campos = [
-                {'nombre': 'voltaje_bomba_vacio', 'label': 'Voltaje bomba de vacío', 'tipo': 'text'},
-                {'nombre': 'foto_bomba_vacio', 'label': 'Foto bomba de vacío', 'tipo': 'file'}
-            ]
-            bomba_vacio = seccion_articulo("Bomba de vacío", st.session_state.get('mostrar_bomba_vacio', False), bomba_vacio_campos)
-            voltaje_bomba_vacio = bomba_vacio['voltaje_bomba_vacio']
-            foto_bomba_vacio = bomba_vacio['foto_bomba_vacio']
+                bomba_vacio_campos = [
+                    {'nombre': 'voltaje_bomba_vacio', 'label': 'Voltaje bomba de vacío', 'tipo': 'text'},
+                    {'nombre': 'foto_bomba_vacio', 'label': 'Foto bomba de vacío', 'tipo': 'file'}
+                ]
+                bomba_vacio = seccion_articulo("Bomba de vacío", st.session_state.get('mostrar_bomba_vacio', False), bomba_vacio_campos)
+                voltaje_bomba_vacio = bomba_vacio['voltaje_bomba_vacio']
+                foto_bomba_vacio = bomba_vacio['foto_bomba_vacio']
 
-            # Compresor
-            compresor_campos = [
-                {'nombre': 'voltaje_compresor', 'label': 'Voltaje compresor', 'tipo': 'text'},
-                {'nombre': 'foto_compresor', 'label': 'Foto compresor', 'tipo': 'file'}
-            ]
-            compresor = seccion_articulo("Compresor", st.session_state.get('mostrar_compresor', False), compresor_campos)
-            voltaje_compresor = compresor['voltaje_compresor']
-            foto_compresor = compresor['foto_compresor']
+                compresor_campos = [
+                    {'nombre': 'voltaje_compresor', 'label': 'Voltaje compresor', 'tipo': 'text'},
+                    {'nombre': 'foto_compresor', 'label': 'Foto compresor', 'tipo': 'file'}
+                ]
+                compresor = seccion_articulo("Compresor", st.session_state.get('mostrar_compresor', False), compresor_campos)
+                voltaje_compresor = compresor['voltaje_compresor']
+                foto_compresor = compresor['foto_compresor']
 
-            # Manómetros
-            manometros_campos = [
-                {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'text'},
-                {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
-            ]
-            manometros = seccion_articulo("Manómetros", st.session_state.get('mostrar_manometros', False), manometros_campos)
-            cantidad_manometros = manometros['cantidad_manometros']
-            foto_manometros = manometros['foto_manometros']
+            # 2. Accesorios
+            with st.expander("Lista de chequeo general accesorios", expanded=False):
+                manometros_campos = [
+                    {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'text'},
+                    {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
+                ]
+                manometros = seccion_articulo("Manómetros", st.session_state.get('mostrar_manometros', False), manometros_campos)
+                cantidad_manometros = manometros['cantidad_manometros']
+                foto_manometros = manometros['foto_manometros']
 
-            # Vacuómetros
-            vacuometros_campos = [
-                {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'text'},
-                {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
-            ]
-            vacuometros = seccion_articulo("Vacuómetros", st.session_state.get('mostrar_vacuometros', False), vacuometros_campos)
-            cantidad_vacuometros = vacuometros['cantidad_vacuometros']
-            foto_vacuometros = vacuometros['foto_vacuometros']
+                vacuometros_campos = [
+                    {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'text'},
+                    {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
+                ]
+                vacuometros = seccion_articulo("Vacuómetros", st.session_state.get('mostrar_vacuometros', False), vacuometros_campos)
+                cantidad_vacuometros = vacuometros['cantidad_vacuometros']
+                foto_vacuometros = vacuometros['foto_vacuometros']
 
-            # Válvulas
-            valvulas_campos = [
-                {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'text'},
-                {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
-            ]
-            valvulas = seccion_articulo("Válvulas", st.session_state.get('mostrar_valvulas', False), valvulas_campos)
-            cantidad_valvulas = valvulas['cantidad_valvulas']
-            foto_valvulas = valvulas['foto_valvulas']
+                valvulas_campos = [
+                    {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'text'},
+                    {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
+                ]
+                valvulas = seccion_articulo("Válvulas", st.session_state.get('mostrar_valvulas', False), valvulas_campos)
+                cantidad_valvulas = valvulas['cantidad_valvulas']
+                foto_valvulas = valvulas['foto_valvulas']
 
-            # Mangueras
-            mangueras_campos = [
-                {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'text'},
-                {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
-            ]
-            mangueras = seccion_articulo("Mangueras", st.session_state.get('mostrar_mangueras', False), mangueras_campos)
-            cantidad_mangueras = mangueras['cantidad_mangueras']
-            foto_mangueras = mangueras['foto_mangueras']
+                mangueras_campos = [
+                    {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'text'},
+                    {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
+                ]
+                mangueras = seccion_articulo("Mangueras", st.session_state.get('mostrar_mangueras', False), mangueras_campos)
+                cantidad_mangueras = mangueras['cantidad_mangueras']
+                foto_mangueras = mangueras['foto_mangueras']
 
-            # Boquillas
-            boquillas_campos = [
-                {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'text'},
-                {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
-            ]
-            boquillas = seccion_articulo("Boquillas", st.session_state.get('mostrar_boquillas', False), boquillas_campos)
-            cantidad_boquillas = boquillas['cantidad_boquillas']
-            foto_boquillas = boquillas['foto_boquillas']
+                boquillas_campos = [
+                    {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'text'},
+                    {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
+                ]
+                boquillas = seccion_articulo("Boquillas", st.session_state.get('mostrar_boquillas', False), boquillas_campos)
+                cantidad_boquillas = boquillas['cantidad_boquillas']
+                foto_boquillas = boquillas['foto_boquillas']
 
-            # Reguladores
-            reguladores_campos = [
-                {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'text'},
-                {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
-            ]
-            reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
-            cantidad_reguladores = reguladores['cantidad_reguladores']
-            foto_reguladores = reguladores['foto_reguladores']
+                reguladores_campos = [
+                    {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'text'},
+                    {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
+                ]
+                reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
+                cantidad_reguladores = reguladores['cantidad_reguladores']
+                foto_reguladores = reguladores['foto_reguladores']
 
-            # Piñón 1
-            pinon1_campos = [
-                {'nombre': 'tension_pinon1', 'label': 'Tensión piñón 1', 'tipo': 'text'},
-                {'nombre': 'foto_pinon1', 'label': 'Foto piñón 1', 'tipo': 'file'}
-            ]
-            pinon1 = seccion_articulo("Piñón 1", st.session_state.get('mostrar_pinon1', False), pinon1_campos)
-            tension_pinon1 = pinon1['tension_pinon1']
-            foto_pinon1 = pinon1['foto_pinon1']
+            # 3. Elementos mecánicos
+            with st.expander("Lista de chequeo general elementos mecánicos", expanded=False):
+                pinon1_campos = [
+                    {'nombre': 'tension_pinon1', 'label': 'Tensión piñón 1', 'tipo': 'text'},
+                    {'nombre': 'foto_pinon1', 'label': 'Foto piñón 1', 'tipo': 'file'}
+                ]
+                pinon1 = seccion_articulo("Piñón 1", st.session_state.get('mostrar_pinon1', False), pinon1_campos)
+                tension_pinon1 = pinon1['tension_pinon1']
+                foto_pinon1 = pinon1['foto_pinon1']
 
-            # Piñón 2
-            pinon2_campos = [
-                {'nombre': 'tension_pinon2', 'label': 'Tensión piñón 2', 'tipo': 'text'},
-                {'nombre': 'foto_pinon2', 'label': 'Foto piñón 2', 'tipo': 'file'}
-            ]
-            pinon2 = seccion_articulo("Piñón 2", st.session_state.get('mostrar_pinon2', False), pinon2_campos)
-            tension_pinon2 = pinon2['tension_pinon2']
-            foto_pinon2 = pinon2['foto_pinon2']
+                pinon2_campos = [
+                    {'nombre': 'tension_pinon2', 'label': 'Tensión piñón 2', 'tipo': 'text'},
+                    {'nombre': 'foto_pinon2', 'label': 'Foto piñón 2', 'tipo': 'file'}
+                ]
+                pinon2 = seccion_articulo("Piñón 2", st.session_state.get('mostrar_pinon2', False), pinon2_campos)
+                tension_pinon2 = pinon2['tension_pinon2']
+                foto_pinon2 = pinon2['foto_pinon2']
 
-            # Polea 1
-            polea1_campos = [
-                {'nombre': 'tension_polea1', 'label': 'Tensión polea 1', 'tipo': 'text'},
-                {'nombre': 'foto_polea1', 'label': 'Foto polea 1', 'tipo': 'file'}
-            ]
-            polea1 = seccion_articulo("Polea 1", st.session_state.get('mostrar_polea1', False), polea1_campos)
-            tension_polea1 = polea1['tension_polea1']
-            foto_polea1 = polea1['foto_polea1']
+                polea1_campos = [
+                    {'nombre': 'tension_polea1', 'label': 'Tensión polea 1', 'tipo': 'text'},
+                    {'nombre': 'foto_polea1', 'label': 'Foto polea 1', 'tipo': 'file'}
+                ]
+                polea1 = seccion_articulo("Polea 1", st.session_state.get('mostrar_polea1', False), polea1_campos)
+                tension_polea1 = polea1['tension_polea1']
+                foto_polea1 = polea1['foto_polea1']
 
-            # Polea 2
-            polea2_campos = [
-                {'nombre': 'tension_polea2', 'label': 'Tensión polea 2', 'tipo': 'text'},
-                {'nombre': 'foto_polea2', 'label': 'Foto polea 2', 'tipo': 'file'}
-            ]
-            polea2 = seccion_articulo("Polea 2", st.session_state.get('mostrar_polea2', False), polea2_campos)
-            tension_polea2 = polea2['tension_polea2']
-            foto_polea2 = polea2['foto_polea2']
+                polea2_campos = [
+                    {'nombre': 'tension_polea2', 'label': 'Tensión polea 2', 'tipo': 'text'},
+                    {'nombre': 'foto_polea2', 'label': 'Foto polea 2', 'tipo': 'file'}
+                ]
+                polea2 = seccion_articulo("Polea 2", st.session_state.get('mostrar_polea2', False), polea2_campos)
+                tension_polea2 = polea2['tension_polea2']
+                foto_polea2 = polea2['foto_polea2']
 
-            # Gabinete electrico
-            gabinete_campos = [
-                {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'text'},
-                {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
-            ]
-            gabinete = seccion_articulo("Gabinete eléctrico", st.session_state.get('mostrar_gabinete', False), gabinete_campos)
-            cantidad_gabinete = gabinete['cantidad_gabinete']
-            foto_gabinete = gabinete['foto_gabinete']
+            # 4. Elementos eléctricos
+            with st.expander("Lista de chequeo general elementos eléctricos", expanded=False):
+                gabinete_campos = [
+                    {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'text'},
+                    {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
+                ]
+                gabinete = seccion_articulo("Gabinete eléctrico", st.session_state.get('mostrar_gabinete', False), gabinete_campos)
+                cantidad_gabinete = gabinete['cantidad_gabinete']
+                foto_gabinete = gabinete['foto_gabinete']
 
-            # Arrancadores
-            arrancadores_campos = [
-                {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'text'},
-                {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
-            ]
-            arrancadores = seccion_articulo("Arrancadores", st.session_state.get('mostrar_arrancador', False), arrancadores_campos)
-            cantidad_arrancadores = arrancadores['cantidad_arrancadores']
-            foto_arrancadores = arrancadores['foto_arrancadores']
+                arrancadores_campos = [
+                    {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'text'},
+                    {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
+                ]
+                arrancadores = seccion_articulo("Arrancadores", st.session_state.get('mostrar_arrancador', False), arrancadores_campos)
+                cantidad_arrancadores = arrancadores['cantidad_arrancadores']
+                foto_arrancadores = arrancadores['foto_arrancadores']
 
-            # Control de nivel
-            control_nivel_campos = [
-                {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'text'},
-                {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
-            ]
-            control_nivel = seccion_articulo("Control de nivel", st.session_state.get('mostrar_control_nivel', False), control_nivel_campos)
-            cantidad_control_nivel = control_nivel['cantidad_control_nivel']
-            foto_control_nivel = control_nivel['foto_control_nivel']
+                control_nivel_campos = [
+                    {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'text'},
+                    {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
+                ]
+                control_nivel = seccion_articulo("Control de nivel", st.session_state.get('mostrar_control_nivel', False), control_nivel_campos)
+                cantidad_control_nivel = control_nivel['cantidad_control_nivel']
+                foto_control_nivel = control_nivel['foto_control_nivel']
 
-            # Variadores de velocidad
-            variadores_campos = [
-                {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'text'},
-                {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
-            ]
-            variadores = seccion_articulo("Variadores de velocidad", st.session_state.get('mostrar_variador', False), variadores_campos)
-            cantidad_variadores = variadores['cantidad_variadores']
-            foto_variadores = variadores['foto_variadores']
+                variadores_campos = [
+                    {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'text'},
+                    {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
+                ]
+                variadores = seccion_articulo("Variadores de velocidad", st.session_state.get('mostrar_variador', False), variadores_campos)
+                cantidad_variadores = variadores['cantidad_variadores']
+                foto_variadores = variadores['foto_variadores']
 
-            # Sensores de temperatura
-            sensores_campos = [
-                {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'text'},
-                {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
-            ]
-            sensores = seccion_articulo("Sensores de temperatura", st.session_state.get('mostrar_sensor_temp', False), sensores_campos)
-            cantidad_sensores = sensores['cantidad_sensores']
-            foto_sensores = sensores['foto_sensores']
+                sensores_campos = [
+                    {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'text'},
+                    {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
+                ]
+                sensores = seccion_articulo("Sensores de temperatura", st.session_state.get('mostrar_sensor_temp', False), sensores_campos)
+                cantidad_sensores = sensores['cantidad_sensores']
+                foto_sensores = sensores['foto_sensores']
 
-            # Toma corriente
-            toma_corriente_campos = [
-                {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'text'},
-                {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
-            ]
-            toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
-            cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
-            foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
+                toma_corriente_campos = [
+                    {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'text'},
+                    {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
+                ]
+                toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
+                cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
+                foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
             otros_elementos = st.text_area("otros elementos")
+            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+            st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
             revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
             revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"])
             manual_funcionamiento = st.selectbox("manual de funcionamiento", ["", "Sí", "No"])
@@ -711,6 +701,8 @@ def main():
             revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"])
             revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"])
             ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"])
+            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+            st.markdown("<b>Información final</b>", unsafe_allow_html=True)
             observaciones_generales = st.text_area("observciones generales")
             lider_inspeccion = st.text_input("lider de inspeccion")
             disenador = st.text_input("diseñador")
