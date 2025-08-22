@@ -300,8 +300,23 @@ def main():
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
             nombre_proyecto = st.text_input("Nombre de proyecto")
             encargado_ensamblador = st.text_input("Encargado ensamblador")
-            encargado_almacen = st.text_input("Encargado almacén")
-            encargado_ingenieria = st.text_input("Encargado ingeniería y diseño")
+            encargado_almacen = st.selectbox(
+                "Encargado almacén",
+                ["", "Andrea Ochoa", "Juan Pablo"]
+            )
+            encargado_ingenieria = st.selectbox(
+                "Encargado ingeniería y diseño",
+                [
+                    "",
+                    "Alejandro Diaz",
+                    "Juan David Martinez",
+                    "Juan Andres Zapata",
+                    "Daniel Valbuena",
+                    "Victor Manuel Baena",
+                    "Diomer Arbelaez",
+                    "Jose Perez"
+                ]
+            )
 
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
             articulos_seleccion = {}
@@ -743,7 +758,10 @@ def main():
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
             observaciones_generales = st.text_area("observciones generales")
             lider_inspeccion = st.text_input("lider de inspeccion")
-            disenador = st.text_input("diseñador")
+            disenador = st.selectbox(
+                "diseñador",
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
+            )
             recibe = st.text_input("recibe")
             fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
@@ -812,4 +830,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
