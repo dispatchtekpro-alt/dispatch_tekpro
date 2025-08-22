@@ -253,46 +253,34 @@ def main():
                         articulos_presentes.append(art)
                         break
 
-        # Estado dinámico para empaques por artículo
-        if 'empaques_por_articulo' not in st.session_state:
-            st.session_state['empaques_por_articulo'] = {}
-        for art in articulos_presentes:
-            if art not in st.session_state['empaques_por_articulo']:
-                st.session_state['empaques_por_articulo'][art] = 1
+        # Estado dinámico para número de paquetes
+        if 'num_paquetes' not in st.session_state:
+            st.session_state['num_paquetes'] = 1
 
         with st.form("dispatch_form"):
             import datetime
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
-
-            # Nuevos campos de encabezado
             nombre_proyecto = st.text_input("Nombre de proyecto")
             encargado_ensamblador = st.text_input("Encargado ensamblador")
             encargado_almacen = st.text_input("Encargado almacén")
             encargado_ingenieria = st.text_input("Encargado ingeniería y diseño")
 
-            st.markdown("<b>Artículos a empacar según el acta de entrega:</b>", unsafe_allow_html=True)
-            empaques_data = {}
-            articulos_enviados = []
-            articulos_no_enviados = []
+            st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
+            articulos_seleccion = {}
             for art in articulos_presentes:
-                st.markdown(f"### {art}")
-                num_empaques = st.session_state['empaques_por_articulo'][art]
-                empaques_data[art] = []
-                tiene_empaque = False
-                for i in range(num_empaques):
-                    st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
-                    desc = st.text_area(f"Descripción del guacal {i+1} para {art}", key=f"desc_{art}_{i+1}")
-                    fotos = st.file_uploader(f"Fotos del guacal {i+1} para {art}", type=["jpg", "jpeg", "png"], key=f"fotos_{art}_{i+1}", accept_multiple_files=True)
-                    empaques_data[art].append({"desc": desc, "fotos": fotos})
-                    if desc:
-                        tiene_empaque = True
-                if st.form_submit_button(f"Agregar otro guacal para {art}"):
-                    st.session_state['empaques_por_articulo'][art] += 1
-                    st.experimental_rerun()
-                if tiene_empaque:
-                    articulos_enviados.append(art)
-                else:
-                    articulos_no_enviados.append(art)
+                articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
+
+            st.markdown("<hr>")
+            st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
+            paquetes = []
+            for i in range(st.session_state['num_paquetes']):
+                st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
+                desc = st.text_area(f"Descripción paquete {i+1}", key=f"desc_paquete_{i+1}")
+                fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
+                paquetes.append({"desc": desc, "fotos": fotos})
+            if st.form_submit_button("Agregar otro paquete"):
+                st.session_state['num_paquetes'] += 1
+                st.experimental_rerun()
 
             observaciones = st.text_area("Observaciones adicionales")
             submitted = st.form_submit_button("Guardar despacho")
@@ -301,6 +289,8 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
+                enviados = [art for art, v in articulos_seleccion.items() if v]
+                no_enviados = [art for art, v in articulos_seleccion.items() if not v]
                 row = [
                     str(fecha),
                     nombre_proyecto,
@@ -308,31 +298,28 @@ def main():
                     encargado_ensamblador,
                     encargado_almacen,
                     encargado_ingenieria,
-                    ", ".join(articulos_enviados),
-                    ", ".join(articulos_no_enviados)
+                    ", ".join(enviados),
+                    ", ".join(no_enviados)
                 ]
-                # Por cada guacal de cada artículo enviado, guardar descripción y fotos
-                for art in articulos_enviados:
-                    for idx, empaque in enumerate(empaques_data[art], start=1):
-                        if empaque["desc"]:
-                            row.append(empaque["desc"])
-                            enlaces = []
-                            if empaque["fotos"]:
-                                for n, foto in enumerate(empaque["fotos"], start=1):
-                                    try:
-                                        image_filename = f"Guacal_{orden_pedido_val}_{art}_{idx}_{n}.jpg"
-                                        file_stream = io.BytesIO(foto.read())
-                                        public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                                        enlaces.append(public_url)
-                                        st.success(f"Foto {n} de {art} guacal {idx} subida correctamente")
-                                    except Exception as upload_error:
-                                        st.error(f"Error al subir la foto {n} de {art} guacal {idx}: {str(upload_error)}")
-                                if enlaces:
-                                    row.append(", ".join(enlaces))
-                                else:
-                                    row.append("Error al subir foto")
-                            else:
-                                row.append("Sin foto")
+                for idx, paquete in enumerate(paquetes, start=1):
+                    row.append(paquete["desc"])
+                    enlaces = []
+                    if paquete["fotos"]:
+                        for n, foto in enumerate(paquete["fotos"], start=1):
+                            try:
+                                image_filename = f"Paquete_{orden_pedido_val}_{idx}_{n}.jpg"
+                                file_stream = io.BytesIO(foto.read())
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                enlaces.append(public_url)
+                                st.success(f"Foto {n} de paquete {idx} subida correctamente")
+                            except Exception as upload_error:
+                                st.error(f"Error al subir la foto {n} de paquete {idx}: {str(upload_error)}")
+                        if enlaces:
+                            row.append(", ".join(enlaces))
+                        else:
+                            row.append("Error al subir foto")
+                    else:
+                        row.append("Sin foto")
                 write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
                 st.success("Despacho guardado correctamente.")
                 st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
