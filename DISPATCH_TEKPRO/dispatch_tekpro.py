@@ -269,6 +269,16 @@ def main():
             articulos_seleccion = {}
             for art in articulos_presentes:
                 articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
+                # Si es 'Otros elementos', mostrar la descripción registrada en el acta
+                if art.lower() == "otros elementos":
+                    desc_otros = ""
+                    # Buscar columna de descripción de otros elementos
+                    for idx, h in enumerate(headers):
+                        if "otros elementos" in h.lower() and "descrip" in h.lower():
+                            desc_otros = row[idx] if idx < len(row) else ""
+                            break
+                    if desc_otros:
+                        st.markdown(f"<span style='color: #666; font-size: 0.95em'><b>Descripción en acta:</b> {desc_otros}</span>", unsafe_allow_html=True)
 
             st.markdown("<hr>")
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
