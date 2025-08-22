@@ -462,12 +462,13 @@ def main():
             # Encabezados en el orden y nombre exacto solicitado
 
             st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
+            import datetime
             cliente = st.text_input("cliente")
             op = st.text_input("op")
             equipo = st.text_input("equipo")
             item = st.text_input("item")
             cantidad = st.text_input("cantidad")
-            fecha = st.text_input("fecha")
+            fecha = st.date_input("fecha", value=datetime.date.today(), key="fecha_acta")
             st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
 
@@ -481,7 +482,9 @@ def main():
                         """, unsafe_allow_html=True)
                         resultados = {}
                         for campo in campos:
-                            if campo['tipo'] == 'text':
+                            if campo['tipo'] == 'number':
+                                resultados[campo['nombre']] = st.number_input(campo['label'], min_value=0, step=1, format="%d")
+                            elif campo['tipo'] == 'text':
                                 resultados[campo['nombre']] = st.text_input(campo['label'])
                             elif campo['tipo'] == 'text_area':
                                 resultados[campo['nombre']] = st.text_area(campo['label'])
@@ -490,13 +493,13 @@ def main():
                         st.markdown("</div>", unsafe_allow_html=True)
                         return resultados
                 else:
-                    return {campo['nombre']: "" for campo in campos}
+                    return {campo['nombre']: 0 if campo['tipo'] == 'number' else "" for campo in campos}
 
             # --- Agrupación por listas de chequeo principales ---
             # 1. Elementos electromecánicos
             with st.expander("Lista de chequeo general elementos electromecánicos", expanded=False):
                 motores_campos = [
-                    {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'text'},
+                    {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'number'},
                     {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
                     {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
                 ]
@@ -506,7 +509,7 @@ def main():
                 fotos_motores = motores['fotos_motores']
 
                 reductores_campos = [
-                    {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'text'},
+                    {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'number'},
                     {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
                     {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
                 ]
@@ -516,7 +519,7 @@ def main():
                 fotos_reductores = reductores['fotos_reductores']
 
                 bombas_campos = [
-                    {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'text'},
+                    {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'number'},
                     {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
                     {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
                 ]
@@ -560,7 +563,7 @@ def main():
             # 2. Accesorios
             with st.expander("Lista de chequeo general accesorios", expanded=False):
                 manometros_campos = [
-                    {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'text'},
+                    {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'number'},
                     {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
                 ]
                 manometros = seccion_articulo("Manómetros", st.session_state.get('mostrar_manometros', False), manometros_campos)
@@ -568,7 +571,7 @@ def main():
                 foto_manometros = manometros['foto_manometros']
 
                 vacuometros_campos = [
-                    {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'text'},
+                    {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'number'},
                     {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
                 ]
                 vacuometros = seccion_articulo("Vacuómetros", st.session_state.get('mostrar_vacuometros', False), vacuometros_campos)
@@ -576,7 +579,7 @@ def main():
                 foto_vacuometros = vacuometros['foto_vacuometros']
 
                 valvulas_campos = [
-                    {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'text'},
+                    {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'number'},
                     {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
                 ]
                 valvulas = seccion_articulo("Válvulas", st.session_state.get('mostrar_valvulas', False), valvulas_campos)
@@ -584,7 +587,7 @@ def main():
                 foto_valvulas = valvulas['foto_valvulas']
 
                 mangueras_campos = [
-                    {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'text'},
+                    {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'number'},
                     {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
                 ]
                 mangueras = seccion_articulo("Mangueras", st.session_state.get('mostrar_mangueras', False), mangueras_campos)
@@ -592,7 +595,7 @@ def main():
                 foto_mangueras = mangueras['foto_mangueras']
 
                 boquillas_campos = [
-                    {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'text'},
+                    {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'number'},
                     {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
                 ]
                 boquillas = seccion_articulo("Boquillas", st.session_state.get('mostrar_boquillas', False), boquillas_campos)
@@ -600,7 +603,7 @@ def main():
                 foto_boquillas = boquillas['foto_boquillas']
 
                 reguladores_campos = [
-                    {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'text'},
+                    {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'number'},
                     {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
                 ]
                 reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
@@ -644,7 +647,7 @@ def main():
             # 4. Elementos eléctricos
             with st.expander("Lista de chequeo general elementos eléctricos", expanded=False):
                 gabinete_campos = [
-                    {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'text'},
+                    {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'number'},
                     {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
                 ]
                 gabinete = seccion_articulo("Gabinete eléctrico", st.session_state.get('mostrar_gabinete', False), gabinete_campos)
@@ -652,7 +655,7 @@ def main():
                 foto_gabinete = gabinete['foto_gabinete']
 
                 arrancadores_campos = [
-                    {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'text'},
+                    {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'number'},
                     {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
                 ]
                 arrancadores = seccion_articulo("Arrancadores", st.session_state.get('mostrar_arrancador', False), arrancadores_campos)
@@ -660,7 +663,7 @@ def main():
                 foto_arrancadores = arrancadores['foto_arrancadores']
 
                 control_nivel_campos = [
-                    {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'text'},
+                    {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'number'},
                     {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
                 ]
                 control_nivel = seccion_articulo("Control de nivel", st.session_state.get('mostrar_control_nivel', False), control_nivel_campos)
@@ -668,7 +671,7 @@ def main():
                 foto_control_nivel = control_nivel['foto_control_nivel']
 
                 variadores_campos = [
-                    {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'text'},
+                    {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'number'},
                     {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
                 ]
                 variadores = seccion_articulo("Variadores de velocidad", st.session_state.get('mostrar_variador', False), variadores_campos)
@@ -676,7 +679,7 @@ def main():
                 foto_variadores = variadores['foto_variadores']
 
                 sensores_campos = [
-                    {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'text'},
+                    {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'number'},
                     {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
                 ]
                 sensores = seccion_articulo("Sensores de temperatura", st.session_state.get('mostrar_sensor_temp', False), sensores_campos)
@@ -684,7 +687,7 @@ def main():
                 foto_sensores = sensores['foto_sensores']
 
                 toma_corriente_campos = [
-                    {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'text'},
+                    {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'number'},
                     {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
                 ]
                 toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
@@ -707,26 +710,51 @@ def main():
             lider_inspeccion = st.text_input("lider de inspeccion")
             disenador = st.text_input("diseñador")
             recibe = st.text_input("recibe")
-            fecha_entrega = st.text_input("fecha de entrega")
+            fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
             submitted = st.form_submit_button("Guardar acta de entrega")
 
             # Validación: solo encabezado y responsables son obligatorios
 
             if submitted:
-                # Guardar los datos en el orden exacto solicitado
+                # Serializar todos los campos a string y manejar file_uploader
+                def serializa_fotos(valor):
+                    if isinstance(valor, list):
+                        # Si es lista de archivos subidos, mostrar nombres separados por coma
+                        return ", ".join([f.name for f in valor]) if valor else ""
+                    elif hasattr(valor, 'name'):
+                        return valor.name
+                    else:
+                        return str(valor) if valor is not None else ""
+
                 row = [
-                    cliente, op, item, equipo, cantidad, fecha, cantidad_motores, voltaje_motores, fotos_motores,
-                    cantidad_reductores, voltaje_reductores, fotos_reductores, cantidad_bombas, voltaje_bombas, fotos_bombas,
-                    voltaje_turbina, foto_turbina, voltaje_quemador, foto_quemador, voltaje_bomba_vacio, foto_bomba_vacio,
-                    voltaje_compresor, foto_compresor, cantidad_manometros, foto_manometros, cantidad_vacuometros, foto_vacuometros,
-                    cantidad_valvulas, foto_valvulas, cantidad_mangueras, foto_mangueras, cantidad_boquillas, foto_boquillas,
-                    cantidad_reguladores, foto_reguladores, tension_pinon1, foto_pinon1, tension_pinon2, foto_pinon2,
-                    tension_polea1, foto_polea1, tension_polea2, foto_polea2, cantidad_gabinete, foto_gabinete,
-                    cantidad_arrancadores, foto_arrancadores, cantidad_control_nivel, foto_control_nivel, cantidad_variadores, foto_variadores,
-                    cantidad_sensores, foto_sensores, cantidad_toma_corriente, foto_toma_corrientes, otros_elementos,
-                    revision_soldadura, revision_sentidos, manual_funcionamiento, revision_filos, revision_tratamientos, revision_tornilleria,
-                    revision_ruidos, ensayo_equipo, observaciones_generales, lider_inspeccion, disenador, recibe, fecha_entrega
+                    str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
+                    str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores),
+                    str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores),
+                    str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas),
+                    str(voltaje_turbina), serializa_fotos(foto_turbina),
+                    str(voltaje_quemador), serializa_fotos(foto_quemador),
+                    str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio),
+                    str(voltaje_compresor), serializa_fotos(foto_compresor),
+                    str(cantidad_manometros), serializa_fotos(foto_manometros),
+                    str(cantidad_vacuometros), serializa_fotos(foto_vacuometros),
+                    str(cantidad_valvulas), serializa_fotos(foto_valvulas),
+                    str(cantidad_mangueras), serializa_fotos(foto_mangueras),
+                    str(cantidad_boquillas), serializa_fotos(foto_boquillas),
+                    str(cantidad_reguladores), serializa_fotos(foto_reguladores),
+                    str(tension_pinon1), serializa_fotos(foto_pinon1),
+                    str(tension_pinon2), serializa_fotos(foto_pinon2),
+                    str(tension_polea1), serializa_fotos(foto_polea1),
+                    str(tension_polea2), serializa_fotos(foto_polea2),
+                    str(cantidad_gabinete), serializa_fotos(foto_gabinete),
+                    str(cantidad_arrancadores), serializa_fotos(foto_arrancadores),
+                    str(cantidad_control_nivel), serializa_fotos(foto_control_nivel),
+                    str(cantidad_variadores), serializa_fotos(foto_variadores),
+                    str(cantidad_sensores), serializa_fotos(foto_sensores),
+                    str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes),
+                    str(otros_elementos),
+                    str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
+                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(recibe), str(fecha_entrega)
                 ]
                 headers = [
                     "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
