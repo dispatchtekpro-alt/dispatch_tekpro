@@ -471,8 +471,7 @@ def main():
             st.markdown("</div>", unsafe_allow_html=True)
 
             # Motores
-            hay_motores = st.checkbox("¿Hay motores?")
-            if hay_motores:
+            if st.session_state.get('mostrar_motores', False):
                 cantidad_motores = st.text_input("cantidad motores")
                 voltaje_motores = st.text_input("voltaje motores")
                 fotos_motores = st.text_input("fotos motores (URL o nombre)")
@@ -482,8 +481,7 @@ def main():
                 fotos_motores = ""
 
             # Reductores
-            hay_reductores = st.checkbox("¿Hay reductores?")
-            if hay_reductores:
+            if st.session_state.get('mostrar_reductor', False):
                 cantidad_reductores = st.text_input("cantidad reductores")
                 voltaje_reductores = st.text_input("voltaje reductores")
                 fotos_reductores = st.text_input("fotos reductores (URL o nombre)")
@@ -493,8 +491,7 @@ def main():
                 fotos_reductores = ""
 
             # Bombas
-            hay_bombas = st.checkbox("¿Hay bombas?")
-            if hay_bombas:
+            if st.session_state.get('mostrar_bomba', False):
                 cantidad_bombas = st.text_input("cantidad bombas")
                 voltaje_bombas = st.text_input("voltaje bombas")
                 fotos_bombas = st.text_input("fotos bombas (URL o nombre)")
@@ -504,8 +501,7 @@ def main():
                 fotos_bombas = ""
 
             # Turbina
-            hay_turbina = st.checkbox("¿Hay turbina?")
-            if hay_turbina:
+            if st.session_state.get('mostrar_turbina', False):
                 voltaje_turbina = st.text_input("voltaje turbina")
                 foto_turbina = st.text_input("foto turbina (URL o nombre)")
             else:
@@ -513,8 +509,7 @@ def main():
                 foto_turbina = ""
 
             # Quemador
-            hay_quemador = st.checkbox("¿Hay quemador?")
-            if hay_quemador:
+            if st.session_state.get('mostrar_quemador', False):
                 voltaje_quemador = st.text_input("voltaje quemador")
                 foto_quemador = st.text_input("foto quemador (URL o nombre)")
             else:
@@ -522,8 +517,7 @@ def main():
                 foto_quemador = ""
 
             # Bomba de vacío
-            hay_bomba_vacio = st.checkbox("¿Hay bomba de vacio?")
-            if hay_bomba_vacio:
+            if st.session_state.get('mostrar_bomba_vacio', False):
                 voltaje_bomba_vacio = st.text_input("voltaje bomba de vacio")
                 foto_bomba_vacio = st.text_input("foto bomba de vacio (URL o nombre)")
             else:
@@ -531,8 +525,7 @@ def main():
                 foto_bomba_vacio = ""
 
             # Compresor
-            hay_compresor = st.checkbox("¿Hay compresor?")
-            if hay_compresor:
+            if st.session_state.get('mostrar_compresor', False):
                 voltaje_compresor = st.text_input("voltaje compresor")
                 foto_compresor = st.text_input("foto compresor (URL o nombre)")
             else:
@@ -540,8 +533,7 @@ def main():
                 foto_compresor = ""
 
             # Manómetros
-            hay_manometros = st.checkbox("¿Hay manometros?")
-            if hay_manometros:
+            if st.session_state.get('mostrar_manometros', False):
                 cantidad_manometros = st.text_input("cantidad manometros")
                 foto_manometros = st.text_input("foto manometros (URL o nombre)")
             else:
@@ -549,8 +541,7 @@ def main():
                 foto_manometros = ""
 
             # Vacuómetros
-            hay_vacuometros = st.checkbox("¿Hay vacuometros?")
-            if hay_vacuometros:
+            if st.session_state.get('mostrar_vacuometros', False):
                 cantidad_vacuometros = st.text_input("cantidad vacuometros")
                 foto_vacuometros = st.text_input("foto vacuometros (URL o nombre)")
             else:
@@ -558,8 +549,7 @@ def main():
                 foto_vacuometros = ""
 
             # Válvulas
-            hay_valvulas = st.checkbox("¿Hay valvulas?")
-            if hay_valvulas:
+            if st.session_state.get('mostrar_valvulas', False):
                 cantidad_valvulas = st.text_input("cantidad valvulas")
                 foto_valvulas = st.text_input("foto valvulas (URL o nombre)")
             else:
@@ -567,8 +557,7 @@ def main():
                 foto_valvulas = ""
 
             # Mangueras
-            hay_mangueras = st.checkbox("¿Hay mangueras?")
-            if hay_mangueras:
+            if st.session_state.get('mostrar_mangueras', False):
                 cantidad_mangueras = st.text_input("cantidad mangueras")
                 foto_mangueras = st.text_input("foto mangueras (URL o nombre)")
             else:
@@ -576,8 +565,7 @@ def main():
                 foto_mangueras = ""
 
             # Boquillas
-            hay_boquillas = st.checkbox("¿Hay boquillas?")
-            if hay_boquillas:
+            if st.session_state.get('mostrar_boquillas', False):
                 cantidad_boquillas = st.text_input("cantidad boquillas")
                 foto_boquillas = st.text_input("foto boquillas (URL o nombre)")
             else:
@@ -585,8 +573,7 @@ def main():
                 foto_boquillas = ""
 
             # Reguladores
-            hay_reguladores = st.checkbox("¿Hay reguladores aire/gas?")
-            if hay_reguladores:
+            if st.session_state.get('mostrar_reguladores', False):
                 cantidad_reguladores = st.text_input("cantidad reguladores aire/gas")
                 foto_reguladores = st.text_input("foto reguladores (URL o nombre)")
             else:
@@ -594,8 +581,7 @@ def main():
                 foto_reguladores = ""
 
             # Piñón 1
-            hay_pinon1 = st.checkbox("¿Hay piñon 1?")
-            if hay_pinon1:
+            if st.session_state.get('mostrar_pinon1', False):
                 tension_pinon1 = st.text_input("tension piñon 1")
                 foto_pinon1 = st.text_input("foto piñon 1 (URL o nombre)")
             else:
@@ -603,8 +589,7 @@ def main():
                 foto_pinon1 = ""
 
             # Piñón 2
-            hay_pinon2 = st.checkbox("¿Hay piñon 2?")
-            if hay_pinon2:
+            if st.session_state.get('mostrar_pinon2', False):
                 tension_pinon2 = st.text_input("tension piñon 2")
                 foto_pinon2 = st.text_input("foto piñon 2 (URL o nombre)")
             else:
@@ -612,8 +597,7 @@ def main():
                 foto_pinon2 = ""
 
             # Polea 1
-            hay_polea1 = st.checkbox("¿Hay polea 1?")
-            if hay_polea1:
+            if st.session_state.get('mostrar_polea1', False):
                 tension_polea1 = st.text_input("tension polea 1")
                 foto_polea1 = st.text_input("foto polea 1 (URL o nombre)")
             else:
@@ -621,8 +605,7 @@ def main():
                 foto_polea1 = ""
 
             # Polea 2
-            hay_polea2 = st.checkbox("¿Hay polea 2?")
-            if hay_polea2:
+            if st.session_state.get('mostrar_polea2', False):
                 tension_polea2 = st.text_input("tension polea 2")
                 foto_polea2 = st.text_input("foto polea 2 (URL o nombre)")
             else:
@@ -630,8 +613,7 @@ def main():
                 foto_polea2 = ""
 
             # Gabinete electrico
-            hay_gabinete = st.checkbox("¿Hay gabinete electrico?")
-            if hay_gabinete:
+            if st.session_state.get('mostrar_gabinete', False):
                 cantidad_gabinete = st.text_input("cantidad gabinete electrico")
                 foto_gabinete = st.text_input("foto gabinete (URL o nombre)")
             else:
@@ -639,8 +621,7 @@ def main():
                 foto_gabinete = ""
 
             # Arrancadores
-            hay_arrancadores = st.checkbox("¿Hay arrancadores?")
-            if hay_arrancadores:
+            if st.session_state.get('mostrar_arrancador', False):
                 cantidad_arrancadores = st.text_input("cantidad arrancadores")
                 foto_arrancadores = st.text_input("foto arrancadores (URL o nombre)")
             else:
@@ -648,8 +629,7 @@ def main():
                 foto_arrancadores = ""
 
             # Control de nivel
-            hay_control_nivel = st.checkbox("¿Hay control de nivel?")
-            if hay_control_nivel:
+            if st.session_state.get('mostrar_control_nivel', False):
                 cantidad_control_nivel = st.text_input("cantidad control de nivel")
                 foto_control_nivel = st.text_input("foto control de nivel (URL o nombre)")
             else:
@@ -657,8 +637,7 @@ def main():
                 foto_control_nivel = ""
 
             # Variadores de velocidad
-            hay_variadores = st.checkbox("¿Hay variadores de velocidad?")
-            if hay_variadores:
+            if st.session_state.get('mostrar_variador', False):
                 cantidad_variadores = st.text_input("cantidad variadores de velociad")
                 foto_variadores = st.text_input("foto variadores de velocidad (URL o nombre)")
             else:
@@ -666,8 +645,7 @@ def main():
                 foto_variadores = ""
 
             # Sensores de temperatura
-            hay_sensores = st.checkbox("¿Hay sensores de temperatura?")
-            if hay_sensores:
+            if st.session_state.get('mostrar_sensor_temp', False):
                 cantidad_sensores = st.text_input("cantidad sensores de temperatura")
                 foto_sensores = st.text_input("foto sensores de temperatura (URL o nombre)")
             else:
@@ -675,22 +653,21 @@ def main():
                 foto_sensores = ""
 
             # Toma corriente
-            hay_toma_corriente = st.checkbox("¿Hay toma corriente?")
-            if hay_toma_corriente:
+            if st.session_state.get('mostrar_toma_corriente', False):
                 cantidad_toma_corriente = st.text_input("cantidad toma corriente")
                 foto_toma_corrientes = st.text_input("foto toma corrientes (URL o nombre)")
             else:
                 cantidad_toma_corriente = ""
                 foto_toma_corrientes = ""
             otros_elementos = st.text_area("otros elementos")
-            revision_soldadura = st.text_input("revision de soldadura")
-            revision_sentidos = st.text_input("revision de sentidos de giro")
-            manual_funcionamiento = st.text_input("manual de funcionamiento")
-            revision_filos = st.text_input("revision de filos y acabados")
-            revision_tratamientos = st.text_input("revision de tratamientos")
-            revision_tornilleria = st.text_input("revision de tornilleria")
-            revision_ruidos = st.text_input("revision de ruidos")
-            ensayo_equipo = st.text_input("ensayo equipo")
+            revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
+            revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"])
+            manual_funcionamiento = st.selectbox("manual de funcionamiento", ["", "Sí", "No"])
+            revision_filos = st.selectbox("revision de filos y acabados", ["", "Sí", "No"])
+            revision_tratamientos = st.selectbox("revision de tratamientos", ["", "Sí", "No"])
+            revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"])
+            revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"])
+            ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"])
             observaciones_generales = st.text_area("observciones generales")
             lider_inspeccion = st.text_input("lider de inspeccion")
             disenador = st.text_input("diseñador")
