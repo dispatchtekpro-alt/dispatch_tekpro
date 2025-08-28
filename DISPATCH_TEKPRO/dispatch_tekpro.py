@@ -409,38 +409,29 @@ def main():
             paquetes = []
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
-                # Estado para artículos agregados manualmente
-                if f"articulos_paquete_{i+1}" not in st.session_state:
-                    st.session_state[f"articulos_paquete_{i+1}"] = []
-                # Botón para agregar artículo de BDD SAG
-                col_desc, col_btn = st.columns([4,1])
-                with col_desc:
-                    desc = st.text_area(
-                        f"Descripción paquete {i+1}",
-                        value=", ".join(st.session_state[f"articulos_paquete_{i+1}"]),
-                        key=f"desc_paquete_{i+1}"
-                    )
-                with col_btn:
-                    articulo_a_agregar = st.selectbox(
-                        f"Selecciona artículo BDD SAG", bdd_sag_articulos, key=f"select_bdd_{i+1}")
-                    if st.button(f"Agregar artículo {i+1}", key=f"btn_add_art_{i+1}"):
-                        if articulo_a_agregar and articulo_a_agregar not in st.session_state[f"articulos_paquete_{i+1}"]:
-                            st.session_state[f"articulos_paquete_{i+1}"].append(articulo_a_agregar)
-                            # Actualizar el text_area también
-                            st.session_state[f"desc_paquete_{i+1}"] = ", ".join(st.session_state[f"articulos_paquete_{i+1}"])
-                            st.experimental_rerun()
-                # Campo para dimensiones
+                # Multiselección de artículos de BDD SAG para la descripción
+                articulos_guacal = st.multiselect(
+                    f"Agregar artículos de BDD SAG al paquete {i+1}",
+                    options=bdd_sag_articulos,
+                    key=f"bddsag_paquete_{i+1}"
+                )
+                # Formato: (ARTICULO1,ARTICULO2,...)
+                desc_bdd = ""
+                if articulos_guacal:
+                    desc_bdd = "(" + ",".join(articulos_guacal) + ")"
+                desc = st.text_area(
+                    f"Descripción paquete {i+1}",
+                    value=desc_bdd,
+                    key=f"desc_paquete_{i+1}"
+                )
                 dimensiones = st.text_input(f"DIMENSIONES / DIMENSIONS LXAXH (MT) paquete {i+1}", key=f"dim_paquete_{i+1}")
-                # Campo para peso neto
                 peso_neto = st.text_input(f"PESO NETO / NET WEIGHT (Kg) paquete {i+1}", key=f"peso_neto_paquete_{i+1}")
-                # Campo para peso bruto
                 peso_bruto = st.text_input(f"PESO BRUTO / GROSS WEIGHT (Kg) paquete {i+1}", key=f"peso_bruto_paquete_{i+1}")
-                # Fotos
                 fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 paquetes.append({
                     "desc": desc,
                     "fotos": fotos,
-                    "articulos_guacal": st.session_state[f"articulos_paquete_{i+1}"],
+                    "articulos_guacal": articulos_guacal,
                     "dimensiones": dimensiones,
                     "peso_neto": peso_neto,
                     "peso_bruto": peso_bruto
