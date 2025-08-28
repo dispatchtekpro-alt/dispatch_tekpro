@@ -322,16 +322,16 @@ def main():
             articulos_seleccion = {}
             for art in articulos_presentes:
                 articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
-                # Si es 'Otros elementos', mostrar la descripción registrada en el acta
+                # Si es 'Otros elementos', mostrar la descripción registrada en el acta justo debajo
                 if art.lower() == "otros elementos":
                     desc_otros = ""
                     # Buscar columna de descripción de otros elementos
                     for idx, h in enumerate(headers):
-                        if "otros elementos" in h.lower() and "descrip" in h.lower():
+                        if "otros elementos" in h.lower():
                             desc_otros = row[idx] if idx < len(row) else ""
                             break
-                    if desc_otros:
-                        st.markdown(f"<span style='color: #666; font-size: 0.95em'><b>Descripción en acta:</b> {desc_otros}</span>", unsafe_allow_html=True)
+                    if desc_otros and desc_otros.strip():
+                        st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
             st.markdown("<hr>")
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
@@ -401,126 +401,166 @@ def main():
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
 
-        # --- Botones de mostrar/ocultar secciones (fuera del form) ---
+
+        # --- Botones personalizados con cambio de color ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos electromecánicos")
-        if 'mostrar_motores' not in st.session_state:
-            st.session_state['mostrar_motores'] = False
-        if st.button("¿Hay motores?"):
-            st.session_state['mostrar_motores'] = not st.session_state['mostrar_motores']
-        if 'mostrar_reductor' not in st.session_state:
-            st.session_state['mostrar_reductor'] = False
-        if st.button("¿Hay reductor?"):
-            st.session_state['mostrar_reductor'] = not st.session_state['mostrar_reductor']
-        if 'mostrar_bomba' not in st.session_state:
-            st.session_state['mostrar_bomba'] = False
-        if st.button("¿Hay bomba?"):
-            st.session_state['mostrar_bomba'] = not st.session_state['mostrar_bomba']
-        if 'mostrar_turbina' not in st.session_state:
-            st.session_state['mostrar_turbina'] = False
-        if st.button("¿Hay turbina?"):
-            st.session_state['mostrar_turbina'] = not st.session_state['mostrar_turbina']
-        if 'mostrar_quemador' not in st.session_state:
-            st.session_state['mostrar_quemador'] = False
-        if st.button("¿Hay quemador?"):
-            st.session_state['mostrar_quemador'] = not st.session_state['mostrar_quemador']
-        if 'mostrar_bomba_vacio' not in st.session_state:
-            st.session_state['mostrar_bomba_vacio'] = False
-        if st.button("¿Hay bomba de vacío?"):
-            st.session_state['mostrar_bomba_vacio'] = not st.session_state['mostrar_bomba_vacio']
-        if 'mostrar_compresor' not in st.session_state:
-            st.session_state['mostrar_compresor'] = False
-        if st.button("¿Hay compresor?"):
-            st.session_state['mostrar_compresor'] = not st.session_state['mostrar_compresor']
+        botones_articulos = [
+            ("mostrar_motores", "¿Hay motores?"),
+            ("mostrar_reductor", "¿Hay reductor?"),
+            ("mostrar_bomba", "¿Hay bomba?"),
+            ("mostrar_turbina", "¿Hay turbina?"),
+            ("mostrar_quemador", "¿Hay quemador?"),
+            ("mostrar_bomba_vacio", "¿Hay bomba de vacío?"),
+            ("mostrar_compresor", "¿Hay compresor?")
+        ]
+        for key, label in botones_articulos:
+            if key not in st.session_state:
+                st.session_state[key] = False
+            color = "#a259d9" if st.session_state[key] else "#1db6b6"
+            txt_color = "#fff" if st.session_state[key] else "#fff"
+            btn_id = f"btn_{key}"
+            btn_html = f"""
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            """
+            st.markdown(btn_html, unsafe_allow_html=True)
+        # Leer parámetros de la URL para detectar clics
+        import streamlit as stlib
+        import urllib.parse
+        query_params = st.experimental_get_query_params()
+        for key, _ in botones_articulos:
+            param = f"toggle_{key}"
+            if param in query_params:
+                st.session_state[key] = not st.session_state[key]
+                # Limpiar el parámetro de la URL
+                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general accesorios")
-        if 'mostrar_manometros' not in st.session_state:
-            st.session_state['mostrar_manometros'] = False
-        if st.button("¿Hay manómetros?"):
-            st.session_state['mostrar_manometros'] = not st.session_state['mostrar_manometros']
-        if 'mostrar_vacuometros' not in st.session_state:
-            st.session_state['mostrar_vacuometros'] = False
-        if st.button("¿Hay vacuómetros?"):
-            st.session_state['mostrar_vacuometros'] = not st.session_state['mostrar_vacuometros']
-        if 'mostrar_valvulas' not in st.session_state:
-            st.session_state['mostrar_valvulas'] = False
-        if st.button("¿Hay válvulas?"):
-            st.session_state['mostrar_valvulas'] = not st.session_state['mostrar_valvulas']
-        if 'mostrar_mangueras' not in st.session_state:
-            st.session_state['mostrar_mangueras'] = False
-        if st.button("¿Hay mangueras?"):
-            st.session_state['mostrar_mangueras'] = not st.session_state['mostrar_mangueras']
-        if 'mostrar_boquillas' not in st.session_state:
-            st.session_state['mostrar_boquillas'] = False
-        if st.button("¿Hay boquillas?"):
-            st.session_state['mostrar_boquillas'] = not st.session_state['mostrar_boquillas']
-        if 'mostrar_reguladores' not in st.session_state:
-            st.session_state['mostrar_reguladores'] = False
-        if st.button("¿Hay reguladores aire/gas?"):
-            st.session_state['mostrar_reguladores'] = not st.session_state['mostrar_reguladores']
+        botones_accesorios = [
+            ("mostrar_manometros", "¿Hay manómetros?"),
+            ("mostrar_vacuometros", "¿Hay vacuómetros?"),
+            ("mostrar_valvulas", "¿Hay válvulas?"),
+            ("mostrar_mangueras", "¿Hay mangueras?"),
+            ("mostrar_boquillas", "¿Hay boquillas?"),
+            ("mostrar_reguladores", "¿Hay reguladores aire/gas?")
+        ]
+        for key, label in botones_accesorios:
+            if key not in st.session_state:
+                st.session_state[key] = False
+            color = "#a259d9" if st.session_state[key] else "#1db6b6"
+            txt_color = "#fff" if st.session_state[key] else "#fff"
+            btn_id = f"btn_{key}"
+            btn_html = f"""
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            """
+            st.markdown(btn_html, unsafe_allow_html=True)
+        query_params = st.experimental_get_query_params()
+        for key, _ in botones_accesorios:
+            param = f"toggle_{key}"
+            if param in query_params:
+                st.session_state[key] = not st.session_state[key]
+                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos mecánicos")
-        if 'mostrar_pinon1' not in st.session_state:
-            st.session_state['mostrar_pinon1'] = False
-        if st.button("¿Hay piñón 1?"):
-            st.session_state['mostrar_pinon1'] = not st.session_state['mostrar_pinon1']
-        if 'mostrar_pinon2' not in st.session_state:
-            st.session_state['mostrar_pinon2'] = False
-        if st.button("¿Hay piñón 2?"):
-            st.session_state['mostrar_pinon2'] = not st.session_state['mostrar_pinon2']
-        if 'mostrar_polea1' not in st.session_state:
-            st.session_state['mostrar_polea1'] = False
-        if st.button("¿Hay polea 1?"):
-            st.session_state['mostrar_polea1'] = not st.session_state['mostrar_polea1']
-        if 'mostrar_polea2' not in st.session_state:
-            st.session_state['mostrar_polea2'] = False
-        if st.button("¿Hay polea 2?"):
-            st.session_state['mostrar_polea2'] = not st.session_state['mostrar_polea2']
+        botones_mecanicos = [
+            ("mostrar_pinon1", "¿Hay piñón 1?"),
+            ("mostrar_pinon2", "¿Hay piñón 2?"),
+            ("mostrar_polea1", "¿Hay polea 1?"),
+            ("mostrar_polea2", "¿Hay polea 2?")
+        ]
+        for key, label in botones_mecanicos:
+            if key not in st.session_state:
+                st.session_state[key] = False
+            color = "#a259d9" if st.session_state[key] else "#1db6b6"
+            txt_color = "#fff" if st.session_state[key] else "#fff"
+            btn_id = f"btn_{key}"
+            btn_html = f"""
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            """
+            st.markdown(btn_html, unsafe_allow_html=True)
+        query_params = st.experimental_get_query_params()
+        for key, _ in botones_mecanicos:
+            param = f"toggle_{key}"
+            if param in query_params:
+                st.session_state[key] = not st.session_state[key]
+                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos eléctricos")
-        if 'mostrar_gabinete' not in st.session_state:
-            st.session_state['mostrar_gabinete'] = False
-        if st.button("¿Hay gabinete eléctrico?"):
-            st.session_state['mostrar_gabinete'] = not st.session_state['mostrar_gabinete']
-        if 'mostrar_arrancador' not in st.session_state:
-            st.session_state['mostrar_arrancador'] = False
-        if st.button("¿Hay arrancador?"):
-            st.session_state['mostrar_arrancador'] = not st.session_state['mostrar_arrancador']
-        if 'mostrar_control_nivel' not in st.session_state:
-            st.session_state['mostrar_control_nivel'] = False
-        if st.button("¿Hay control de nivel?"):
-            st.session_state['mostrar_control_nivel'] = not st.session_state['mostrar_control_nivel']
-        if 'mostrar_variador' not in st.session_state:
-            st.session_state['mostrar_variador'] = False
-        if st.button("¿Hay variador de velocidad?"):
-            st.session_state['mostrar_variador'] = not st.session_state['mostrar_variador']
-        if 'mostrar_sensor_temp' not in st.session_state:
-            st.session_state['mostrar_sensor_temp'] = False
-        if st.button("¿Hay sensor de temperatura?"):
-            st.session_state['mostrar_sensor_temp'] = not st.session_state['mostrar_sensor_temp']
-        if 'mostrar_toma_corriente' not in st.session_state:
-            st.session_state['mostrar_toma_corriente'] = False
-        if st.button("¿Hay toma corriente?"):
-            st.session_state['mostrar_toma_corriente'] = not st.session_state['mostrar_toma_corriente']
+        botones_electricos = [
+            ("mostrar_gabinete", "¿Hay gabinete eléctrico?"),
+            ("mostrar_arrancador", "¿Hay arrancador?"),
+            ("mostrar_control_nivel", "¿Hay control de nivel?"),
+            ("mostrar_variador", "¿Hay variador de velocidad?"),
+            ("mostrar_sensor_temp", "¿Hay sensor de temperatura?"),
+            ("mostrar_toma_corriente", "¿Hay toma corriente?")
+        ]
+        for key, label in botones_electricos:
+            if key not in st.session_state:
+                st.session_state[key] = False
+            color = "#a259d9" if st.session_state[key] else "#1db6b6"
+            txt_color = "#fff" if st.session_state[key] else "#fff"
+            btn_id = f"btn_{key}"
+            btn_html = f"""
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            """
+            st.markdown(btn_html, unsafe_allow_html=True)
+        query_params = st.experimental_get_query_params()
+        for key, _ in botones_electricos:
+            param = f"toggle_{key}"
+            if param in query_params:
+                st.session_state[key] = not st.session_state[key]
+                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
 
         # --- Formulario principal ---
 
-        with st.form("acta_entrega_form"):
-            # Encabezados en el orden y nombre exacto solicitado
+        # --- Estado de acta de entrega (completa/pendiente) ---
+        import datetime
+        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
+        cliente = st.text_input("cliente")
+        op = st.text_input("op")
+        equipo = st.text_input("equipo")
+        item = st.text_input("item")
+        cantidad = st.text_input("cantidad")
+        fecha = st.date_input("fecha", value=datetime.date.today(), key="fecha_acta")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
-            import datetime
-            cliente = st.text_input("cliente")
-            op = st.text_input("op")
-            equipo = st.text_input("equipo")
-            item = st.text_input("item")
-            cantidad = st.text_input("cantidad")
-            fecha = st.date_input("fecha", value=datetime.date.today(), key="fecha_acta")
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+        # Verificar estado de acta de entrega para la OP
+        acta_status = "pendiente"
+        if op:
+            try:
+                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                all_rows = sheet.get_all_values()
+                op_idx = None
+                if all_rows:
+                    headers = all_rows[0]
+                    for idx, h in enumerate(headers):
+                        if h.strip().lower() == "op":
+                            op_idx = idx
+                            break
+                    if op_idx is not None:
+                        for row in all_rows[1:]:
+                            if len(row) > op_idx and row[op_idx].strip() == op.strip():
+                                acta_status = "completa"
+                                break
+            except Exception:
+                pass
+        if acta_status == "completa":
+            st.markdown("""
+                <div style='background:#e6f7e6;border:2px solid #1db6b6;color:#1db6b6;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
+                ✅ Acta de entrega completa
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+                <div style='background:#fff3e6;border:2px solid #f7b267;color:#f7b267;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
+                ⏳ Acta de entrega pendiente
+                </div>
+            """, unsafe_allow_html=True)
+
+        with st.form("acta_entrega_form"):
 
             # --- Secciones visuales para cada artículo ---
             def seccion_articulo(nombre, mostrar, campos):
@@ -743,7 +783,11 @@ def main():
                 toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
                 cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
                 foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
-            otros_elementos = st.text_area("otros elementos")
+            col_otros1, col_otros2 = st.columns([2,2])
+            with col_otros1:
+                otros_elementos = st.text_area("otros elementos")
+            with col_otros2:
+                fotos_otros_elementos = st.file_uploader("Fotos otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
             revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
@@ -757,12 +801,14 @@ def main():
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
             observaciones_generales = st.text_area("observciones generales")
+
             lider_inspeccion = st.text_input("lider de inspeccion")
             disenador = st.selectbox(
                 "diseñador",
                 ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
             )
-            recibe = st.text_input("recibe")
+            encargado_logistica = st.text_input("encargado logistica")
+            cedula_logistica = st.text_input("cedula logistica")
             fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
             submitted = st.form_submit_button("Guardar acta de entrega")
@@ -771,43 +817,59 @@ def main():
 
             if submitted:
                 # Serializar todos los campos a string y manejar file_uploader
-                def serializa_fotos(valor):
+                def serializa_fotos(valor, nombre_base, folder_id):
+                    enlaces = []
                     if isinstance(valor, list):
-                        # Si es lista de archivos subidos, mostrar nombres separados por coma
-                        return ", ".join([f.name for f in valor]) if valor else ""
+                        for idx, f in enumerate(valor, start=1):
+                            try:
+                                import io
+                                file_stream = io.BytesIO(f.read())
+                                image_filename = f"{nombre_base}_{idx}.jpg"
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                enlaces.append(public_url)
+                            except Exception as e:
+                                enlaces.append(f"Error: {e}")
+                        return ", ".join(enlaces) if enlaces else ""
                     elif hasattr(valor, 'name'):
-                        return valor.name
+                        try:
+                            import io
+                            file_stream = io.BytesIO(valor.read())
+                            image_filename = f"{nombre_base}.jpg"
+                            public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                            return public_url
+                        except Exception as e:
+                            return f"Error: {e}"
                     else:
                         return str(valor) if valor is not None else ""
 
                 row = [
                     str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-                    str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores),
-                    str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores),
-                    str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas),
-                    str(voltaje_turbina), serializa_fotos(foto_turbina),
-                    str(voltaje_quemador), serializa_fotos(foto_quemador),
-                    str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio),
-                    str(voltaje_compresor), serializa_fotos(foto_compresor),
-                    str(cantidad_manometros), serializa_fotos(foto_manometros),
-                    str(cantidad_vacuometros), serializa_fotos(foto_vacuometros),
-                    str(cantidad_valvulas), serializa_fotos(foto_valvulas),
-                    str(cantidad_mangueras), serializa_fotos(foto_mangueras),
-                    str(cantidad_boquillas), serializa_fotos(foto_boquillas),
-                    str(cantidad_reguladores), serializa_fotos(foto_reguladores),
-                    str(tension_pinon1), serializa_fotos(foto_pinon1),
-                    str(tension_pinon2), serializa_fotos(foto_pinon2),
-                    str(tension_polea1), serializa_fotos(foto_polea1),
-                    str(tension_polea2), serializa_fotos(foto_polea2),
-                    str(cantidad_gabinete), serializa_fotos(foto_gabinete),
-                    str(cantidad_arrancadores), serializa_fotos(foto_arrancadores),
-                    str(cantidad_control_nivel), serializa_fotos(foto_control_nivel),
-                    str(cantidad_variadores), serializa_fotos(foto_variadores),
-                    str(cantidad_sensores), serializa_fotos(foto_sensores),
-                    str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes),
-                    str(otros_elementos),
+                    str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
+                    str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
+                    str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
+                    str(voltaje_turbina), serializa_fotos(foto_turbina, f"Turbina_{op}", folder_id),
+                    str(voltaje_quemador), serializa_fotos(foto_quemador, f"Quemador_{op}", folder_id),
+                    str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio, f"BombaVacio_{op}", folder_id),
+                    str(voltaje_compresor), serializa_fotos(foto_compresor, f"Compresor_{op}", folder_id),
+                    str(cantidad_manometros), serializa_fotos(foto_manometros, f"Manometros_{op}", folder_id),
+                    str(cantidad_vacuometros), serializa_fotos(foto_vacuometros, f"Vacuometros_{op}", folder_id),
+                    str(cantidad_valvulas), serializa_fotos(foto_valvulas, f"Valvulas_{op}", folder_id),
+                    str(cantidad_mangueras), serializa_fotos(foto_mangueras, f"Mangueras_{op}", folder_id),
+                    str(cantidad_boquillas), serializa_fotos(foto_boquillas, f"Boquillas_{op}", folder_id),
+                    str(cantidad_reguladores), serializa_fotos(foto_reguladores, f"Reguladores_{op}", folder_id),
+                    str(tension_pinon1), serializa_fotos(foto_pinon1, f"Pinon1_{op}", folder_id),
+                    str(tension_pinon2), serializa_fotos(foto_pinon2, f"Pinon2_{op}", folder_id),
+                    str(tension_polea1), serializa_fotos(foto_polea1, f"Polea1_{op}", folder_id),
+                    str(tension_polea2), serializa_fotos(foto_polea2, f"Polea2_{op}", folder_id),
+                    str(cantidad_gabinete), serializa_fotos(foto_gabinete, f"Gabinete_{op}", folder_id),
+                    str(cantidad_arrancadores), serializa_fotos(foto_arrancadores, f"Arrancadores_{op}", folder_id),
+                    str(cantidad_control_nivel), serializa_fotos(foto_control_nivel, f"ControlNivel_{op}", folder_id),
+                    str(cantidad_variadores), serializa_fotos(foto_variadores, f"Variadores_{op}", folder_id),
+                    str(cantidad_sensores), serializa_fotos(foto_sensores, f"Sensores_{op}", folder_id),
+                    str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes, f"TomaCorriente_{op}", folder_id),
+                    str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
                     str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
-                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(recibe), str(fecha_entrega)
+                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
                 ]
                 headers = [
                     "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
@@ -818,9 +880,9 @@ def main():
                     "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
                     "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
                     "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
-                    "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos",
+                    "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "fotos otros elementos",
                     "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
-                    "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "recibe", "fecha de entrega"
+                    "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "encargado logistica", "cedula logistica", "fecha de entrega"
                 ]
                 sheet = sheet_client.open(file_name).worksheet(worksheet_name)
                 if not sheet.get_all_values():
