@@ -418,10 +418,10 @@ def main():
             if key not in st.session_state:
                 st.session_state[key] = False
             color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff" if st.session_state[key] else "#fff"
+            txt_color = "#fff"
             btn_id = f"btn_{key}"
             btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
         # Leer parámetros de la URL para detectar clics
@@ -449,10 +449,10 @@ def main():
             if key not in st.session_state:
                 st.session_state[key] = False
             color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff" if st.session_state[key] else "#fff"
+            txt_color = "#fff"
             btn_id = f"btn_{key}"
             btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
         query_params = st.experimental_get_query_params()
@@ -474,10 +474,10 @@ def main():
             if key not in st.session_state:
                 st.session_state[key] = False
             color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff" if st.session_state[key] else "#fff"
+            txt_color = "#fff"
             btn_id = f"btn_{key}"
             btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
         query_params = st.experimental_get_query_params()
@@ -501,10 +501,10 @@ def main():
             if key not in st.session_state:
                 st.session_state[key] = False
             color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff" if st.session_state[key] else "#fff"
+            txt_color = "#fff"
             btn_id = f"btn_{key}"
             btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick="window.location.search += '&toggle_{key}=1';return false;">{label}</button>
+            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
         query_params = st.experimental_get_query_params()
