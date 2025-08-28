@@ -307,14 +307,68 @@ def main():
                     if valor and valor.strip().lower() not in ["", "0", "no"]:
                         articulos_presentes.append(art)
 
+
         # Estado dinámico para número de paquetes
         if 'num_paquetes' not in st.session_state:
             st.session_state['num_paquetes'] = 1
 
+        # Leer artículos de BDD SAG
+        try:
+            bdd_sag_sheet = sheet_client.open(file_name).worksheet("BDD SAG")
+            bdd_sag_rows = bdd_sag_sheet.get_all_values()
+            bdd_sag_headers = bdd_sag_rows[0] if bdd_sag_rows else []
+            # Buscar columnas relevantes: código, descripción, unidad
+            codigo_idx = descripcion_idx = unidad_idx = None
+            for idx, h in enumerate(bdd_sag_headers):
+                h_low = h.strip().lower()
+                if h_low in ["codigo", "código", "code"]:
+                    codigo_idx = idx
+                elif h_low in ["descripcion", "descripción", "artículo", "articulo", "nombre"]:
+                    descripcion_idx = idx
+                elif h_low in ["unidad", "unid.", "unid", "unit"]:
+                    unidad_idx = idx
+            bdd_sag_articulos = []
+            bdd_sag_articulos_fmt = []
+            for row in bdd_sag_rows[1:]:
+                if codigo_idx is not None and descripcion_idx is not None and unidad_idx is not None:
+                    if len(row) > max(codigo_idx, descripcion_idx, unidad_idx):
+                        code = row[codigo_idx].strip()
+                        desc = row[descripcion_idx].strip()
+                        unidad = row[unidad_idx].strip()
+                        label = f"{code}-{desc}-{unidad}"
+                        bdd_sag_articulos.append(label)
+                        bdd_sag_articulos_fmt.append((label, code, desc, unidad))
+                elif descripcion_idx is not None:
+                    # fallback: just description
+                    desc = row[descripcion_idx].strip()
+                    bdd_sag_articulos.append(desc)
+                    bdd_sag_articulos_fmt.append((desc, "", desc, ""))
+        except Exception:
+            bdd_sag_articulos = []
+            bdd_sag_articulos_fmt = []
+
         with st.form("dispatch_form"):
             import datetime
+            # Autocompletar nombre_proyecto y encargado_ingenieria si la OP existe
+            auto_nombre_proyecto = ""
+            auto_encargado_ingenieria = ""
+            if orden_pedido_val and orden_pedido_val in ordenes_existentes:
+                row = ordenes_existentes[orden_pedido_val]
+                headers = acta_rows[0]
+                # Buscar índice de cliente y diseñador
+                cliente_idx = None
+                disenador_idx = None
+                for idx, h in enumerate(headers):
+                    if h.strip().lower() == "cliente":
+                        cliente_idx = idx
+                    if h.strip().lower() == "diseñador":
+                        disenador_idx = idx
+                if cliente_idx is not None and len(row) > cliente_idx:
+                    auto_nombre_proyecto = row[cliente_idx]
+                if disenador_idx is not None and len(row) > disenador_idx:
+                    auto_encargado_ingenieria = row[disenador_idx]
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
-            nombre_proyecto = st.text_input("Nombre de proyecto")
+            nombre_proyecto = st.text_input("Nombre de proyecto", value=auto_nombre_proyecto)
             encargado_ensamblador = st.text_input("Encargado ensamblador")
             encargado_almacen = st.selectbox(
                 "Encargado almacén",
@@ -331,7 +385,8 @@ def main():
                     "Victor Manuel Baena",
                     "Diomer Arbelaez",
                     "Jose Perez"
-                ]
+                ],
+                index=["", "Alejandro Diaz", "Juan David Martinez", "Juan Andres Zapata", "Daniel Valbuena", "Victor Manuel Baena", "Diomer Arbelaez", "Jose Perez"].index(auto_encargado_ingenieria) if auto_encargado_ingenieria in ["", "Alejandro Diaz", "Juan David Martinez", "Juan Andres Zapata", "Daniel Valbuena", "Victor Manuel Baena", "Diomer Arbelaez", "Jose Perez"] else 0
             )
 
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
@@ -349,14 +404,47 @@ def main():
                     if desc_otros and desc_otros.strip():
                         st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
-            st.markdown("<hr>")
+            # Quitar el <hr> literal, solo dejar la línea de paquetes
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             paquetes = []
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
-                desc = st.text_area(f"Descripción paquete {i+1}", key=f"desc_paquete_{i+1}")
+                # Estado para artículos agregados manualmente
+                if f"articulos_paquete_{i+1}" not in st.session_state:
+                    st.session_state[f"articulos_paquete_{i+1}"] = []
+                # Botón para agregar artículo de BDD SAG
+                col_desc, col_btn = st.columns([4,1])
+                with col_desc:
+                    desc = st.text_area(
+                        f"Descripción paquete {i+1}",
+                        value=", ".join(st.session_state[f"articulos_paquete_{i+1}"]),
+                        key=f"desc_paquete_{i+1}"
+                    )
+                with col_btn:
+                    articulo_a_agregar = st.selectbox(
+                        f"Selecciona artículo BDD SAG", bdd_sag_articulos, key=f"select_bdd_{i+1}")
+                    if st.button(f"Agregar artículo {i+1}", key=f"btn_add_art_{i+1}"):
+                        if articulo_a_agregar and articulo_a_agregar not in st.session_state[f"articulos_paquete_{i+1}"]:
+                            st.session_state[f"articulos_paquete_{i+1}"].append(articulo_a_agregar)
+                            # Actualizar el text_area también
+                            st.session_state[f"desc_paquete_{i+1}"] = ", ".join(st.session_state[f"articulos_paquete_{i+1}"])
+                            st.experimental_rerun()
+                # Campo para dimensiones
+                dimensiones = st.text_input(f"DIMENSIONES / DIMENSIONS LXAXH (MT) paquete {i+1}", key=f"dim_paquete_{i+1}")
+                # Campo para peso neto
+                peso_neto = st.text_input(f"PESO NETO / NET WEIGHT (Kg) paquete {i+1}", key=f"peso_neto_paquete_{i+1}")
+                # Campo para peso bruto
+                peso_bruto = st.text_input(f"PESO BRUTO / GROSS WEIGHT (Kg) paquete {i+1}", key=f"peso_bruto_paquete_{i+1}")
+                # Fotos
                 fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
-                paquetes.append({"desc": desc, "fotos": fotos})
+                paquetes.append({
+                    "desc": desc,
+                    "fotos": fotos,
+                    "articulos_guacal": st.session_state[f"articulos_paquete_{i+1}"],
+                    "dimensiones": dimensiones,
+                    "peso_neto": peso_neto,
+                    "peso_bruto": peso_bruto
+                })
             if st.form_submit_button("Agregar otro paquete"):
                 st.session_state['num_paquetes'] += 1
                 st.experimental_rerun()
@@ -368,40 +456,107 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
-                enviados = [art for art, v in articulos_seleccion.items() if v]
-                no_enviados = [art for art, v in articulos_seleccion.items() if not v]
-                row = [
-                    str(fecha),
-                    nombre_proyecto,
-                    orden_pedido_val,
-                    encargado_ensamblador,
-                    encargado_almacen,
-                    encargado_ingenieria,
-                    ", ".join(enviados),
-                    ", ".join(no_enviados)
+                # Solo actualizar los campos especificados en la misma línea de la OP
+                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                all_rows = sheet.get_all_values()
+                headers = all_rows[0] if all_rows else []
+                op_idx = None
+                if headers:
+                    for idx, h in enumerate(headers):
+                        if h.strip().lower() == "op":
+                            op_idx = idx
+                            break
+                row_to_update = None
+                row_number = None
+                if op_idx is not None:
+                    for i, row_exist in enumerate(all_rows[1:], start=2):
+                        if len(row_exist) > op_idx and row_exist[op_idx].strip() == str(orden_pedido_val).strip():
+                            row_to_update = row_exist
+                            row_number = i
+                            break
+                # Campos a actualizar (en el orden solicitado por el usuario)
+                campos_actualizar = [
+                    "fecha", "cantidad motores", "voltaje motores", "fotos motores", "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas", "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio", "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros", "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas", "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2", "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete", "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad", "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria", "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "Encargado logistica", "Cedula logistica", "fecha de entrega"
                 ]
-                for idx, paquete in enumerate(paquetes, start=1):
-                    row.append(paquete["desc"])
-                    enlaces = []
-                    if paquete["fotos"]:
-                        for n, foto in enumerate(paquete["fotos"], start=1):
-                            try:
-                                image_filename = f"Paquete_{orden_pedido_val}_{idx}_{n}.jpg"
-                                file_stream = io.BytesIO(foto.read())
-                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                                enlaces.append(public_url)
-                                st.success(f"Foto {n} de paquete {idx} subida correctamente")
-                            except Exception as upload_error:
-                                st.error(f"Error al subir la foto {n} de paquete {idx}: {str(upload_error)}")
-                        if enlaces:
-                            row.append(", ".join(enlaces))
-                        else:
-                            row.append("Error al subir foto")
-                    else:
-                        row.append("Sin foto")
-                write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
-                st.success("Despacho guardado correctamente.")
-                st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+                # Preparar los valores a actualizar (usar los mismos nombres de variables que en el acta de entrega)
+                # NOTA: Aquí se debe mapear cada campo a la variable correspondiente del formulario
+                valores_actualizar = {
+                    "fecha": str(fecha),
+                    "cantidad motores": str(st.session_state.get('cantidad_motores', '')),
+                    "voltaje motores": str(st.session_state.get('voltaje_motores', '')),
+                    "fotos motores": '',
+                    "cantidad reductores": str(st.session_state.get('cantidad_reductores', '')),
+                    "voltaje reductores": str(st.session_state.get('voltaje_reductores', '')),
+                    "fotos reductores": '',
+                    "cantidad bombas": str(st.session_state.get('cantidad_bombas', '')),
+                    "voltaje bombas": str(st.session_state.get('voltaje_bombas', '')),
+                    "fotos bombas": '',
+                    "voltaje turbina": str(st.session_state.get('voltaje_turbina', '')),
+                    "foto turbina": '',
+                    "voltaje quemador": str(st.session_state.get('voltaje_quemador', '')),
+                    "foto quemador": '',
+                    "voltaje bomba de vacio": str(st.session_state.get('voltaje_bomba_vacio', '')),
+                    "foto bomba de vacio": '',
+                    "voltaje compresor": str(st.session_state.get('voltaje_compresor', '')),
+                    "foto compresor": '',
+                    "cantidad manometros": str(st.session_state.get('cantidad_manometros', '')),
+                    "foto manometros": '',
+                    "cantidad vacuometros": str(st.session_state.get('cantidad_vacuometros', '')),
+                    "foto vacuometros": '',
+                    "cantidad valvulas": str(st.session_state.get('cantidad_valvulas', '')),
+                    "foto valvulas": '',
+                    "cantidad mangueras": str(st.session_state.get('cantidad_mangueras', '')),
+                    "foto mangueras": '',
+                    "cantidad boquillas": str(st.session_state.get('cantidad_boquillas', '')),
+                    "foto boquillas": '',
+                    "cantidad reguladores aire/gas": str(st.session_state.get('cantidad_reguladores', '')),
+                    "foto reguladores": '',
+                    "tension piñon 1": str(st.session_state.get('tension_pinon1', '')),
+                    "foto piñon 1": '',
+                    "tension piñon 2": str(st.session_state.get('tension_pinon2', '')),
+                    "foto piñon 2": '',
+                    "tension polea 1": str(st.session_state.get('tension_polea1', '')),
+                    "foto polea 1": '',
+                    "tension polea 2": str(st.session_state.get('tension_polea2', '')),
+                    "foto polea 2": '',
+                    "cantidad gabinete electrico": str(st.session_state.get('cantidad_gabinete', '')),
+                    "foto gabinete": '',
+                    "cantidad arrancadores": str(st.session_state.get('cantidad_arrancadores', '')),
+                    "foto arrancadores": '',
+                    "cantidad control de nivel": str(st.session_state.get('cantidad_control_nivel', '')),
+                    "foto control de nivel": '',
+                    "cantidad variadores de velociad": str(st.session_state.get('cantidad_variadores', '')),
+                    "foto variadores de velocidad": '',
+                    "cantidad sensores de temperatura": str(st.session_state.get('cantidad_sensores', '')),
+                    "foto sensores de temperatura": '',
+                    "cantidad toma corriente": str(st.session_state.get('cantidad_toma_corriente', '')),
+                    "foto toma corrientes": '',
+                    "otros elementos": str(st.session_state.get('otros_elementos', '')),
+                    "revision de soldadura": str(st.session_state.get('revision_soldadura', '')),
+                    "revision de sentidos de giro": str(st.session_state.get('revision_sentidos', '')),
+                    "manual de funcionamiento": str(st.session_state.get('manual_funcionamiento', '')),
+                    "revision de filos y acabados": str(st.session_state.get('revision_filos', '')),
+                    "revision de tratamientos": str(st.session_state.get('revision_tratamientos', '')),
+                    "revision de tornilleria": str(st.session_state.get('revision_tornilleria', '')),
+                    "revision de ruidos": str(st.session_state.get('revision_ruidos', '')),
+                    "ensayo equipo": str(st.session_state.get('ensayo_equipo', '')),
+                    "observciones generales": str(st.session_state.get('observaciones_generales', '')),
+                    "lider de inspeccion": str(st.session_state.get('lider_inspeccion', '')),
+                    "diseñador": str(st.session_state.get('disenador', '')),
+                    "Encargado logistica": str(st.session_state.get('encargado_logistica', '')),
+                    "Cedula logistica": str(st.session_state.get('cedula_logistica', '')),
+                    "fecha de entrega": str(st.session_state.get('fecha_entrega', ''))
+                }
+                # Si la OP existe, actualizar solo los campos indicados
+                if row_to_update and row_number:
+                    for campo in campos_actualizar:
+                        if campo in headers:
+                            idx_campo = headers.index(campo)
+                            valor = valores_actualizar.get(campo, '')
+                            sheet.update_cell(row_number, idx_campo+1, valor)
+                    st.success("Información de la OP actualizada correctamente en la hoja de empaque.")
+                else:
+                    st.warning("No se encontró la OP en la hoja de empaque para actualizar.")
 
 
     elif opcion_menu == "ACTA DE ENTREGA":
