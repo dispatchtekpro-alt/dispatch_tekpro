@@ -198,7 +198,7 @@ def main():
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
 
-        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA usando encabezados estándar
+        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA, solo mostrar las que estén completas
         try:
             acta_sheet = sheet_client.open(file_name).worksheet("Acta de entrega")
             acta_rows = acta_sheet.get_all_values()
@@ -224,11 +224,27 @@ def main():
                     op_idx = idx
                     break
             ordenes_existentes = {}
+            ordenes_list = []
+            # Definir los campos relevantes para considerar una OP como completa (igual que en ACTA DE ENTREGA)
+            campos_relevantes = [
+                "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
+            ]
             for row in acta_rows[1:]:
                 if op_idx is not None and len(row) > op_idx:
                     orden = row[op_idx]
-                    ordenes_existentes[orden] = row
-            ordenes_list = list(ordenes_existentes.keys())
+                    # Verificar si la OP está completa
+                    completa = False
+                    for campo in campos_relevantes:
+                        if campo in headers:
+                            idx_campo = headers.index(campo)
+                            if idx_campo < len(row):
+                                valor = row[idx_campo]
+                                if valor and str(valor).strip() not in ["", "0", "no", "No"]:
+                                    completa = True
+                                    break
+                    if completa:
+                        ordenes_existentes[orden] = row
+                        ordenes_list.append(orden)
         except Exception:
             ordenes_existentes = {}
             ordenes_list = []
@@ -417,7 +433,9 @@ def main():
         for key, label in botones_articulos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
+            # Usar un key diferente para el checkbox para evitar conflicto con session_state
+            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
+            st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general accesorios")
@@ -432,7 +450,8 @@ def main():
         for key, label in botones_accesorios:
             if key not in st.session_state:
                 st.session_state[key] = False
-            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
+            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
+            st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos mecánicos")
@@ -445,7 +464,8 @@ def main():
         for key, label in botones_mecanicos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
+            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
+            st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos eléctricos")
@@ -460,7 +480,8 @@ def main():
         for key, label in botones_electricos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
+            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
+            st.session_state[key] = checkbox_value
 
         # --- Formulario principal ---
 
