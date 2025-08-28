@@ -431,11 +431,10 @@ def main():
             ("mostrar_compresor", "¿Hay compresor?")
         ]
         for key, label in botones_articulos:
-            if key not in st.session_state:
-                st.session_state[key] = False
-            # Usar un key diferente para el checkbox para evitar conflicto con session_state
-            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
-            st.session_state[key] = checkbox_value
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general accesorios")
@@ -448,10 +447,10 @@ def main():
             ("mostrar_reguladores", "¿Hay reguladores aire/gas?")
         ]
         for key, label in botones_accesorios:
-            if key not in st.session_state:
-                st.session_state[key] = False
-            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
-            st.session_state[key] = checkbox_value
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos mecánicos")
@@ -462,10 +461,10 @@ def main():
             ("mostrar_polea2", "¿Hay polea 2?")
         ]
         for key, label in botones_mecanicos:
-            if key not in st.session_state:
-                st.session_state[key] = False
-            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
-            st.session_state[key] = checkbox_value
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos eléctricos")
@@ -478,10 +477,10 @@ def main():
             ("mostrar_toma_corriente", "¿Hay toma corriente?")
         ]
         for key, label in botones_electricos:
-            if key not in st.session_state:
-                st.session_state[key] = False
-            checkbox_value = st.checkbox(label, value=st.session_state[key], key=f"cb_{key}")
-            st.session_state[key] = checkbox_value
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
 
         # --- Formulario principal ---
 
