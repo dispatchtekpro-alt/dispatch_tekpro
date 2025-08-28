@@ -402,7 +402,7 @@ def main():
         worksheet_name = "Acta de entrega"
 
 
-        # --- Botones personalizados con cambio de color ---
+        # --- Botones para mostrar/ocultar secciones de artículos (comportamiento clásico) ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos electromecánicos")
         botones_articulos = [
@@ -417,23 +417,7 @@ def main():
         for key, label in botones_articulos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff"
-            btn_id = f"btn_{key}"
-            btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
-            """
-            st.markdown(btn_html, unsafe_allow_html=True)
-        # Leer parámetros de la URL para detectar clics
-        import streamlit as stlib
-        import urllib.parse
-        query_params = st.query_params
-        for key, _ in botones_articulos:
-            param = f"toggle_{key}"
-            if param in query_params:
-                st.session_state[key] = not st.session_state[key]
-                # Limpiar el parámetro de la URL
-                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
+            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general accesorios")
@@ -448,19 +432,7 @@ def main():
         for key, label in botones_accesorios:
             if key not in st.session_state:
                 st.session_state[key] = False
-            color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff"
-            btn_id = f"btn_{key}"
-            btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
-            """
-            st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.query_params
-        for key, _ in botones_accesorios:
-            param = f"toggle_{key}"
-            if param in query_params:
-                st.session_state[key] = not st.session_state[key]
-                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
+            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos mecánicos")
@@ -473,19 +445,7 @@ def main():
         for key, label in botones_mecanicos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff"
-            btn_id = f"btn_{key}"
-            btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
-            """
-            st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.query_params
-        for key, _ in botones_mecanicos:
-            param = f"toggle_{key}"
-            if param in query_params:
-                st.session_state[key] = not st.session_state[key]
-                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
+            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
 
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos eléctricos")
@@ -500,19 +460,7 @@ def main():
         for key, label in botones_electricos:
             if key not in st.session_state:
                 st.session_state[key] = False
-            color = "#a259d9" if st.session_state[key] else "#1db6b6"
-            txt_color = "#fff"
-            btn_id = f"btn_{key}"
-            btn_html = f"""
-            <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
-            """
-            st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.query_params
-        for key, _ in botones_electricos:
-            param = f"toggle_{key}"
-            if param in query_params:
-                st.session_state[key] = not st.session_state[key]
-                st.experimental_set_query_params(**{k: v for k, v in query_params.items() if k != param})
+            st.session_state[key] = st.checkbox(label, value=st.session_state[key], key=key)
 
         # --- Formulario principal ---
 
@@ -571,7 +519,7 @@ def main():
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Verificar estado de acta de entrega para la OP
+        # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
         acta_status = "pendiente"
         if op:
             try:
@@ -584,10 +532,25 @@ def main():
                         if h.strip().lower() == "op":
                             op_idx = idx
                             break
+                    # Buscar la fila de la OP
                     if op_idx is not None:
                         for row in all_rows[1:]:
                             if len(row) > op_idx and row[op_idx].strip() == op.strip():
-                                acta_status = "completa"
+                                # Considerar campos relevantes para determinar si está completa
+                                campos_relevantes = [
+                                    "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
+                                ]
+                                completa = False
+                                for campo in campos_relevantes:
+                                    if campo in headers:
+                                        idx_campo = headers.index(campo)
+                                        if idx_campo < len(row):
+                                            valor = row[idx_campo]
+                                            if valor and str(valor).strip() not in ["", "0", "no", "No"]:
+                                                completa = True
+                                                break
+                                if completa:
+                                    acta_status = "completa"
                                 break
             except Exception:
                 pass
