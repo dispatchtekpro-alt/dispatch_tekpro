@@ -427,7 +427,7 @@ def main():
         # Leer parámetros de la URL para detectar clics
         import streamlit as stlib
         import urllib.parse
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         for key, _ in botones_articulos:
             param = f"toggle_{key}"
             if param in query_params:
@@ -455,7 +455,7 @@ def main():
             <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         for key, _ in botones_accesorios:
             param = f"toggle_{key}"
             if param in query_params:
@@ -480,7 +480,7 @@ def main():
             <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         for key, _ in botones_mecanicos:
             param = f"toggle_{key}"
             if param in query_params:
@@ -507,7 +507,7 @@ def main():
             <button id='{btn_id}' style='background:{color};color:{txt_color};border:none;padding:0.5em 1.5em;margin-bottom:0.5em;border-radius:8px;font-family:Montserrat,Arial,sans-serif;font-weight:600;cursor:pointer;' onclick=\"window.location.search += '&toggle_{key}=1';return false;\">{label}</button>
             """
             st.markdown(btn_html, unsafe_allow_html=True)
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         for key, _ in botones_electricos:
             param = f"toggle_{key}"
             if param in query_params:
@@ -519,12 +519,56 @@ def main():
         # --- Estado de acta de entrega (completa/pendiente) ---
         import datetime
         st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
-        cliente = st.text_input("cliente")
-        op = st.text_input("op")
-        equipo = st.text_input("equipo")
-        item = st.text_input("item")
-        cantidad = st.text_input("cantidad")
-        fecha = st.date_input("fecha", value=datetime.date.today(), key="fecha_acta")
+        # --- Autocompletar datos generales si la OP existe en el sheet, usando selectbox ---
+        auto_cliente = ""
+        auto_equipo = ""
+        auto_item = ""
+        auto_cantidad = ""
+        auto_fecha = datetime.date.today()
+        op_options = []
+        op_to_row = {}
+        try:
+            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+            all_rows = sheet.get_all_values()
+            if all_rows:
+                headers = [h.strip().lower() for h in all_rows[0]]
+                op_idx = headers.index("op") if "op" in headers else None
+                for row in all_rows[1:]:
+                    if op_idx is not None and len(row) > op_idx:
+                        op_val = row[op_idx].strip()
+                        if op_val:
+                            op_options.append(op_val)
+                            op_to_row[op_val] = row
+        except Exception:
+            pass
+        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
+        if op_selected != "(Nueva OP)":
+            row = op_to_row.get(op_selected, [])
+            try:
+                headers = [h.strip().lower() for h in all_rows[0]]
+                cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                item_idx = headers.index("item") if "item" in headers else None
+                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                fecha_idx = headers.index("fecha") if "fecha" in headers else None
+                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                try:
+                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                except Exception:
+                    auto_fecha = datetime.date.today()
+            except Exception:
+                pass
+        else:
+            op_selected = ""
+        cliente = st.text_input("cliente", value=auto_cliente)
+        op = op_selected
+        equipo = st.text_input("equipo", value=auto_equipo)
+        item = st.text_input("item", value=auto_item)
+        cantidad = st.text_input("cantidad", value=auto_cantidad)
+        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
         st.markdown("</div>", unsafe_allow_html=True)
 
         # Verificar estado de acta de entrega para la OP
