@@ -409,27 +409,25 @@ def main():
             paquetes = []
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
-                # Multiselección de artículos de BDD SAG para la descripción
                 articulos_guacal = st.multiselect(
                     f"Agregar artículos de BDD SAG al paquete {i+1}",
                     options=bdd_sag_articulos,
                     key=f"bddsag_paquete_{i+1}"
                 )
-                # Formato: (ARTICULO1,ARTICULO2,...)
                 desc_bdd = ""
                 if articulos_guacal:
                     desc_bdd = "(" + ",".join(articulos_guacal) + ")"
-                desc = st.text_area(
-                    f"Descripción paquete {i+1}",
-                    value=desc_bdd,
-                    key=f"desc_paquete_{i+1}"
+                desc_adicional = st.text_area(
+                    f"Descripción adicional paquete {i+1}",
+                    key=f"desc_adic_paquete_{i+1}"
                 )
                 dimensiones = st.text_input(f"DIMENSIONES / DIMENSIONS LXAXH (MT) paquete {i+1}", key=f"dim_paquete_{i+1}")
                 peso_neto = st.text_input(f"PESO NETO / NET WEIGHT (Kg) paquete {i+1}", key=f"peso_neto_paquete_{i+1}")
                 peso_bruto = st.text_input(f"PESO BRUTO / GROSS WEIGHT (Kg) paquete {i+1}", key=f"peso_bruto_paquete_{i+1}")
                 fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 paquetes.append({
-                    "desc": desc,
+                    "desc_bdd": desc_bdd,
+                    "desc_adicional": desc_adicional,
                     "fotos": fotos,
                     "articulos_guacal": articulos_guacal,
                     "dimensiones": dimensiones,
@@ -447,107 +445,75 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
-                # Solo actualizar los campos especificados en la misma línea de la OP
+                # Estructura recomendada de encabezados:
+                # OP, Fecha, Nombre de proyecto, Encargado ensamblador, Encargado almacén, Encargado ingeniería y diseño, Observaciones adicionales,
+                # Artículos enviados, Artículos no enviados,
+                # Descripción Guacal 1, Descripción adicional Guacal 1, Dimensiones Guacal 1, Peso Neto Guacal 1, Peso Bruto Guacal 1, Fotos Guacal 1, ...
                 sheet = sheet_client.open(file_name).worksheet(worksheet_name)
                 all_rows = sheet.get_all_values()
                 headers = all_rows[0] if all_rows else []
-                op_idx = None
-                if headers:
-                    for idx, h in enumerate(headers):
-                        if h.strip().lower() == "op":
-                            op_idx = idx
-                            break
-                row_to_update = None
-                row_number = None
-                if op_idx is not None:
-                    for i, row_exist in enumerate(all_rows[1:], start=2):
-                        if len(row_exist) > op_idx and row_exist[op_idx].strip() == str(orden_pedido_val).strip():
-                            row_to_update = row_exist
-                            row_number = i
-                            break
-                # Campos a actualizar (en el orden solicitado por el usuario)
-                campos_actualizar = [
-                    "fecha", "cantidad motores", "voltaje motores", "fotos motores", "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas", "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio", "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros", "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas", "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2", "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete", "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad", "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria", "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "Encargado logistica", "Cedula logistica", "fecha de entrega"
+                # Determinar artículos enviados/no enviados
+                articulos_enviados = [art for art, checked in articulos_seleccion.items() if checked]
+                articulos_no_enviados = [art for art, checked in articulos_seleccion.items() if not checked]
+                # Construir encabezados dinámicamente según la cantidad de paquetes
+                base_headers = [
+                    "OP", "Fecha", "Nombre de proyecto", "Encargado ensamblador", "Encargado almacén", "Encargado ingeniería y diseño", "Observaciones adicionales",
+                    "Artículos enviados", "Artículos no enviados"
                 ]
-                # Preparar los valores a actualizar (usar los mismos nombres de variables que en el acta de entrega)
-                # NOTA: Aquí se debe mapear cada campo a la variable correspondiente del formulario
-                valores_actualizar = {
-                    "fecha": str(fecha),
-                    "cantidad motores": str(st.session_state.get('cantidad_motores', '')),
-                    "voltaje motores": str(st.session_state.get('voltaje_motores', '')),
-                    "fotos motores": '',
-                    "cantidad reductores": str(st.session_state.get('cantidad_reductores', '')),
-                    "voltaje reductores": str(st.session_state.get('voltaje_reductores', '')),
-                    "fotos reductores": '',
-                    "cantidad bombas": str(st.session_state.get('cantidad_bombas', '')),
-                    "voltaje bombas": str(st.session_state.get('voltaje_bombas', '')),
-                    "fotos bombas": '',
-                    "voltaje turbina": str(st.session_state.get('voltaje_turbina', '')),
-                    "foto turbina": '',
-                    "voltaje quemador": str(st.session_state.get('voltaje_quemador', '')),
-                    "foto quemador": '',
-                    "voltaje bomba de vacio": str(st.session_state.get('voltaje_bomba_vacio', '')),
-                    "foto bomba de vacio": '',
-                    "voltaje compresor": str(st.session_state.get('voltaje_compresor', '')),
-                    "foto compresor": '',
-                    "cantidad manometros": str(st.session_state.get('cantidad_manometros', '')),
-                    "foto manometros": '',
-                    "cantidad vacuometros": str(st.session_state.get('cantidad_vacuometros', '')),
-                    "foto vacuometros": '',
-                    "cantidad valvulas": str(st.session_state.get('cantidad_valvulas', '')),
-                    "foto valvulas": '',
-                    "cantidad mangueras": str(st.session_state.get('cantidad_mangueras', '')),
-                    "foto mangueras": '',
-                    "cantidad boquillas": str(st.session_state.get('cantidad_boquillas', '')),
-                    "foto boquillas": '',
-                    "cantidad reguladores aire/gas": str(st.session_state.get('cantidad_reguladores', '')),
-                    "foto reguladores": '',
-                    "tension piñon 1": str(st.session_state.get('tension_pinon1', '')),
-                    "foto piñon 1": '',
-                    "tension piñon 2": str(st.session_state.get('tension_pinon2', '')),
-                    "foto piñon 2": '',
-                    "tension polea 1": str(st.session_state.get('tension_polea1', '')),
-                    "foto polea 1": '',
-                    "tension polea 2": str(st.session_state.get('tension_polea2', '')),
-                    "foto polea 2": '',
-                    "cantidad gabinete electrico": str(st.session_state.get('cantidad_gabinete', '')),
-                    "foto gabinete": '',
-                    "cantidad arrancadores": str(st.session_state.get('cantidad_arrancadores', '')),
-                    "foto arrancadores": '',
-                    "cantidad control de nivel": str(st.session_state.get('cantidad_control_nivel', '')),
-                    "foto control de nivel": '',
-                    "cantidad variadores de velociad": str(st.session_state.get('cantidad_variadores', '')),
-                    "foto variadores de velocidad": '',
-                    "cantidad sensores de temperatura": str(st.session_state.get('cantidad_sensores', '')),
-                    "foto sensores de temperatura": '',
-                    "cantidad toma corriente": str(st.session_state.get('cantidad_toma_corriente', '')),
-                    "foto toma corrientes": '',
-                    "otros elementos": str(st.session_state.get('otros_elementos', '')),
-                    "revision de soldadura": str(st.session_state.get('revision_soldadura', '')),
-                    "revision de sentidos de giro": str(st.session_state.get('revision_sentidos', '')),
-                    "manual de funcionamiento": str(st.session_state.get('manual_funcionamiento', '')),
-                    "revision de filos y acabados": str(st.session_state.get('revision_filos', '')),
-                    "revision de tratamientos": str(st.session_state.get('revision_tratamientos', '')),
-                    "revision de tornilleria": str(st.session_state.get('revision_tornilleria', '')),
-                    "revision de ruidos": str(st.session_state.get('revision_ruidos', '')),
-                    "ensayo equipo": str(st.session_state.get('ensayo_equipo', '')),
-                    "observciones generales": str(st.session_state.get('observaciones_generales', '')),
-                    "lider de inspeccion": str(st.session_state.get('lider_inspeccion', '')),
-                    "diseñador": str(st.session_state.get('disenador', '')),
-                    "Encargado logistica": str(st.session_state.get('encargado_logistica', '')),
-                    "Cedula logistica": str(st.session_state.get('cedula_logistica', '')),
-                    "fecha de entrega": str(st.session_state.get('fecha_entrega', ''))
-                }
-                # Si la OP existe, actualizar solo los campos indicados
-                if row_to_update and row_number:
-                    for campo in campos_actualizar:
-                        if campo in headers:
-                            idx_campo = headers.index(campo)
-                            valor = valores_actualizar.get(campo, '')
-                            sheet.update_cell(row_number, idx_campo+1, valor)
-                    st.success("Información de la OP actualizada correctamente en la hoja de empaque.")
-                else:
-                    st.warning("No se encontró la OP en la hoja de empaque para actualizar.")
+                paquete_headers = []
+                for i in range(st.session_state['num_paquetes']):
+                    n = i+1
+                    paquete_headers.extend([
+                        f"Descripción Guacal {n}",
+                        f"Descripción adicional Guacal {n}",
+                        f"Dimensiones Guacal {n}",
+                        f"Peso Neto Guacal {n}",
+                        f"Peso Bruto Guacal {n}",
+                        f"Fotos Guacal {n}"
+                    ])
+                full_headers = base_headers + paquete_headers
+                # Si los headers actuales no coinciden, actualizarlos
+                if headers != full_headers:
+                    if not all_rows:
+                        sheet.append_row(full_headers)
+                    else:
+                        sheet.resize(rows=1)
+                        sheet.update('A1', [full_headers])
+                # Preparar la fila a guardar
+                row_data = [
+                    str(orden_pedido_val),
+                    str(fecha),
+                    str(nombre_proyecto),
+                    str(encargado_ensamblador),
+                    str(encargado_almacen),
+                    str(encargado_ingenieria),
+                    str(observaciones),
+                    ", ".join(articulos_enviados),
+                    ", ".join(articulos_no_enviados)
+                ]
+                for i, paquete in enumerate(paquetes):
+                    # Subir fotos a Drive y obtener links
+                    fotos_links = []
+                    if paquete["fotos"]:
+                        for idx, f in enumerate(paquete["fotos"], start=1):
+                            try:
+                                import io
+                                file_stream = io.BytesIO(f.read())
+                                image_filename = f"Guacal{i+1}_{orden_pedido_val}_{idx}.jpg"
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                fotos_links.append(public_url)
+                            except Exception as e:
+                                fotos_links.append(f"Error: {e}")
+                    row_data.extend([
+                        paquete["desc_bdd"],
+                        paquete["desc_adicional"],
+                        paquete["dimensiones"],
+                        paquete["peso_neto"],
+                        paquete["peso_bruto"],
+                        ", ".join(fotos_links)
+                    ])
+                sheet.append_row(row_data)
+                st.success("Información de la lista de empaque guardada correctamente en Google Sheets.")
 
 
     elif opcion_menu == "ACTA DE ENTREGA":
