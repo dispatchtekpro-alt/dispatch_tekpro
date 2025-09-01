@@ -195,6 +195,7 @@ def main():
         "Selecciona una opción:",
         options=[
             "ACTA DE ENTREGA",
+            "LISTA DE EMPAQUE",
             "OTRA OPCIÓN"
         ]
     )
@@ -213,6 +214,7 @@ def main():
         auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
         auto_fecha = datetime.date.today()
         op_options, op_to_row = [], {}
+        op_selected = ""
         try:
             sheet = sheet_client.open(file_name).worksheet(worksheet_name)
             all_rows = sheet.get_all_values()
@@ -224,7 +226,10 @@ def main():
                         op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
         except Exception:
             pass
-            op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_main")
+        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_main")
+    elif opcion_menu == "LISTA DE EMPAQUE":
+        st.markdown("<h2 style='color:#1db6b6;'>LISTA DE EMPAQUE</h2>", unsafe_allow_html=True)
+        st.info("Aquí irá el formulario de la lista de empaque. (Implementación pendiente)")
         if op_selected != "(Nueva OP)":
             r = op_to_row.get(op_selected, [])
             try:
