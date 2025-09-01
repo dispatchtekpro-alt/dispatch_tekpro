@@ -242,12 +242,12 @@ def main():
                         auto_fecha = datetime.date.today()
                 else:
                     auto_fecha = datetime.date.today()
-        cliente = st.text_input("cliente", value=auto_cliente)
+        cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
-        equipo = st.text_input("equipo", value=auto_equipo)
-        item = st.text_input("item", value=auto_item)
-        cantidad = st.text_input("cantidad", value=auto_cantidad)
-        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
+        equipo = st.text_input("equipo", value=auto_equipo, key="equipo_input")
+        item = st.text_input("item", value=auto_item, key="item_input")
+        cantidad = st.text_input("cantidad", value=auto_cantidad, key="cantidad_input")
+        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta_input")
         st.markdown("</div>", unsafe_allow_html=True)
 
         # 3. Checkbox de listas de chequeo (debajo de los datos generales)
