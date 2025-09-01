@@ -224,7 +224,7 @@ def main():
                         op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
         except Exception:
             pass
-        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
+            op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_main")
         if op_selected != "(Nueva OP)":
             r = op_to_row.get(op_selected, [])
             try:
@@ -581,39 +581,39 @@ def main():
                             op_to_row[op_val] = row
         except Exception:
             pass
-        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
-        if op_selected != "(Nueva OP)":
-            row = op_to_row.get(op_selected, [])
+    op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_estado")
+    if op_selected != "(Nueva OP)":
+        row = op_to_row.get(op_selected, [])
+        try:
+            headers = [h.strip().lower() for h in all_rows[0]]
+            cliente_idx = headers.index("cliente") if "cliente" in headers else None
+            equipo_idx = headers.index("equipo") if "equipo" in headers else None
+            item_idx = headers.index("item") if "item" in headers else None
+            cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+            fecha_idx = headers.index("fecha") if "fecha" in headers else None
+            auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+            auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+            auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+            auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
             try:
-                headers = [h.strip().lower() for h in all_rows[0]]
-                cliente_idx = headers.index("cliente") if "cliente" in headers else None
-                equipo_idx = headers.index("equipo") if "equipo" in headers else None
-                item_idx = headers.index("item") if "item" in headers else None
-                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
-                fecha_idx = headers.index("fecha") if "fecha" in headers else None
-                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
-                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
-                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
-                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
-                try:
-                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
-                except Exception:
-                    auto_fecha = datetime.date.today()
+                auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
             except Exception:
-                pass
-        else:
-            op_selected = ""
-        cliente = st.text_input("cliente", value=auto_cliente)
-        op = op_selected
-        equipo = st.text_input("equipo", value=auto_equipo)
-        item = st.text_input("item", value=auto_item)
-        cantidad = st.text_input("cantidad", value=auto_cantidad)
-        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
-        st.markdown("</div>", unsafe_allow_html=True)
+                auto_fecha = datetime.date.today()
+        except Exception:
+            pass
+    else:
+        op_selected = ""
+    cliente = st.text_input("cliente", value=auto_cliente)
+    op = op_selected
+    equipo = st.text_input("equipo", value=auto_equipo)
+    item = st.text_input("item", value=auto_item)
+    cantidad = st.text_input("cantidad", value=auto_cantidad)
+    fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
+    st.markdown("</div>", unsafe_allow_html=True)
 
         # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
-        acta_status = "pendiente"
-        if op:
+    acta_status = "pendiente"
+    if op:
             try:
                 sheet = sheet_client.open(file_name).worksheet(worksheet_name)
                 all_rows = sheet.get_all_values()
@@ -646,20 +646,20 @@ def main():
                                 break
             except Exception:
                 pass
-        if acta_status == "completa":
+    if acta_status == "completa":
             st.markdown("""
                 <div style='background:#e6f7e6;border:2px solid #1db6b6;color:#1db6b6;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
                 ✅ Acta de entrega completa
                 </div>
             """, unsafe_allow_html=True)
-        else:
+    else:
             st.markdown("""
                 <div style='background:#fff3e6;border:2px solid #f7b267;color:#f7b267;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
                 ⏳ Acta de entrega pendiente
                 </div>
             """, unsafe_allow_html=True)
 
-        with st.form("acta_entrega_form"):
+    with st.form("acta_entrega_form"):
 
             # --- Secciones visuales para cada artículo ---
             def seccion_articulo(nombre, mostrar, campos):
