@@ -191,48 +191,32 @@ def main():
         st.image("https://drive.google.com/thumbnail?id=19MGYsVVEtnwv8SpdnRw4TainlJBsQLSE", width=150)
     st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
 
-    opcion_menu = st.radio(
-        "Selecciona una opción:",
-        options=[
-            "ACTA DE ENTREGA",
-            "LISTA DE EMPAQUE",
-            "OTRA OPCIÓN"
-        ]
-    )
-    if opcion_menu == "ACTA DE ENTREGA":
-        # 1. Título
-        st.markdown("<h2 style='color:#1db6b6;'>ACTA DE ENTREGA</h2>", unsafe_allow_html=True)
-
-        # 2. Datos generales
-        creds = get_service_account_creds()
-        sheet_client = gspread.authorize(creds)
-        folder_id = st.secrets.drive_config.FOLDER_ID
-        file_name = st.secrets.drive_config.FILE_NAME
-        worksheet_name = "Acta de entrega"
-        import datetime
-        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
-        auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
-        auto_fecha = datetime.date.today()
-        op_options, op_to_row = [], {}
-        op_selected = ""
-        try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
-            if all_rows:
-                headers_lower = [h.strip().lower() for h in all_rows[0]]
-                op_idx = headers_lower.index("op") if "op" in headers_lower else None
-                for r in all_rows[1:]:
-                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                        op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
-        except Exception:
-            pass
+    # --- DATOS GENERALES Y OP ---
+    creds = get_service_account_creds()
+    sheet_client = gspread.authorize(creds)
+    folder_id = st.secrets.drive_config.FOLDER_ID
+    file_name = st.secrets.drive_config.FILE_NAME
+    worksheet_name = "Acta de entrega"
+    import datetime
+    st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
+    auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
+    auto_fecha = datetime.date.today()
+    op_options, op_to_row = [], {}
+    try:
+        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+        all_rows = sheet.get_all_values()
+        if all_rows:
+            headers_lower = [h.strip().lower() for h in all_rows[0]]
+            op_idx = headers_lower.index("op") if "op" in headers_lower else None
+            for r in all_rows[1:]:
+                if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
+                    op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
+    except Exception:
+        pass
         op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_main")
-    elif opcion_menu == "LISTA DE EMPAQUE":
-        st.markdown("<h2 style='color:#1db6b6;'>LISTA DE EMPAQUE</h2>", unsafe_allow_html=True)
-        st.info("Aquí irá el formulario de la lista de empaque. (Implementación pendiente)")
         if op_selected != "(Nueva OP)":
             r = op_to_row.get(op_selected, [])
-            try:
+            if r:
                 headers_lower = [h.strip().lower() for h in all_rows[0]]
                 cliente_idx = headers_lower.index("cliente") if "cliente" in headers_lower else None
                 equipo_idx = headers_lower.index("equipo") if "equipo" in headers_lower else None
@@ -243,14 +227,13 @@ def main():
                 auto_equipo = r[equipo_idx] if equipo_idx is not None and len(r) > equipo_idx else ""
                 auto_item = r[item_idx] if item_idx is not None and len(r) > item_idx else ""
                 auto_cantidad = r[cantidad_idx] if cantidad_idx is not None and len(r) > cantidad_idx else ""
-                try:
-                    auto_fecha = datetime.datetime.strptime(r[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(r) > fecha_idx and r[fecha_idx] else datetime.date.today()
-                except Exception:
+                if fecha_idx is not None and len(r) > fecha_idx and r[fecha_idx]:
+                    try:
+                        auto_fecha = datetime.datetime.strptime(r[fecha_idx], "%Y-%m-%d").date()
+                    except Exception:
+                        auto_fecha = datetime.date.today()
+                else:
                     auto_fecha = datetime.date.today()
-            except Exception:
-                pass
-        else:
-            op_selected = ""
         cliente = st.text_input("cliente", value=auto_cliente)
         op = op_selected
         equipo = st.text_input("equipo", value=auto_equipo)
@@ -258,6 +241,18 @@ def main():
         cantidad = st.text_input("cantidad", value=auto_cantidad)
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
         st.markdown("</div>", unsafe_allow_html=True)
+
+        # 3. Checkbox de listas de chequeo (debajo de los datos generales)
+        st.markdown("<b>Listas de chequeo</b>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            mostrar_electromecanicos = st.checkbox("Electromecánicos", key="cb_electromecanicos")
+        with col2:
+            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios")
+        with col3:
+            mostrar_mecanicos = st.checkbox("Mecánicos", key="cb_mecanicos")
+        with col4:
+            mostrar_electricos = st.checkbox("Eléctricos", key="cb_electricos")
 
         # 3. Checkbox de listas de chequeo
         st.markdown("<b>Listas de chequeo</b>", unsafe_allow_html=True)
