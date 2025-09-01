@@ -3,4 +3,5 @@ gspread
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
+streamlit-drawable-canvas
 google-api-python-client
