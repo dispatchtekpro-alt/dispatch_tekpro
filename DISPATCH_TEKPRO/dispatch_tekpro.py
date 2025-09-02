@@ -250,33 +250,83 @@ def main():
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta_input")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Listas de chequeo con títulos y checkboxes por ítem
-        st.markdown("<h4>Lista de chequeo elementos electromecánicos</h4>", unsafe_allow_html=True)
-        hay_motor = st.checkbox("¿Hay motor?", key="motor_check")
-        hay_reductor = st.checkbox("¿Hay reductor?", key="reductor_check")
-        hay_bombas = st.checkbox("¿Hay bombas?", key="bombas_check")
-        hay_turbina = st.checkbox("¿Hay turbina?", key="turbina_check")
+        # Listas de chequeo: un checkbox para mostrar cada sección, y si está activo, mostrar expander con los ítems
+        st.markdown("<h4>Listas de chequeo</h4>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            mostrar_electromecanicos = st.checkbox("Elementos electromecánicos", key="cb_electromecanicos")
+        with col2:
+            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios")
+        with col3:
+            mostrar_mecanicos = st.checkbox("Elementos mecánicos", key="cb_mecanicos")
+        with col4:
+            mostrar_electricos = st.checkbox("Elementos eléctricos", key="cb_electricos")
 
-        st.markdown("<h4>Lista de chequeo accesorios</h4>", unsafe_allow_html=True)
-        hay_manometro = st.checkbox("¿Hay manómetro?", key="manometro_check")
-        hay_vacuometro = st.checkbox("¿Hay vacuómetro?", key="vacuometro_check")
-        hay_valvula = st.checkbox("¿Hay válvula?", key="valvula_check")
-        hay_manguera = st.checkbox("¿Hay manguera?", key="manguera_check")
-
-        st.markdown("<h4>Lista de chequeo elementos mecánicos</h4>", unsafe_allow_html=True)
-        hay_pinon1 = st.checkbox("¿Hay piñón 1?", key="pinon1_check")
-        hay_pinon2 = st.checkbox("¿Hay piñón 2?", key="pinon2_check")
-        hay_polea1 = st.checkbox("¿Hay polea 1?", key="polea1_check")
-        hay_polea2 = st.checkbox("¿Hay polea 2?", key="polea2_check")
-
-        st.markdown("<h4>Lista de chequeo elementos eléctricos</h4>", unsafe_allow_html=True)
-        hay_gabinete = st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check")
-        hay_arrancador = st.checkbox("¿Hay arrancador?", key="arrancador_check")
-        hay_control_nivel = st.checkbox("¿Hay control de nivel?", key="control_nivel_check")
+        if mostrar_electromecanicos:
+            with st.expander("Lista de chequeo general elementos electromecánicos", expanded=True):
+                st.checkbox("¿Hay motor?", key="motor_check")
+                st.checkbox("¿Hay reductor?", key="reductor_check")
+                st.checkbox("¿Hay bombas?", key="bombas_check")
+                st.checkbox("¿Hay turbina?", key="turbina_check")
+        if mostrar_accesorios:
+            with st.expander("Lista de chequeo general accesorios", expanded=True):
+                st.checkbox("¿Hay manómetro?", key="manometro_check")
+                st.checkbox("¿Hay vacuómetro?", key="vacuometro_check")
+                st.checkbox("¿Hay válvula?", key="valvula_check")
+                st.checkbox("¿Hay manguera?", key="manguera_check")
+        if mostrar_mecanicos:
+            with st.expander("Lista de chequeo general elementos mecánicos", expanded=True):
+                st.checkbox("¿Hay piñón 1?", key="pinon1_check")
+                st.checkbox("¿Hay piñón 2?", key="pinon2_check")
+                st.checkbox("¿Hay polea 1?", key="polea1_check")
+                st.checkbox("¿Hay polea 2?", key="polea2_check")
+        if mostrar_electricos:
+            with st.expander("Lista de chequeo general elementos eléctricos", expanded=True):
+                st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check")
+                st.checkbox("¿Hay arrancador?", key="arrancador_check")
+                st.checkbox("¿Hay control de nivel?", key="control_nivel_check")
 
     elif menu_opcion == "Lista de empaque":
-        st.markdown("<h2 style='color:#1db6b6;'>Lista de empaque</h2>", unsafe_allow_html=True)
-        st.info("Aquí irá el formulario de la lista de empaque. (Implementación pendiente)")
+        # Mismos datos generales que acta de entrega
+        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales de la lista de empaque</b>", unsafe_allow_html=True)
+        # Puedes reutilizar la lógica de datos generales aquí si lo deseas, o factorizar en una función
+        # ... (repetir inputs de datos generales aquí, con claves distintas si es necesario) ...
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<h4>Listas de chequeo</h4>", unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            mostrar_electromecanicos = st.checkbox("Elementos electromecánicos", key="cb_electromecanicos_empaque")
+        with col2:
+            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios_empaque")
+        with col3:
+            mostrar_mecanicos = st.checkbox("Elementos mecánicos", key="cb_mecanicos_empaque")
+        with col4:
+            mostrar_electricos = st.checkbox("Elementos eléctricos", key="cb_electricos_empaque")
+
+        if mostrar_electromecanicos:
+            with st.expander("Lista de chequeo general elementos electromecánicos", expanded=True):
+                st.checkbox("¿Hay motor?", key="motor_check_empaque")
+                st.checkbox("¿Hay reductor?", key="reductor_check_empaque")
+                st.checkbox("¿Hay bombas?", key="bombas_check_empaque")
+                st.checkbox("¿Hay turbina?", key="turbina_check_empaque")
+        if mostrar_accesorios:
+            with st.expander("Lista de chequeo general accesorios", expanded=True):
+                st.checkbox("¿Hay manómetro?", key="manometro_check_empaque")
+                st.checkbox("¿Hay vacuómetro?", key="vacuometro_check_empaque")
+                st.checkbox("¿Hay válvula?", key="valvula_check_empaque")
+                st.checkbox("¿Hay manguera?", key="manguera_check_empaque")
+        if mostrar_mecanicos:
+            with st.expander("Lista de chequeo general elementos mecánicos", expanded=True):
+                st.checkbox("¿Hay piñón 1?", key="pinon1_check_empaque")
+                st.checkbox("¿Hay piñón 2?", key="pinon2_check_empaque")
+                st.checkbox("¿Hay polea 1?", key="polea1_check_empaque")
+                st.checkbox("¿Hay polea 2?", key="polea2_check_empaque")
+        if mostrar_electricos:
+            with st.expander("Lista de chequeo general elementos eléctricos", expanded=True):
+                st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check_empaque")
+                st.checkbox("¿Hay arrancador?", key="arrancador_check_empaque")
+                st.checkbox("¿Hay control de nivel?", key="control_nivel_check_empaque")
 
         # 3. Checkbox de listas de chequeo
         st.markdown("<b>Listas de chequeo</b>", unsafe_allow_html=True)
