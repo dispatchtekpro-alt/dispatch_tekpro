@@ -171,8 +171,6 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
-    # Botón para enviar el acta de entrega
-    enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
     # ...existing code...
 
 
@@ -190,12 +188,12 @@ def main():
     # --- MENU PRINCIPAL ---
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Actaaaaa de entrega", "Lista de empaque"],
+        ["Acta de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
 
-    if menu_opcion == "Actaaaaa de entrega":
+    if menu_opcion == "Acta de entrega":
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
         folder_id = st.secrets.drive_config.FOLDER_ID
@@ -372,6 +370,26 @@ def main():
                     st.markdown("<b>Reguladores aire/gas</b>", unsafe_allow_html=True)
                     st.number_input("Cantidad reguladores aire/gas", min_value=0, step=1, format="%d", key="cantidad_reguladores")
                     st.file_uploader("Foto reguladores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_reguladores")
+            if tornillos_checked:
+                with st.expander("Tornillos", expanded=True):
+                    st.markdown("<b>Tornillos</b>", unsafe_allow_html=True)
+                    st.number_input("Cantidad tornillos", min_value=0, step=1, format="%d", key="cantidad_tornillos")
+                    st.file_uploader("Foto tornillos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tornillos")
+            if curvas_checked:
+                with st.expander("Curvas", expanded=True):
+                    st.markdown("<b>Curvas</b>", unsafe_allow_html=True)
+                    st.number_input("Cantidad curvas", min_value=0, step=1, format="%d", key="cantidad_curvas")
+                    st.file_uploader("Foto curvas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_curvas")
+            if cables_checked:
+                with st.expander("Cables", expanded=True):
+                    st.markdown("<b>Cables</b>", unsafe_allow_html=True)
+                    st.number_input("Cantidad cables", min_value=0, step=1, format="%d", key="cantidad_cables")
+                    st.file_uploader("Foto cables", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_cables")
+            if tuberias_checked:
+                with st.expander("Tuberías", expanded=True):
+                    st.markdown("<b>Tuberías</b>", unsafe_allow_html=True)
+                    st.number_input("Cantidad tuberías", min_value=0, step=1, format="%d", key="cantidad_tuberias")
+                    st.file_uploader("Foto tuberías", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tuberias")
         if mostrar_mecanicos:
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
@@ -671,8 +689,10 @@ def main():
         st.session_state.get("disenador", ""),
         st.session_state.get("fecha_hora_formateada", "")
     ]
+    # Botón para enviar el acta de entrega (al final del formulario)
+    enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
     # Guardar solo al presionar el botón
-    if 'enviar_acta' in locals() and enviar_acta:
+    if enviar_acta:
         sheet = sheet_client.open(file_name).worksheet(worksheet_name)
         if not sheet.get_all_values():
             sheet.append_row(headers)
