@@ -171,6 +171,8 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
+    # Botón para enviar el acta de entrega
+    enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
     # ...existing code...
 
 
@@ -292,6 +294,8 @@ def main():
                 with st.expander("Turbinas", expanded=True):
                     st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje turbinas", key="voltaje_turbina")
+                    tipo_combustible_turbina = st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_turbina")
+                    metodo_uso_turbina = st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_turbina")
                     st.file_uploader("Foto turbinas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
             if quemador_checked:
                 with st.expander("Quemadores", expanded=True):
@@ -331,6 +335,10 @@ def main():
             manguera_checked = st.checkbox("¿Hay mangueras?", key="manguera_check_accesorios2")
             boquilla_checked = st.checkbox("¿Hay boquillas?", key="boquilla_check_accesorios2")
             regulador_checked = st.checkbox("¿Hay reguladores aire/gas?", key="regulador_check_accesorios2")
+            tornillos_checked = st.checkbox("¿Hay tornillos?", key="tornillos_check_accesorios2")
+            curvas_checked = st.checkbox("¿Hay curvas de ascenso o descenso?", key="curvas_check_accesorios2")
+            cables_checked = st.checkbox("¿Hay cables?", key="cables_check_accesorios2")
+            tuberias_checked = st.checkbox("¿Hay tuberías?", key="tuberias_check_accesorios2")
             st.markdown("<hr>", unsafe_allow_html=True)
 
         if mostrar_accesorios:
@@ -452,6 +460,30 @@ def main():
     revision_ruidos = st.selectbox("Revisión de ruidos", ["", "Si", "No"], key="revision_ruidos")
     ensayo_equipo = st.selectbox("Ensayo equipo", ["", "Si", "No"], key="ensayo_equipo")
 
+    # Observaciones generales
+    observaciones_generales = st.text_area("Observaciones generales", key="observaciones_generales")
+
+    # Líder de inspección
+    lideres = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata","Juan David Martinez"]  # Puedes personalizar esta lista
+    lider_inspeccion = st.selectbox("Líder de inspección", lideres, key="lider_inspeccion")
+
+    # Soldador
+    soldador = ["", "Jaime Ramos", "Jaime Rincon", "Gabriel","Lewis"]  # Puedes personalizar esta lista
+    soldador = st.selectbox("Encargado Soldador", soldador, key="soldador")
+
+    # Diseñador
+    disenadores = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata","Juan David Martinez"]  # Puedes personalizar esta lista
+    disenador = st.selectbox("Diseñador", disenadores, key="disenador")
+
+    # Fecha y hora de entrega
+    fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+    hora_entrega = st.time_input("Hora de entrega", value=datetime.datetime.now().time(), key="hora_entrega_acta")
+
+    # Mostrar fecha y hora en formato DD-MM-AA-HH:MM:SS
+    dt_entrega = datetime.datetime.combine(fecha_entrega, hora_entrega)
+    fecha_hora_formateada = dt_entrega.strftime("%d-%m-%y-%H:%M:%S")
+    st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
+
     if menu_opcion == "Lista de empaque":
         # ...existing code para lista de empaque...
         pass  # Bloque vacío para evitar error de indentación
@@ -524,28 +556,128 @@ def main():
     encargado_logistica = st.session_state.get("encargado_logistica", "")
     cedula_logistica = st.session_state.get("cedula_logistica", "")
     fecha_entrega = st.session_state.get("fecha_entrega_acta", datetime.date.today())
-    row = [
-        str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-        str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
-    ]
+    # Encabezados según lo solicitado
     headers = [
-        "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
-        "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
-        "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
-        "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
-        "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
-        "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
-        "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
-        "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
-        "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "fotos otros elementos",
-        "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
-        "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "encargado logistica", "cedula logistica", "fecha de entrega"
+        "cliente", "Op", "item", "equipo", "cantidad", "fecha",
+        "cantidad motores", "voltaje motores", "fotos motores",
+        "cantidad reductores", "voltaje reductores", "fotos reductores",
+        "cantidad bombas", "voltaje bombas", "fotos bombas",
+        "voltaje turbina", "Tipo combustible turbina", "Metodo uso turbina", "foto turbina",
+        "voltaje quemador", "foto quemador",
+        "voltaje bomba de vacio", "foto bomba de vacio",
+        "voltaje compresor", "foto compresor",
+        "cantidad manometros", "foto manometros",
+        "cantidad vacuometros", "foto vacuometros",
+        "cantidad valvulas", "foto valvulas",
+        "cantidad mangueras", "foto mangueras",
+        "cantidad boquillas", "foto boquillas",
+        "cantidad reguladores aire/gas", "foto reguladores",
+        "tension piñon 1", "foto piñon 1",
+        "tension piñon 2", "foto piñon 2",
+        "tension polea 1", "foto polea 1",
+        "tension polea 2", "foto polea 2",
+        "cantidad gabinete electrico", "foto gabinete",
+        "cantidad arrancadores", "foto arrancadores",
+        "cantidad control de nivel", "foto control de nivel",
+        "cantidad variadores de velociad", "foto variadores de velocidad",
+        "cantidad sensores de temperatura", "foto sensores de temperatura",
+        "cantidad toma corriente", "foto toma corrientes",
+        "descripcion otros elementos", "fotos otros elementos",
+        "descripcion tuberias", "foto tuberias",
+        "descripcion cables", "foto cables",
+        "descripcion curvas", "foto curvas",
+        "descripcion tornilleria", "foto tornilleria",
+        "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento",
+        "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
+        "revision de ruidos", "ensayo equipo", "observciones generales",
+        "lider de inspeccion", "Encargado soldador", "diseñador", "fecha de entrega"
     ]
-    sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-    if not sheet.get_all_values():
-        sheet.append_row(headers)
-    sheet.append_row(row)
-    st.success("Acta de entrega guardada correctamente en Google Sheets.")
+
+    # Construir la fila de datos en el mismo orden que los encabezados
+    row = [
+        str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha_entrega),
+        st.session_state.get("cantidad_motores", 0),
+        st.session_state.get("voltaje_motores", ""),
+        st.session_state.get("fotos_motores", []),
+        st.session_state.get("cantidad_reductores", 0),
+        st.session_state.get("voltaje_reductores", ""),
+        st.session_state.get("fotos_reductores", []),
+        st.session_state.get("cantidad_bombas", 0),
+        st.session_state.get("voltaje_bombas", ""),
+        st.session_state.get("fotos_bombas", []),
+        st.session_state.get("voltaje_turbina", ""),
+        st.session_state.get("tipo_combustible_turbina", ""),
+        st.session_state.get("metodo_uso_turbina", ""),
+        st.session_state.get("foto_turbina", []),
+        st.session_state.get("voltaje_quemador", ""),
+        st.session_state.get("foto_quemador", []),
+        st.session_state.get("voltaje_bomba_vacio", ""),
+        st.session_state.get("foto_bomba_vacio", []),
+        st.session_state.get("voltaje_compresor", ""),
+        st.session_state.get("foto_compresor", []),
+        st.session_state.get("cantidad_manometros", 0),
+        st.session_state.get("foto_manometros", []),
+        st.session_state.get("cantidad_vacuometros", 0),
+        st.session_state.get("foto_vacuometros", []),
+        st.session_state.get("cantidad_valvulas", 0),
+        st.session_state.get("foto_valvulas", []),
+        st.session_state.get("cantidad_mangueras", 0),
+        st.session_state.get("foto_mangueras", []),
+        st.session_state.get("cantidad_boquillas", 0),
+        st.session_state.get("foto_boquillas", []),
+        st.session_state.get("cantidad_reguladores", 0),
+        st.session_state.get("foto_reguladores", []),
+        st.session_state.get("tension_pinon1", ""),
+        st.session_state.get("foto_pinon1", []),
+        st.session_state.get("tension_pinon2", ""),
+        st.session_state.get("foto_pinon2", []),
+        st.session_state.get("tension_polea1", ""),
+        st.session_state.get("foto_polea1", []),
+        st.session_state.get("tension_polea2", ""),
+        st.session_state.get("foto_polea2", []),
+        st.session_state.get("cantidad_gabinete", 0),
+        st.session_state.get("foto_gabinete", []),
+        st.session_state.get("cantidad_arrancadores", 0),
+        st.session_state.get("foto_arrancadores", []),
+        st.session_state.get("cantidad_control_nivel", 0),
+        st.session_state.get("foto_control_nivel", []),
+        st.session_state.get("cantidad_variadores", 0),
+        st.session_state.get("foto_variadores", []),
+        st.session_state.get("cantidad_sensores", 0),
+        st.session_state.get("foto_sensores", []),
+        st.session_state.get("cantidad_toma_corriente", 0),
+        st.session_state.get("foto_toma_corrientes", []),
+        st.session_state.get("otros_elementos", ""),
+        st.session_state.get("fotos_otros_elementos", []),
+        st.session_state.get("descripcion_tuberias", ""),
+        st.session_state.get("foto_tuberias", []),
+        st.session_state.get("descripcion_cables", ""),
+        st.session_state.get("foto_cables", []),
+        st.session_state.get("descripcion_curvas", ""),
+        st.session_state.get("foto_curvas", []),
+        st.session_state.get("descripcion_tornilleria", ""),
+        st.session_state.get("foto_tornilleria", []),
+        st.session_state.get("revision_soldadura", ""),
+        st.session_state.get("revision_sentidos", ""),
+        st.session_state.get("manual_funcionamiento", ""),
+        st.session_state.get("revision_filos", ""),
+        st.session_state.get("revision_tratamientos", ""),
+        st.session_state.get("revision_tornilleria", ""),
+        st.session_state.get("revision_ruidos", ""),
+        st.session_state.get("ensayo_equipo", ""),
+        st.session_state.get("observaciones_generales", ""),
+        st.session_state.get("lider_inspeccion", ""),
+        st.session_state.get("encargado_soldador", ""),
+        st.session_state.get("disenador", ""),
+        st.session_state.get("fecha_hora_formateada", "")
+    ]
+    # Guardar solo al presionar el botón
+    if 'enviar_acta' in locals() and enviar_acta:
+        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+        if not sheet.get_all_values():
+            sheet.append_row(headers)
+        sheet.append_row(row)
+        st.success("Acta de entrega guardada correctamente en Google Sheets.")
 
 if __name__ == "__main__":
     main()
