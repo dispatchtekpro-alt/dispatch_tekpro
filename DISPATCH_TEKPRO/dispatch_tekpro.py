@@ -191,12 +191,12 @@ def main():
     # --- MENU PRINCIPAL ---
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Actaaaa de entrega", "Lista de empaque"],
+        ["Acta de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
 
-    if menu_opcion == "Actaaaa de entrega":
+    if menu_opcion == "Acta de entrega":
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
         folder_id = st.secrets.drive_config.FOLDER_ID
@@ -231,8 +231,14 @@ def main():
                     return int(val)
                 except:
                     return 0
-            auto_fecha = datetime.date.today()
-            
+            auto_cliente = get_val("cliente")
+            auto_item = get_val("item")
+            auto_equipo = get_val("equipo")
+            auto_cantidad = get_val("cantidad")
+            try:
+                auto_fecha = datetime.datetime.strptime(get_val("fecha"), "%Y-%m-%d").date() if get_val("fecha") else datetime.date.today()
+            except Exception:
+                auto_fecha = datetime.date.today()
         cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
         item = st.text_input("item", value=auto_item, key="item_input")
@@ -687,4 +693,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
