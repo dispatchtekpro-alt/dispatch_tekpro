@@ -263,59 +263,7 @@ def main():
             mostrar_electricos = st.checkbox("Elementos eléctricos", key="cb_electricos")
 
         # Electromecánicos
-        if mostrar_electromecanicos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos electromecánicos</h3>
-""", unsafe_allow_html=True)
-            motor_checked = st.checkbox("¿Hay motores?", key="motor_check")
-            reductor_checked = st.checkbox("¿Hay reductor?", key="reductor_check")
-            bomba_checked = st.checkbox("¿Hay bomba?", key="bombas_check")
-            turbina_checked = st.checkbox("¿Hay turbina?", key="turbina_check")
-            quemador_checked = st.checkbox("¿Hay quemador?", key="quemador_check")
-            bomba_vacio_checked = st.checkbox("¿Hay bomba de vacío?", key="bomba_vacio_check")
-            compresor_checked = st.checkbox("¿Hay compresor?", key="compresor_check")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_electromecanicos:
-            if motor_checked:
-                with st.expander("Motores", expanded=True):
-                    st.markdown("<b> Motores </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de motores", min_value=0, step=1, format="%d", key="cantidad_motores")
-                    st.text_input("Voltaje de motores", key="voltaje_motores")
-                    st.file_uploader("Fotos motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
-            if reductor_checked:
-                with st.expander("Reductor", expanded=True):
-                    st.markdown("<b> Reductor </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de reductores", min_value=0, step=1, format="%d", key="cantidad_reductores")
-                    st.text_input("Voltaje de reductores", key="voltaje_reductores")
-                    st.file_uploader("Fotos reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
-            if bomba_checked:
-                with st.expander("Bomba", expanded=True):
-                    st.markdown("<b> Bomba </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de bombas", min_value=0, step=1, format="%d", key="cantidad_bombas")
-                    st.text_input("Voltaje de bombas", key="voltaje_bombas")
-                    st.file_uploader("Fotos bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
-            if turbina_checked:
-                with st.expander("Turbina", expanded=True):
-                    st.markdown("<b> Turbina </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje turbina", key="voltaje_turbina")
-                    st.file_uploader("Foto turbina", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
-            if quemador_checked:
-                with st.expander("Quemador", expanded=True):
-                    st.markdown("<b> Quemador </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje quemador", key="voltaje_quemador")
-                    st.text_input("Tipo de combustible", key="tipo_combustible_quemador")
-                    st.text_input("Métodos de uso", key="metodos_uso_quemador")
-                    st.file_uploader("Foto quemador", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_quemador")
-            if bomba_vacio_checked:
-                with st.expander("Bomba de vacío", expanded=True):
-                    st.markdown("<b> Bomba de vacío </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje bomba de vacío", key="voltaje_bomba_vacio")
-                    st.file_uploader("Foto bomba de vacío", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_bomba_vacio")
-            if compresor_checked:
-                with st.expander("Compresor", expanded=True):
-                    st.markdown("<b> Compresor </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje compresor", key="voltaje_compresor")
-                    st.file_uploader("Foto compresor", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_compresor")
+        # (Eliminado: Bloque duplicado de listas de chequeo que causaba claves duplicadas)
 
         # Accesorios
         if mostrar_accesorios:
