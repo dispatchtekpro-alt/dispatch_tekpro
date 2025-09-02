@@ -204,20 +204,20 @@ def main():
     auto_fecha = datetime.date.today()
     op_options, op_to_row = [], {}
     try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
-            if all_rows:
-                headers_lower = [h.strip().lower() for h in all_rows[0]]
-                op_idx = headers_lower.index("op") if "op" in headers_lower else None
-                for r in all_rows[1:]:
-                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                        op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
-        except Exception:
-            pass
-        op_selected = st.selectbox("op", options=[" "] + op_options, key="op_selectbox_main")
-        if op_selected != "":
-            r = op_to_row.get(op_selected, [])
-            if r:
+        sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+        all_rows = sheet.get_all_values()
+        if all_rows:
+            headers_lower = [h.strip().lower() for h in all_rows[0]]
+            op_idx = headers_lower.index("op") if "op" in headers_lower else None
+            for r in all_rows[1:]:
+                if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
+                    op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
+    except Exception:
+        pass
+    op_selected = st.selectbox("op", options=[" "] + op_options, key="op_selectbox_main")
+    if op_selected != "":
+        r = op_to_row.get(op_selected, [])
+        if r:
                 headers_lower = [h.strip().lower() for h in all_rows[0]]
                 cliente_idx = headers_lower.index("cliente") if "cliente" in headers_lower else None
                 equipo_idx = headers_lower.index("equipo") if "equipo" in headers_lower else None
