@@ -232,122 +232,7 @@ def main():
                 except:
                     return 0
             auto_fecha = datetime.date.today()
-            # BLOQUES DE FOTOS (expanders)
-            with st.expander("Turbinas", expanded=True):
-                st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
-                st.text_input("Voltaje turbinas", key="voltaje_turbina")
-                tipo_combustible_turbina = st.selectbox("Tipo de combustible", ["", "Gas", "Diésel", "Otro"], key="tipo_combustible_turbina")
-                metodo_uso_turbina = st.selectbox("Método de uso", ["", "Manual", "Automático", "Otro"], key="metodo_uso_turbina")
-                fotos_turbina = st.file_uploader("Foto turbinas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
-                if fotos_turbina:
-                    urls = []
-                    for idx, file in enumerate(fotos_turbina):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"turbina_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_turbina"] = urls
-            with st.expander("Quemadores", expanded=True):
-                st.markdown("<b>Quemadores</b>", unsafe_allow_html=True)
-                st.text_input("Voltaje quemadores", key="voltaje_quemador")
-                st.text_input("Tipo de combustible", key="tipo_combustible_quemador")
-                st.text_input("Métodos de uso", key="metodos_uso_quemador")
-                fotos_quemador = st.file_uploader("Foto quemadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_quemador")
-                if fotos_quemador:
-                    urls = []
-                    for idx, file in enumerate(fotos_quemador):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"quemador_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_quemador"] = urls
-            # auto_fecha = datetime.datetime.strptime(fecha_val, "%d/%m/%Y").date()  # fecha_val no está definida
-            with st.expander("Bombas de vacío", expanded=True):
-                st.markdown("<b>Bombas de vacío</b>", unsafe_allow_html=True)
-                st.text_input("Voltaje bombas de vacío", key="voltaje_bomba_vacio")
-                fotos_bomba_vacio = st.file_uploader("Foto bombas de vacío", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_bomba_vacio")
-                if fotos_bomba_vacio:
-                    urls = []
-                    for idx, file in enumerate(fotos_bomba_vacio):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"bomba_vacio_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_bomba_vacio"] = urls
-            with st.expander("Compresores", expanded=True):
-                st.markdown("<b>Compresores</b>", unsafe_allow_html=True)
-                st.text_input("Voltaje compresores", key="voltaje_compresor")
-                fotos_compresor = st.file_uploader("Foto compresores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_compresor")
-                if fotos_compresor:
-                    urls = []
-                    for idx, file in enumerate(fotos_compresor):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"compresor_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_compresor"] = urls
-            with st.expander("Manómetros", expanded=True):
-                st.markdown("<b>Manómetros</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad manómetros", min_value=0, step=1, format="%d", key="cantidad_manometros")
-                fotos_manometros = st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_manometros")
-                if fotos_manometros:
-                    urls = []
-                    for idx, file in enumerate(fotos_manometros):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"manometros_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_manometros"] = urls
-            with st.expander("Vacuómetros", expanded=True):
-                st.markdown("<b>Vacuómetros</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad vacuómetros", min_value=0, step=1, format="%d", key="cantidad_vacuometros")
-                fotos_vacuometros = st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_vacuometros")
-                if fotos_vacuometros:
-                    urls = []
-                    for idx, file in enumerate(fotos_vacuometros):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"vacuometros_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_vacuometros"] = urls
-            with st.expander("Válvulas", expanded=True):
-                st.markdown("<b>Válvulas</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad válvulas", min_value=0, step=1, format="%d", key="cantidad_valvulas")
-                fotos_valvulas = st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_valvulas")
-                if fotos_valvulas:
-                    urls = []
-                    for idx, file in enumerate(fotos_valvulas):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"valvulas_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_valvulas"] = urls
-            with st.expander("Mangueras", expanded=True):
-                st.markdown("<b>Mangueras</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad mangueras", min_value=0, step=1, format="%d", key="cantidad_mangueras")
-                fotos_mangueras = st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_mangueras")
-                if fotos_mangueras:
-                    urls = []
-                    for idx, file in enumerate(fotos_mangueras):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"mangueras_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_mangueras"] = urls
-            with st.expander("Boquillas", expanded=True):
-                st.markdown("<b>Boquillas</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad boquillas", min_value=0, step=1, format="%d", key="cantidad_boquillas")
-                fotos_boquillas = st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_boquillas")
-                if fotos_boquillas:
-                    urls = []
-                    for idx, file in enumerate(fotos_boquillas):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"boquillas_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_boquillas"] = urls
-            with st.expander("Reguladores aire/gas", expanded=True):
-                st.markdown("<b>Reguladores aire/gas</b>", unsafe_allow_html=True)
-                st.number_input("Cantidad reguladores aire/gas", min_value=0, step=1, format="%d", key="cantidad_reguladores")
-                fotos_reguladores = st.file_uploader("Foto reguladores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_reguladores")
-                if fotos_reguladores:
-                    urls = []
-                    for idx, file in enumerate(fotos_reguladores):
-                        if file is not None:
-                            url = upload_image_to_drive_oauth(file, f"reguladores_{idx+1}.jpg", folder_id)
-                            urls.append(url)
-                    st.session_state["links_foto_reguladores"] = urls
+            
         cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
         item = st.text_input("item", value=auto_item, key="item_input")
@@ -425,8 +310,8 @@ def main():
                 with st.expander("Turbinas", expanded=True):
                     st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje turbinas", key="voltaje_turbina")
-                    tipo_combustible_turbina = st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_turbina")
-                    metodo_uso_turbina = st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_turbina")
+                    st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_turbina")
+                    st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_turbina")
                     st.file_uploader("Foto turbinas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
             if quemador_checked:
                 with st.expander("Quemadores", expanded=True):
