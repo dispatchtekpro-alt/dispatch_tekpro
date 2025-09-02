@@ -318,15 +318,13 @@ def main():
                 with st.expander("Turbinas", expanded=True):
                     st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje turbinas", key="voltaje_turbina")
-                    st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_turbina")
-                    st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_turbina")
                     st.file_uploader("Foto turbinas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
             if quemador_checked:
                 with st.expander("Quemadores", expanded=True):
                     st.markdown("<b>Quemadores</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje quemadores", key="voltaje_quemador")
-                    st.text_input("Tipo de combustible", key="tipo_combustible_quemador")
-                    st.text_input("Métodos de uso", key="metodos_uso_quemador")
+                    st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_quemador")
+                    st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_quemador")
                     st.file_uploader("Foto quemadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_quemador")
             if bomba_vacio_checked:
                 with st.expander("Bombas de vacío", expanded=True):
@@ -602,7 +600,7 @@ def main():
     fecha_entrega = st.session_state.get("fecha_entrega_acta", datetime.date.today())
     # Encabezados según lo solicitado
     headers = [
-        "cliente", "Op", "item", "equipo", "cantidad", "fecha",
+        "cliente", "op", "item", "equipo", "cantidad", "fecha",
         "cantidad motores", "voltaje motores", "fotos motores",
         "cantidad reductores", "voltaje reductores", "fotos reductores",
         "cantidad bombas", "voltaje bombas", "fotos bombas",
@@ -658,17 +656,73 @@ def main():
         return ", ".join(urls)
 
     row = [
-        str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-        str(st.session_state.get("cantidad_motores", 0)),
+        str(cliente),
+        str(op),
+        str(item),
+        str(equipo),
+        str(cantidad),
+        str(fecha),
+        str(st.session_state.get("cantidad_motores", "")),
         str(st.session_state.get("voltaje_motores", "")),
         to_url_list(None, folder_id, "motores", "links_fotos_motores"),
-        str(st.session_state.get("cantidad_reductores", 0)),
+        str(st.session_state.get("cantidad_reductores", "")),
         str(st.session_state.get("voltaje_reductores", "")),
         to_url_list(None, folder_id, "reductores", "links_fotos_reductores"),
-        str(st.session_state.get("cantidad_bombas", 0)),
+        str(st.session_state.get("cantidad_bombas", "")),
         str(st.session_state.get("voltaje_bombas", "")),
         to_url_list(None, folder_id, "bombas", "links_fotos_bombas"),
-        # ...repetir para todos los campos de fotos, usando el state_key correspondiente...
+        str(st.session_state.get("voltaje_turbina", "")),
+        str(st.session_state.get("tipo_combustible_turbina", "")),
+        str(st.session_state.get("metodo_uso_turbina", "")),
+        to_url_list(None, folder_id, "turbina", "links_foto_turbina"),
+        str(st.session_state.get("voltaje_quemador", "")),
+        to_url_list(None, folder_id, "quemador", "links_foto_quemador"),
+        str(st.session_state.get("voltaje_bomba_vacio", "")),
+        to_url_list(None, folder_id, "bomba_vacio", "links_foto_bomba_vacio"),
+        str(st.session_state.get("voltaje_compresor", "")),
+        to_url_list(None, folder_id, "compresor", "links_foto_compresor"),
+        str(st.session_state.get("cantidad_manometros", "")),
+        to_url_list(None, folder_id, "manometros", "links_foto_manometros"),
+        str(st.session_state.get("cantidad_vacuometros", "")),
+        to_url_list(None, folder_id, "vacuometros", "links_foto_vacuometros"),
+        str(st.session_state.get("cantidad_valvulas", "")),
+        to_url_list(None, folder_id, "valvulas", "links_foto_valvulas"),
+        str(st.session_state.get("cantidad_mangueras", "")),
+        to_url_list(None, folder_id, "mangueras", "links_foto_mangueras"),
+        str(st.session_state.get("cantidad_boquillas", "")),
+        to_url_list(None, folder_id, "boquillas", "links_foto_boquillas"),
+        str(st.session_state.get("cantidad_reguladores", "")),
+        to_url_list(None, folder_id, "reguladores", "links_foto_reguladores"),
+        str(st.session_state.get("tension_pinon1", "")),
+        to_url_list(None, folder_id, "pinon1", "links_foto_pinon1"),
+        str(st.session_state.get("tension_pinon2", "")),
+        to_url_list(None, folder_id, "pinon2", "links_foto_pinon2"),
+        str(st.session_state.get("tension_polea1", "")),
+        to_url_list(None, folder_id, "polea1", "links_foto_polea1"),
+        str(st.session_state.get("tension_polea2", "")),
+        to_url_list(None, folder_id, "polea2", "links_foto_polea2"),
+        str(st.session_state.get("cantidad_gabinete", "")),
+        to_url_list(None, folder_id, "gabinete", "links_foto_gabinete"),
+        str(st.session_state.get("cantidad_arrancadores", "")),
+        to_url_list(None, folder_id, "arrancadores", "links_foto_arrancadores"),
+        str(st.session_state.get("cantidad_control_nivel", "")),
+        to_url_list(None, folder_id, "control_nivel", "links_foto_control_nivel"),
+        str(st.session_state.get("cantidad_variadores", "")),
+        to_url_list(None, folder_id, "variador", "links_foto_variador"),
+        str(st.session_state.get("cantidad_sensores", "")),
+        to_url_list(None, folder_id, "sensor_temp", "links_foto_sensor_temp"),
+        str(st.session_state.get("cantidad_toma_corriente", "")),
+        to_url_list(None, folder_id, "toma_corriente", "links_foto_toma_corriente"),
+        str(st.session_state.get("otros_elementos", "")),
+        to_url_list(None, folder_id, "otros_elementos", "links_fotos_otros_elementos"),
+        str(st.session_state.get("descripcion_tuberias", "")),
+        to_url_list(None, folder_id, "tuberias", "links_foto_tuberias"),
+        str(st.session_state.get("descripcion_cables", "")),
+        to_url_list(None, folder_id, "cables", "links_foto_cables"),
+        str(st.session_state.get("descripcion_curvas", "")),
+        to_url_list(None, folder_id, "curvas", "links_foto_curvas"),
+        str(st.session_state.get("descripcion_tornilleria", "")),
+        to_url_list(None, folder_id, "tornilleria", "links_foto_tornilleria"),
         str(st.session_state.get("revision_soldadura", "")),
         str(st.session_state.get("revision_sentidos", "")),
         str(st.session_state.get("manual_funcionamiento", "")),
