@@ -218,28 +218,62 @@ def main():
     if op_selected != "":
         r = op_to_row.get(op_selected, [])
         if r:
-                headers_lower = [h.strip().lower() for h in all_rows[0]]
-                cliente_idx = headers_lower.index("cliente") if "cliente" in headers_lower else None
-                equipo_idx = headers_lower.index("equipo") if "equipo" in headers_lower else None
-                item_idx = headers_lower.index("item") if "item" in headers_lower else None
-                cantidad_idx = headers_lower.index("cantidad") if "cantidad" in headers_lower else None
-                fecha_idx = headers_lower.index("fecha") if "fecha" in headers_lower else None
-                auto_cliente = r[cliente_idx] if cliente_idx is not None and len(r) > cliente_idx else ""
-                auto_equipo = r[equipo_idx] if equipo_idx is not None and len(r) > equipo_idx else ""
-                auto_item = r[item_idx] if item_idx is not None and len(r) > item_idx else ""
-                auto_cantidad = r[cantidad_idx] if cantidad_idx is not None and len(r) > cantidad_idx else ""
-                if fecha_idx is not None and len(r) > fecha_idx and r[fecha_idx]:
+            headers_lower = [h.strip().lower() for h in all_rows[0]]
+            # Mapear todos los campos relevantes
+            def get_val(col):
+                idx = headers_lower.index(col) if col in headers_lower else None
+                return r[idx] if idx is not None and len(r) > idx else ""
+
+            auto_cliente = get_val("cliente")
+            auto_equipo = get_val("equipo")
+            auto_item = get_val("item")
+            auto_cantidad = get_val("cantidad")
+            auto_fecha = datetime.date.today()
+            fecha_val = get_val("fecha")
+            if fecha_val:
+                try:
+                    auto_fecha = datetime.datetime.strptime(fecha_val, "%Y-%m-%d").date()
+                except Exception:
                     try:
-                        auto_fecha = datetime.datetime.strptime(r[fecha_idx], "%Y-%m-%d").date()
+                        auto_fecha = datetime.datetime.strptime(fecha_val, "%d/%m/%Y").date()
                     except Exception:
                         auto_fecha = datetime.date.today()
-                else:
-                    auto_fecha = datetime.date.today()
 
+            # Rellenar campos editables si existen en la fila
+            st.session_state["cantidad_motores"] = get_val("cantidad motores")
+            st.session_state["voltaje_motores"] = get_val("voltaje motores")
+            st.session_state["cantidad_reductores"] = get_val("cantidad reductores")
+            st.session_state["voltaje_reductores"] = get_val("voltaje reductores")
+            st.session_state["cantidad_bombas"] = get_val("cantidad bombas")
+            st.session_state["voltaje_bombas"] = get_val("voltaje bombas")
+            st.session_state["voltaje_turbina"] = get_val("voltaje turbina")
+            st.session_state["tipo_combustible_turbina"] = get_val("tipo combustible turbina")
+            st.session_state["metodo_uso_turbina"] = get_val("metodo uso turbina")
+            st.session_state["voltaje_quemador"] = get_val("voltaje quemador")
+            st.session_state["voltaje_bomba_vacio"] = get_val("voltaje bomba de vacio")
+            st.session_state["voltaje_compresor"] = get_val("voltaje compresor")
+            st.session_state["cantidad_manometros"] = get_val("cantidad manometros")
+            st.session_state["cantidad_vacuometros"] = get_val("cantidad vacuometros")
+            st.session_state["cantidad_valvulas"] = get_val("cantidad valvulas")
+            st.session_state["cantidad_mangueras"] = get_val("cantidad mangueras")
+            st.session_state["cantidad_boquillas"] = get_val("cantidad boquillas")
+            st.session_state["cantidad_reguladores"] = get_val("cantidad reguladores aire/gas")
+            st.session_state["tension_pinon1"] = get_val("tension piñon 1")
+            st.session_state["tension_pinon2"] = get_val("tension piñon 2")
+            st.session_state["tension_polea1"] = get_val("tension polea 1")
+            st.session_state["tension_polea2"] = get_val("tension polea 2")
+            st.session_state["cantidad_gabinete"] = get_val("cantidad gabinete electrico")
+            st.session_state["cantidad_arrancadores"] = get_val("cantidad arrancadores")
+            st.session_state["cantidad_control_nivel"] = get_val("cantidad control de nivel")
+            st.session_state["cantidad_variadores"] = get_val("cantidad variadores de velociad")
+            st.session_state["cantidad_sensores"] = get_val("cantidad sensores de temperatura")
+            st.session_state["cantidad_toma_corriente"] = get_val("cantidad toma corriente")
+
+        # Rellenar automáticamente los campos al seleccionar una OP
         cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
-        equipo = st.text_input("equipo", value=auto_equipo, key="equipo_input")
         item = st.text_input("item", value=auto_item, key="item_input")
+        equipo = st.text_input("equipo", value=auto_equipo, key="equipo_input")
         cantidad = st.text_input("cantidad", value=auto_cantidad, key="cantidad_input")
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta_input")
 
@@ -622,7 +656,7 @@ def main():
         return ", ".join(urls)
 
     row = [
-        str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha_entrega),
+        str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
         str(st.session_state.get("cantidad_motores", 0)),
         str(st.session_state.get("voltaje_motores", "")),
         to_url_list(st.session_state.get("fotos_motores", []), folder_id, "motores"),
