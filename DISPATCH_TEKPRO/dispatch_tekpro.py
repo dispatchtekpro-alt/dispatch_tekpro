@@ -197,13 +197,13 @@ def main():
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
         folder_id = st.secrets.drive_config.FOLDER_ID
-        file_name = st.secrets.drive_config.FILE_NAME
-        worksheet_name = "Acta de entrega"
-        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
-        auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
-        auto_fecha = datetime.date.today()
-        op_options, op_to_row = [], {}
-        try:
+    file_name = "dispatch_tekpro"
+    worksheet_name = "Acta de entrega"
+    st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
+    auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
+    auto_fecha = datetime.date.today()
+    op_options, op_to_row = [], {}
+    try:
             sheet = sheet_client.open(file_name).worksheet(worksheet_name)
             all_rows = sheet.get_all_values()
             if all_rows:
