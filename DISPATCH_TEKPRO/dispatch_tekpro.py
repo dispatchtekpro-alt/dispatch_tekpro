@@ -191,12 +191,12 @@ def main():
     # --- MENU PRINCIPAL ---
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Acta de entrega", "Lista de empaque"],
+        ["Actaaaa de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
 
-    if menu_opcion == "Acta de entrega":
+    if menu_opcion == "Actaaaa de entrega":
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
         folder_id = st.secrets.drive_config.FOLDER_ID
@@ -687,3 +687,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
