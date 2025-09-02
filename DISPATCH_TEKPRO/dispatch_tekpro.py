@@ -250,17 +250,29 @@ def main():
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta_input")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # 3. Checkbox de listas de chequeo (debajo de los datos generales)
-        st.markdown("<b>Listas de chequeo</b>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            mostrar_electromecanicos = st.checkbox("Electromecánicos", key="cb_electromecanicos")
-        with col2:
-            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios")
-        with col3:
-            mostrar_mecanicos = st.checkbox("Mecánicos", key="cb_mecanicos")
-        with col4:
-            mostrar_electricos = st.checkbox("Eléctricos", key="cb_electricos")
+        # Listas de chequeo con títulos y checkboxes por ítem
+        st.markdown("<h4>Lista de chequeo elementos electromecánicos</h4>", unsafe_allow_html=True)
+        hay_motor = st.checkbox("¿Hay motor?", key="motor_check")
+        hay_reductor = st.checkbox("¿Hay reductor?", key="reductor_check")
+        hay_bombas = st.checkbox("¿Hay bombas?", key="bombas_check")
+        hay_turbina = st.checkbox("¿Hay turbina?", key="turbina_check")
+
+        st.markdown("<h4>Lista de chequeo accesorios</h4>", unsafe_allow_html=True)
+        hay_manometro = st.checkbox("¿Hay manómetro?", key="manometro_check")
+        hay_vacuometro = st.checkbox("¿Hay vacuómetro?", key="vacuometro_check")
+        hay_valvula = st.checkbox("¿Hay válvula?", key="valvula_check")
+        hay_manguera = st.checkbox("¿Hay manguera?", key="manguera_check")
+
+        st.markdown("<h4>Lista de chequeo elementos mecánicos</h4>", unsafe_allow_html=True)
+        hay_pinon1 = st.checkbox("¿Hay piñón 1?", key="pinon1_check")
+        hay_pinon2 = st.checkbox("¿Hay piñón 2?", key="pinon2_check")
+        hay_polea1 = st.checkbox("¿Hay polea 1?", key="polea1_check")
+        hay_polea2 = st.checkbox("¿Hay polea 2?", key="polea2_check")
+
+        st.markdown("<h4>Lista de chequeo elementos eléctricos</h4>", unsafe_allow_html=True)
+        hay_gabinete = st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check")
+        hay_arrancador = st.checkbox("¿Hay arrancador?", key="arrancador_check")
+        hay_control_nivel = st.checkbox("¿Hay control de nivel?", key="control_nivel_check")
 
     elif menu_opcion == "Lista de empaque":
         st.markdown("<h2 style='color:#1db6b6;'>Lista de empaque</h2>", unsafe_allow_html=True)
