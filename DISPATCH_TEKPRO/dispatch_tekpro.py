@@ -172,7 +172,6 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
 
 def main():
     # ...existing code...
-    # ...existing code...
 
 
     # Menú de inicio
@@ -314,6 +313,14 @@ def main():
 
         # Aquí van los bloques únicos de cada lista de chequeo (ya presentes más abajo en el código)
         # ...existing code...
+
+
+        # Otros elementos: checkbox, descripción y foto (al final de las listas de chequeo)
+        mostrar_otros_elementos = st.checkbox("Otros elementos", key="cb_otros_elementos")
+        if mostrar_otros_elementos:
+            with st.expander("Otros elementos", expanded=True):
+                otros_elementos = st.text_area("Descripción de otros elementos", key="otros_elementos")
+                fotos_otros_elementos = st.file_uploader("Foto(s) de otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
         if mostrar_accesorios:
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
@@ -432,7 +439,20 @@ def main():
                     st.number_input("Cantidad tomas corriente", min_value=0, step=1, format="%d", key="cantidad_toma_corriente")
                     st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_toma_corriente")
 
-    elif menu_opcion == "Lista de empaque":
+    # Selectboxes de revisión general (ahora debajo de las listas de chequeo)
+    st.markdown("<h4>Revisión general</h4>", unsafe_allow_html=True)
+    revision_visual = st.selectbox("Revisión visual", ["", "Si", "No"], key="revision_visual")
+    revision_funcional = st.selectbox("Revisión funcional", ["", "Si", "No"], key="revision_funcional")
+    revision_soldadura = st.selectbox("Revisión de soldadura", ["", "Si", "No"], key="revision_soldadura")
+    revision_sentidos = st.selectbox("Revisión de sentidos de giro", ["", "Si", "No"], key="revision_sentidos")
+    manual_funcionamiento = st.selectbox("Manual de funcionamiento", ["", "Si", "No"], key="manual_funcionamiento")
+    revision_filos = st.selectbox("Revisión de filos y acabados", ["", "Si", "No"], key="revision_filos")
+    revision_tratamientos = st.selectbox("Revisión de tratamientos", ["", "Si", "No"], key="revision_tratamientos")
+    revision_tornilleria = st.selectbox("Revisión de tornillería", ["", "Si", "No"], key="revision_tornilleria")
+    revision_ruidos = st.selectbox("Revisión de ruidos", ["", "Si", "No"], key="revision_ruidos")
+    ensayo_equipo = st.selectbox("Ensayo equipo", ["", "Si", "No"], key="ensayo_equipo")
+
+    if menu_opcion == "Lista de empaque":
         # ...existing code para lista de empaque...
         pass  # Bloque vacío para evitar error de indentación
 
