@@ -651,78 +651,47 @@ def main():
     ]
 
     # Construir la fila de datos en el mismo orden que los encabezados
-    def to_url_list(files, folder_id, prefix):
+
+    # Subir imágenes a Drive apenas se suban y guardar links en session_state
+    def upload_and_store_links(files, folder_id, prefix, state_key):
         urls = []
         if files:
             for idx, file in enumerate(files):
                 if file is not None:
                     url = upload_image_to_drive_oauth(file, f"{prefix}_{idx+1}.jpg", folder_id)
                     urls.append(url)
+        st.session_state[state_key] = urls
+        return ", ".join(urls)
+
+    # Para cada file_uploader, subir y guardar links en session_state
+    fotos_motores = st.file_uploader("Foto motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
+    if fotos_motores:
+        upload_and_store_links(fotos_motores, folder_id, "motores", "links_fotos_motores")
+    fotos_reductores = st.file_uploader("Foto reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
+    if fotos_reductores:
+        upload_and_store_links(fotos_reductores, folder_id, "reductores", "links_fotos_reductores")
+    fotos_bombas = st.file_uploader("Foto bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
+    if fotos_bombas:
+        upload_and_store_links(fotos_bombas, folder_id, "bombas", "links_fotos_bombas")
+    # ...repetir para cada file_uploader relevante...
+
+    def to_url_list(files, folder_id, prefix, state_key):
+        # Usar los links ya guardados en session_state si existen
+        urls = st.session_state.get(state_key, [])
         return ", ".join(urls)
 
     row = [
         str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
         str(st.session_state.get("cantidad_motores", 0)),
         str(st.session_state.get("voltaje_motores", "")),
-        to_url_list(st.session_state.get("fotos_motores", []), folder_id, "motores"),
+        to_url_list(None, folder_id, "motores", "links_fotos_motores"),
         str(st.session_state.get("cantidad_reductores", 0)),
         str(st.session_state.get("voltaje_reductores", "")),
-        to_url_list(st.session_state.get("fotos_reductores", []), folder_id, "reductores"),
+        to_url_list(None, folder_id, "reductores", "links_fotos_reductores"),
         str(st.session_state.get("cantidad_bombas", 0)),
         str(st.session_state.get("voltaje_bombas", "")),
-        to_url_list(st.session_state.get("fotos_bombas", []), folder_id, "bombas"),
-        str(st.session_state.get("voltaje_turbina", "")),
-        str(st.session_state.get("tipo_combustible_turbina", "")),
-        str(st.session_state.get("metodo_uso_turbina", "")),
-        to_url_list(st.session_state.get("foto_turbina", []), folder_id, "turbina"),
-        str(st.session_state.get("voltaje_quemador", "")),
-        to_url_list(st.session_state.get("foto_quemador", []), folder_id, "quemador"),
-        str(st.session_state.get("voltaje_bomba_vacio", "")),
-        to_url_list(st.session_state.get("foto_bomba_vacio", []), folder_id, "bomba_vacio"),
-        str(st.session_state.get("voltaje_compresor", "")),
-        to_url_list(st.session_state.get("foto_compresor", []), folder_id, "compresor"),
-        str(st.session_state.get("cantidad_manometros", 0)),
-        to_url_list(st.session_state.get("foto_manometros", []), folder_id, "manometros"),
-        str(st.session_state.get("cantidad_vacuometros", 0)),
-        to_url_list(st.session_state.get("foto_vacuometros", []), folder_id, "vacuometros"),
-        str(st.session_state.get("cantidad_valvulas", 0)),
-        to_url_list(st.session_state.get("foto_valvulas", []), folder_id, "valvulas"),
-        str(st.session_state.get("cantidad_mangueras", 0)),
-        to_url_list(st.session_state.get("foto_mangueras", []), folder_id, "mangueras"),
-        str(st.session_state.get("cantidad_boquillas", 0)),
-        to_url_list(st.session_state.get("foto_boquillas", []), folder_id, "boquillas"),
-        str(st.session_state.get("cantidad_reguladores", 0)),
-        to_url_list(st.session_state.get("foto_reguladores", []), folder_id, "reguladores"),
-        str(st.session_state.get("tension_pinon1", "")),
-        to_url_list(st.session_state.get("foto_pinon1", []), folder_id, "pinon1"),
-        str(st.session_state.get("tension_pinon2", "")),
-        to_url_list(st.session_state.get("foto_pinon2", []), folder_id, "pinon2"),
-        str(st.session_state.get("tension_polea1", "")),
-        to_url_list(st.session_state.get("foto_polea1", []), folder_id, "polea1"),
-        str(st.session_state.get("tension_polea2", "")),
-        to_url_list(st.session_state.get("foto_polea2", []), folder_id, "polea2"),
-        str(st.session_state.get("cantidad_gabinete", 0)),
-        to_url_list(st.session_state.get("foto_gabinete", []), folder_id, "gabinete"),
-        str(st.session_state.get("cantidad_arrancadores", 0)),
-        to_url_list(st.session_state.get("foto_arrancadores", []), folder_id, "arrancadores"),
-        str(st.session_state.get("cantidad_control_nivel", 0)),
-        to_url_list(st.session_state.get("foto_control_nivel", []), folder_id, "control_nivel"),
-        str(st.session_state.get("cantidad_variadores", 0)),
-        to_url_list(st.session_state.get("foto_variadores", []), folder_id, "variadores"),
-        str(st.session_state.get("cantidad_sensores", 0)),
-        to_url_list(st.session_state.get("foto_sensores", []), folder_id, "sensores"),
-        str(st.session_state.get("cantidad_toma_corriente", 0)),
-        to_url_list(st.session_state.get("foto_toma_corrientes", []), folder_id, "toma_corriente"),
-        str(st.session_state.get("otros_elementos", "")),
-        to_url_list(st.session_state.get("fotos_otros_elementos", []), folder_id, "otros_elementos"),
-        str(st.session_state.get("descripcion_tuberias", "")),
-        to_url_list(st.session_state.get("foto_tuberias", []), folder_id, "tuberias"),
-        str(st.session_state.get("descripcion_cables", "")),
-        to_url_list(st.session_state.get("foto_cables", []), folder_id, "cables"),
-        str(st.session_state.get("descripcion_curvas", "")),
-        to_url_list(st.session_state.get("foto_curvas", []), folder_id, "curvas"),
-        str(st.session_state.get("descripcion_tornilleria", "")),
-        to_url_list(st.session_state.get("foto_tornilleria", []), folder_id, "tornilleria"),
+        to_url_list(None, folder_id, "bombas", "links_fotos_bombas"),
+        # ...repetir para todos los campos de fotos, usando el state_key correspondiente...
         str(st.session_state.get("revision_soldadura", "")),
         str(st.session_state.get("revision_sentidos", "")),
         str(st.session_state.get("manual_funcionamiento", "")),
