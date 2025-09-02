@@ -1,13 +1,16 @@
-def accesorios_varios_section():
-    """
-    Sección para ingresar accesorios varios: descripción y fotos.
-    Devuelve (descripcion, fotos)
-    """
-    st.markdown("<b>Accesorios varios</b>", unsafe_allow_html=True)
-    desc = st.text_area("Descripción accesorios varios", key="desc_accesorios_varios")
-    fotos = st.file_uploader("Fotos accesorios varios", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_accesorios_varios")
-    return desc, fotos
 import streamlit as st
+import gspread
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+from google.oauth2.service_account import Credentials
+import io
+import os
+import urllib.parse
+from google_auth_oauthlib.flow import Flow
+from google.oauth2.credentials import Credentials as UserCreds
+import json
+import datetime
+
 
 # Incluir CSS corporativo Tekpro
 st.markdown('''
@@ -62,15 +65,6 @@ h2, h3, .stApp h2, .stApp h3 {
 </style>
 ''', unsafe_allow_html=True)
 
-
-import gspread
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2.service_account import Credentials
-import io
-import os
-
-
 # Configuración
 SCOPES = [
     'https://www.googleapis.com/auth/drive',
@@ -96,7 +90,7 @@ def get_service_account_creds():
 # Subir imagen a Drive usando OAuth2 (usuario)
 def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
-    from google_auth_oauthlib.flow import Flow
+    
     redirect_uri = "https://dispatchtekpro.streamlit.app/"
     st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
     flow = Flow.from_client_config(
@@ -104,7 +98,7 @@ def authorize_drive_oauth():
         scopes=SCOPES,
         redirect_uri=redirect_uri
     )
-    import urllib.parse
+    
     auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
     st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
     st.markdown("""
@@ -138,8 +132,7 @@ def authorize_drive_oauth():
     st.stop()
 
 def get_drive_service_oauth():
-    from google.oauth2.credentials import Credentials as UserCreds
-    import json
+    
     creds = None
     if 'drive_oauth_token' in st.session_state:
         creds = UserCreds.from_authorized_user_info(json.loads(st.session_state['drive_oauth_token']))
@@ -205,7 +198,6 @@ def main():
         folder_id = st.secrets.drive_config.FOLDER_ID
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
-        import datetime
         st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
         auto_cliente = auto_equipo = auto_item = auto_cantidad = ""
         auto_fecha = datetime.date.today()
@@ -221,8 +213,8 @@ def main():
                         op_options.append(r[op_idx].strip()); op_to_row[r[op_idx].strip()] = r
         except Exception:
             pass
-        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options, key="op_selectbox_main")
-        if op_selected != "(Nueva OP)":
+        op_selected = st.selectbox("op", options=[" "] + op_options, key="op_selectbox_main")
+        if op_selected != "":
             r = op_to_row.get(op_selected, [])
             if r:
                 headers_lower = [h.strip().lower() for h in all_rows[0]]
@@ -242,15 +234,15 @@ def main():
                         auto_fecha = datetime.date.today()
                 else:
                     auto_fecha = datetime.date.today()
+
         cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
         equipo = st.text_input("equipo", value=auto_equipo, key="equipo_input")
         item = st.text_input("item", value=auto_item, key="item_input")
         cantidad = st.text_input("cantidad", value=auto_cantidad, key="cantidad_input")
         fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta_input")
-        st.markdown("</div>", unsafe_allow_html=True)
 
-        # Listas de chequeo: un checkbox para mostrar cada sección, y si está activo, mostrar expander con los ítems
+        # Listas de chequeo: solo un bloque de cada tipo
         st.markdown("<h4>Listas de chequeo</h4>", unsafe_allow_html=True)
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -262,181 +254,8 @@ def main():
         with col4:
             mostrar_electricos = st.checkbox("Elementos eléctricos", key="cb_electricos")
 
-        # Electromecánicos (unificado)
-        if mostrar_electromecanicos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos electromecánicos</h3>
-""", unsafe_allow_html=True)
-            motor_checked = st.checkbox("¿Hay motores?", key="motor_check")
-            reductor_checked = st.checkbox("¿Hay reductor?", key="reductor_check")
-            bomba_checked = st.checkbox("¿Hay bomba?", key="bombas_check")
-            turbina_checked = st.checkbox("¿Hay turbina?", key="turbina_check")
-            quemador_checked = st.checkbox("¿Hay quemador?", key="quemador_check")
-            bomba_vacio_checked = st.checkbox("¿Hay bomba de vacío?", key="bomba_vacio_check")
-            compresor_checked = st.checkbox("¿Hay compresor?", key="compresor_check")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            if motor_checked:
-                with st.expander("Motores", expanded=True):
-                    st.markdown("<b> Motores </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de motores", min_value=0, step=1, format="%d", key="cantidad_motores")
-                    st.text_input("Voltaje de motores", key="voltaje_motores")
-                    st.file_uploader("Fotos motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
-            if reductor_checked:
-                with st.expander("Reductor", expanded=True):
-                    st.markdown("<b> Reductor </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de reductores", min_value=0, step=1, format="%d", key="cantidad_reductores")
-                    st.text_input("Voltaje de reductores", key="voltaje_reductores")
-                    st.file_uploader("Fotos reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
-            if bomba_checked:
-                with st.expander("Bomba", expanded=True):
-                    st.markdown("<b> Bomba </b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad de bombas", min_value=0, step=1, format="%d", key="cantidad_bombas")
-                    st.text_input("Voltaje de bombas", key="voltaje_bombas")
-                    st.file_uploader("Fotos bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
-            if turbina_checked:
-                with st.expander("Turbina", expanded=True):
-                    st.markdown("<b> Turbina </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje turbina", key="voltaje_turbina")
-                    st.file_uploader("Foto turbina", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
-            if quemador_checked:
-                with st.expander("Quemador", expanded=True):
-                    st.markdown("<b> Quemador </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje quemador", key="voltaje_quemador")
-                    st.text_input("Tipo de combustible", key="tipo_combustible_quemador")
-                    st.text_input("Métodos de uso", key="metodos_uso_quemador")
-                    st.file_uploader("Foto quemador", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_quemador")
-            if bomba_vacio_checked:
-                with st.expander("Bomba de vacío", expanded=True):
-                    st.markdown("<b> Bomba de vacío </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje bomba de vacío", key="voltaje_bomba_vacio")
-                    st.file_uploader("Foto bomba de vacío", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_bomba_vacio")
-            if compresor_checked:
-                with st.expander("Compresor", expanded=True):
-                    st.markdown("<b> Compresor </b>", unsafe_allow_html=True)
-                    st.text_input("Voltaje compresor", key="voltaje_compresor")
-                    st.file_uploader("Foto compresor", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_compresor")
-
-        # Accesorios
-        if mostrar_accesorios:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
-""", unsafe_allow_html=True)
-            manometro_checked = st.checkbox("¿Hay manómetros?", key="manometro_check_accesorios")
-            vacuometro_checked = st.checkbox("¿Hay vacuómetros?", key="vacuometro_check_accesorios")
-            valvula_checked = st.checkbox("¿Hay válvulas?", key="valvula_check_accesorios")
-            manguera_checked = st.checkbox("¿Hay mangueras?", key="manguera_check_accesorios")
-            boquilla_checked = st.checkbox("¿Hay boquillas?", key="boquilla_check_accesorios")
-            regulador_checked = st.checkbox("¿Hay reguladores aire/gas?", key="regulador_check_accesorios")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_accesorios:
-            if manometro_checked:
-                with st.expander("Manómetros", expanded=True):
-                    st.markdown("<b>Manómetros</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad manómetros", min_value=0, step=1, format="%d", key="cantidad_manometros_accesorios")
-                    st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_manometros_accesorios")
-            if vacuometro_checked:
-                with st.expander("Vacuómetros", expanded=True):
-                    st.markdown("<b>Vacuómetros</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad vacuómetros", min_value=0, step=1, format="%d", key="cantidad_vacuometros_accesorios")
-                    st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_vacuometros_accesorios")
-            if valvula_checked:
-                with st.expander("Válvulas", expanded=True):
-                    st.markdown("<b>Válvulas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad válvulas", min_value=0, step=1, format="%d", key="cantidad_valvulas_accesorios")
-                    st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_valvulas_accesorios")
-            if manguera_checked:
-                with st.expander("Mangueras", expanded=True):
-                    st.markdown("<b>Mangueras</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad mangueras", min_value=0, step=1, format="%d", key="cantidad_mangueras_accesorios")
-                    st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_mangueras_accesorios")
-            if boquilla_checked:
-                with st.expander("Boquillas", expanded=True):
-                    st.markdown("<b>Boquillas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad boquillas", min_value=0, step=1, format="%d", key="cantidad_boquillas_accesorios")
-                    st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_boquillas_accesorios")
-            if regulador_checked:
-                with st.expander("Reguladores aire/gas", expanded=True):
-                    st.markdown("<b>Reguladores aire/gas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad reguladores aire/gas", min_value=0, step=1, format="%d", key="cantidad_reguladores_accesorios")
-                    st.file_uploader("Foto reguladores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_reguladores_accesorios")
-
-        # Mecánicos
-        if mostrar_mecanicos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
-""", unsafe_allow_html=True)
-            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos_acta")
-            pinon2_checked = st.checkbox("¿Hay piñón 2?", key="pinon2_check_mecanicos")
-            polea1_checked = st.checkbox("¿Hay polea 1?", key="polea1_check_mecanicos")
-            polea2_checked = st.checkbox("¿Hay polea 2?", key="polea2_check_mecanicos")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_mecanicos:
-            if pinon1_checked:
-                with st.expander("Piñón 1", expanded=True):
-                    st.markdown("<b>Piñón 1</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión piñón 1", key="tension_pinon1")
-                    st.file_uploader("Foto piñón 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon1")
-            if pinon2_checked:
-                with st.expander("Piñón 2", expanded=True):
-                    st.markdown("<b>Piñón 2</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión piñón 2", key="tension_pinon2")
-                    st.file_uploader("Foto piñón 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon2")
-            if polea1_checked:
-                with st.expander("Polea 1", expanded=True):
-                    st.markdown("<b>Polea 1</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión polea 1", key="tension_polea1")
-                    st.file_uploader("Foto polea 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea1")
-            if polea2_checked:
-                with st.expander("Polea 2", expanded=True):
-                    st.markdown("<b>Polea 2</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión polea 2", key="tension_polea2")
-                    st.file_uploader("Foto polea 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea2")
-
-        # Eléctricos
-        if mostrar_electricos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos eléctricos</h3>
-""", unsafe_allow_html=True)
-            gabinete_checked = st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check")
-            arrancador_checked = st.checkbox("¿Hay arrancador?", key="arrancador_check")
-            control_nivel_checked = st.checkbox("¿Hay control de nivel?", key="control_nivel_check")
-            variador_checked = st.checkbox("¿Hay variador de velocidad?", key="variador_check")
-            sensor_temp_checked = st.checkbox("¿Hay sensor de temperatura?", key="sensor_temp_check")
-            toma_corriente_checked = st.checkbox("¿Hay toma corriente?", key="toma_corriente_check")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_electricos:
-            if gabinete_checked:
-                with st.expander("Gabinete eléctrico", expanded=True):
-                    st.markdown("<b>Gabinete eléctrico</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad gabinete eléctrico", min_value=0, step=1, format="%d", key="cantidad_gabinete")
-                    st.file_uploader("Foto gabinete", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_gabinete")
-            if arrancador_checked:
-                with st.expander("Arrancador", expanded=True):
-                    st.markdown("<b>Arrancador</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad arrancadores", min_value=0, step=1, format="%d", key="cantidad_arrancadores")
-                    st.file_uploader("Foto arrancadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_arrancadores")
-            if control_nivel_checked:
-                with st.expander("Control de nivel", expanded=True):
-                    st.markdown("<b>Control de nivel</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad control de nivel", min_value=0, step=1, format="%d", key="cantidad_control_nivel")
-                    st.file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_control_nivel")
-            if variador_checked:
-                with st.expander("Variador de velocidad", expanded=True):
-                    st.markdown("<b>Variador de velocidad</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad variadores de velocidad", min_value=0, step=1, format="%d", key="cantidad_variador")
-                    st.file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_variador")
-            if sensor_temp_checked:
-                with st.expander("Sensor de temperatura", expanded=True):
-                    st.markdown("<b>Sensor de temperatura</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad sensores de temperatura", min_value=0, step=1, format="%d", key="cantidad_sensor_temp")
-                    st.file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_sensor_temp")
-            if toma_corriente_checked:
-                with st.expander("Toma corriente", expanded=True):
-                    st.markdown("<b>Toma corriente</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad tomas corriente", min_value=0, step=1, format="%d", key="cantidad_toma_corriente")
-                    st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_toma_corriente")
-
+        # Aquí van los bloques únicos de cada lista de chequeo (ya presentes más abajo en el código)
+        # ...existing code...
         if mostrar_accesorios:
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
