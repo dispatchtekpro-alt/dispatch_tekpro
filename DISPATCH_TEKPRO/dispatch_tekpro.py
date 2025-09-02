@@ -757,17 +757,7 @@ def main():
         st.session_state[state_key] = urls
         return ", ".join(urls)
 
-    # Para cada file_uploader, subir y guardar links en session_state
-    fotos_motores = st.file_uploader("Foto motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
-    if fotos_motores:
-        upload_and_store_links(fotos_motores, folder_id, "motores", "links_fotos_motores")
-    fotos_reductores = st.file_uploader("Foto reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
-    if fotos_reductores:
-        upload_and_store_links(fotos_reductores, folder_id, "reductores", "links_fotos_reductores")
-    fotos_bombas = st.file_uploader("Foto bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
-    if fotos_bombas:
-        upload_and_store_links(fotos_bombas, folder_id, "bombas", "links_fotos_bombas")
-    # ...repetir para cada file_uploader relevante...
+    # (Eliminado: los file_uploader y campos duplicados fuera de los expanders)
 
     def to_url_list(files, folder_id, prefix, state_key):
         # Usar los links ya guardados en session_state si existen
