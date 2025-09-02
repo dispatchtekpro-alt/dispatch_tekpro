@@ -366,7 +366,7 @@ def main():
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
 """, unsafe_allow_html=True)
-            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos")
+            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos_acta")
             pinon2_checked = st.checkbox("¿Hay piñón 2?", key="pinon2_check_mecanicos")
             polea1_checked = st.checkbox("¿Hay polea 1?", key="polea1_check_mecanicos")
             polea2_checked = st.checkbox("¿Hay polea 2?", key="polea2_check_mecanicos")
@@ -484,7 +484,7 @@ def main():
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
 """, unsafe_allow_html=True)
-            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos2")
+            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos_accesorios")
             pinon2_checked = st.checkbox("¿Hay piñón 2?", key="pinon2_check_mecanicos2")
             polea1_checked = st.checkbox("¿Hay polea 1?", key="polea1_check_mecanicos2")
             polea2_checked = st.checkbox("¿Hay polea 2?", key="polea2_check_mecanicos2")
@@ -556,240 +556,10 @@ def main():
                     st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_toma_corriente")
 
     elif menu_opcion == "Lista de empaque":
-        # Mismos datos generales que acta de entrega
-        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales de la lista de empaque</b>", unsafe_allow_html=True)
-        # Puedes reutilizar la lógica de datos generales aquí si lo deseas, o factorizar en una función
-        # ... (repetir inputs de datos generales aquí, con claves distintas si es necesario) ...
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<h4>Listas de chequeo</h4>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            mostrar_electromecanicos = st.checkbox("Elementos electromecánicos", key="cb_electromecanicos_empaque")
-        with col2:
-            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios_empaque")
-        with col3:
-            mostrar_mecanicos = st.checkbox("Elementos mecánicos", key="cb_mecanicos_empaque")
-        with col4:
-            mostrar_electricos = st.checkbox("Elementos eléctricos", key="cb_electricos_empaque")
-
-        if mostrar_electromecanicos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos electromecánicos</h3>
-""", unsafe_allow_html=True)
-            st.checkbox("¿Hay motores?", key="motor_check_empaque")
-            st.checkbox("¿Hay reductor?", key="reductor_check_empaque")
-            st.checkbox("¿Hay bomba?", key="bombas_check_empaque")
-            st.checkbox("¿Hay turbina?", key="turbina_check_empaque")
-            st.checkbox("¿Hay quemador?", key="quemador_check_empaque")
-            st.checkbox("¿Hay bomba de vacío?", key="bomba_vacio_check_empaque")
-            st.checkbox("¿Hay compresor?", key="compresor_check_empaque")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_accesorios:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
-""", unsafe_allow_html=True)
-            st.checkbox("¿Hay manómetros?", key="manometro_check_empaque")
-            st.checkbox("¿Hay vacuómetros?", key="vacuometro_check_empaque")
-            st.checkbox("¿Hay válvulas?", key="valvula_check_empaque")
-            st.checkbox("¿Hay mangueras?", key="manguera_check_empaque")
-            st.checkbox("¿Hay boquillas?", key="boquilla_check_empaque")
-            st.checkbox("¿Hay reguladores aire/gas?", key="regulador_check_empaque")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_mecanicos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
-""", unsafe_allow_html=True)
-            st.checkbox("¿Hay piñón 1?", key="pinon1_check_empaque")
-            st.checkbox("¿Hay piñón 2?", key="pinon2_check_empaque")
-            st.checkbox("¿Hay polea 1?", key="polea1_check_empaque")
-            st.checkbox("¿Hay polea 2?", key="polea2_check_empaque")
-            st.markdown("<hr>", unsafe_allow_html=True)
-        if mostrar_electricos:
-            st.markdown("""
-<h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos eléctricos</h3>
-""", unsafe_allow_html=True)
-            st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check_empaque")
-            st.checkbox("¿Hay arrancador?", key="arrancador_check_empaque")
-            st.checkbox("¿Hay control de nivel?", key="control_nivel_check_empaque")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-        # 3. Checkbox de listas de chequeo
-        st.markdown("<b>Listas de chequeo</b>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            mostrar_electromecanicos = st.checkbox("Electromecánicos", key="cb_electromecanicos")
-        with col2:
-            mostrar_accesorios = st.checkbox("Accesorios", key="cb_accesorios")
-        with col3:
-            mostrar_mecanicos = st.checkbox("Mecánicos", key="cb_mecanicos")
-        with col4:
-            mostrar_electricos = st.checkbox("Eléctricos", key="cb_electricos")
-
-            # 4. Desplegables info listas de chequeo
-            def seccion_articulo(nombre, mostrar, campos):
-                if mostrar:
-                    with st.expander(f"{nombre}", expanded=False):
-                        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'><b style='font-size:1.1em;color:#1db6b6'>"+nombre+"</b>", unsafe_allow_html=True)
-                        res = {}
-                        for c in campos:
-                            if c['tipo'] == 'number':
-                                res[c['nombre']] = st.number_input(c['label'], min_value=0, step=1, format="%d")
-                            elif c['tipo'] == 'text':
-                                res[c['nombre']] = st.text_input(c['label'])
-                            elif c['tipo'] == 'text_area':
-                                res[c['nombre']] = st.text_area(c['label'])
-                            elif c['tipo'] == 'file':
-                                res[c['nombre']] = st.file_uploader(c['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        return res
-                return {c['nombre']: (0 if c['tipo']== 'number' else "") for c in campos}
-
-            # Electromecánicos
-            if mostrar_electromecanicos:
-                motores = seccion_articulo("Motores", True, [
-                    {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'number'},
-                    {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
-                    {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
-                ])
-                reductores = seccion_articulo("Reductores", True, [
-                    {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'number'},
-                    {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
-                    {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
-                ])
-                bombas = seccion_articulo("Bombas", True, [
-                    {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'number'},
-                    {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
-                    {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
-                ])
-                turbina = seccion_articulo("Turbina", True, [
-                    {'nombre': 'voltaje_turbina', 'label': 'Voltaje turbina', 'tipo': 'text'},
-                    {'nombre': 'foto_turbina', 'label': 'Foto turbina', 'tipo': 'file'}
-                ])
-                quemador = seccion_articulo("Quemador", True, [
-                    {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
-                    {'nombre': 'tipo_combustible_quemador', 'label': 'Tipo de combustible', 'tipo': 'text'},
-                    {'nombre': 'metodos_uso_quemador', 'label': 'Métodos de uso', 'tipo': 'text'},
-                    {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
-                ])
-                bomba_vacio = seccion_articulo("Bomba de vacío", True, [
-                    {'nombre': 'voltaje_bomba_vacio', 'label': 'Voltaje bomba de vacío', 'tipo': 'text'},
-                    {'nombre': 'foto_bomba_vacio', 'label': 'Foto bomba de vacío', 'tipo': 'file'}
-                ])
-                compresor = seccion_articulo("Compresor", True, [
-                    {'nombre': 'voltaje_compresor', 'label': 'Voltaje compresor', 'tipo': 'text'},
-                    {'nombre': 'foto_compresor', 'label': 'Foto compresor', 'tipo': 'file'}
-                ])
-            else:
-                motores = reductores = bombas = turbina = quemador = bomba_vacio = compresor = {}
-
-            # Accesorios
-            if mostrar_accesorios:
-                manometros = seccion_articulo("Manómetros", True, [
-                    {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'number'},
-                    {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
-                ])
-                vacuometros = seccion_articulo("Vacuómetros", True, [
-                    {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'number'},
-                    {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
-                ])
-                valvulas = seccion_articulo("Válvulas", True, [
-                    {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'number'},
-                    {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
-                ])
-                mangueras = seccion_articulo("Mangueras", True, [
-                    {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'number'},
-                    {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
-                ])
-                boquillas = seccion_articulo("Boquillas", True, [
-                    {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'number'},
-                    {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
-                ])
-                reguladores = seccion_articulo("Reguladores aire/gas", True, [
-                    {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'number'},
-                    {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
-                ])
-            else:
-                manometros = vacuometros = valvulas = mangueras = boquillas = reguladores = {}
-
-            # Mecánicos
-            if mostrar_mecanicos:
-                pinon1 = seccion_articulo("Piñón 1", True, [
-                    {'nombre': 'tension_pinon1', 'label': 'Tensión piñón 1', 'tipo': 'text'},
-                    {'nombre': 'foto_pinon1', 'label': 'Foto piñón 1', 'tipo': 'file'}
-                ])
-                pinon2 = seccion_articulo("Piñón 2", True, [
-                    {'nombre': 'tension_pinon2', 'label': 'Tensión piñón 2', 'tipo': 'text'},
-                    {'nombre': 'foto_pinon2', 'label': 'Foto piñón 2', 'tipo': 'file'}
-                ])
-                polea1 = seccion_articulo("Polea 1", True, [
-                    {'nombre': 'tension_polea1', 'label': 'Tensión polea 1', 'tipo': 'text'},
-                    {'nombre': 'foto_polea1', 'label': 'Foto polea 1', 'tipo': 'file'}
-                ])
-                polea2 = seccion_articulo("Polea 2", True, [
-                    {'nombre': 'tension_polea2', 'label': 'Tensión polea 2', 'tipo': 'text'},
-                    {'nombre': 'foto_polea2', 'label': 'Foto polea 2', 'tipo': 'file'}
-                ])
-            else:
-                pinon1 = pinon2 = polea1 = polea2 = {}
-
-            # Eléctricos
-            if mostrar_electricos:
-                gabinete = seccion_articulo("Gabinete eléctrico", True, [
-                    {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'number'},
-                    {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
-                ])
-                arrancadores = seccion_articulo("Arrancadores", True, [
-                    {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'number'},
-                    {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
-                ])
-                control_nivel = seccion_articulo("Control de nivel", True, [
-                    {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'number'},
-                    {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
-                ])
-                variadores = seccion_articulo("Variadores de velocidad", True, [
-                    {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'number'},
-                    {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
-                ])
-                sensores = seccion_articulo("Sensores de temperatura", True, [
-                    {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'number'},
-                    {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
-                ])
-                toma_corriente = seccion_articulo("Toma corriente", True, [
-                    {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'number'},
-                    {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
-                ])
-            else:
-                gabinete = arrancadores = control_nivel = variadores = sensores = toma_corriente = {}
-
-            # 5. Otros elementos
-            col_otros1, col_otros2 = st.columns([2,2])
-            with col_otros1:
-                otros_elementos = st.text_area("otros elementos")
-            with col_otros2:
-                fotos_otros_elementos = st.file_uploader("Fotos otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
-
-            # 6. Preguntas de revisión
-            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
-            st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
-            revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"]) 
-            revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"]) 
-            manual_funcionamiento = st.selectbox("manual de funcionamiento", ["", "Sí", "No"]) 
-            revision_filos = st.selectbox("revision de filos y acabados", ["", "Sí", "No"]) 
-            revision_tratamientos = st.selectbox("revision de tratamientos", ["", "Sí", "No"]) 
-            revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"]) 
-            revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"]) 
-            ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"]) 
-
-            # 7. Información final
-            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
-            st.markdown("<b>Información final</b>", unsafe_allow_html=True)
-            observaciones_generales = st.text_area("observciones generales")
             lider_inspeccion = st.text_input("lider de inspeccion")
             encargado_ensamblador = st.text_input("encargado ensamblador")
             disenador = st.selectbox("diseñador", ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]) 
             # Fecha de entrega con hora
-            # Usar datetime_input si está disponible, si no, usar date_input y time_input
             try:
                 fecha_entrega = st.datetime_input("fecha y hora de entrega", value=datetime.datetime.now(), key="fecha_entrega_acta")
             except AttributeError:
@@ -797,62 +567,15 @@ def main():
                 fecha_time = st.time_input("Hora de entrega", value=datetime.datetime.now().time(), key="fecha_entrega_acta_time")
                 fecha_entrega = datetime.datetime.combine(fecha_date, fecha_time)
 
-            # Accesorios varios visibles dentro del formulario
-            accesorios_varios_desc, accesorios_varios_foto = accesorios_varios_section()
-
-            submitted_acta = st.button("Guardar acta de entrega")
+            submitted_acta = st.button("Guardar lista de empaque")
 
             if submitted_acta:
-                def serializa_fotos(valor, nombre_base, folder_id):
-                    enlaces = []
-                    if isinstance(valor, list):
-                        for idx, f in enumerate(valor, start=1):
-                            try:
-                                public_url = upload_image_to_drive_oauth(io.BytesIO(f.read()), f"{nombre_base}_{idx}.jpg", folder_id)
-                                enlaces.append(public_url)
-                            except Exception as e:
-                                enlaces.append(f"Error: {e}")
-                        return ", ".join(enlaces) if enlaces else ""
-                    elif hasattr(valor, 'name'):
-                        try:
-                            return upload_image_to_drive_oauth(io.BytesIO(valor.read()), f"{nombre_base}.jpg", folder_id)
-                        except Exception as e:
-                            return f"Error: {e}"
-                    else:
-                        return str(valor) if valor is not None else ""
-
                 row = [
                     str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-                    str(motores.get('cantidad_motores', 0)), str(motores.get('voltaje_motores', "")), serializa_fotos(motores.get('fotos_motores', []), f"Motores_{op}", folder_id),
-                    str(reductores.get('cantidad_reductores', 0)), str(reductores.get('voltaje_reductores', "")), serializa_fotos(reductores.get('fotos_reductores', []), f"Reductores_{op}", folder_id),
-                    str(bombas.get('cantidad_bombas', 0)), str(bombas.get('voltaje_bombas', "")), serializa_fotos(bombas.get('fotos_bombas', []), f"Bombas_{op}", folder_id),
-                    str(turbina.get('voltaje_turbina', "")), serializa_fotos(turbina.get('foto_turbina', []), f"Turbina_{op}", folder_id),
-                    str(quemador.get('voltaje_quemador', "")), serializa_fotos(quemador.get('foto_quemador', []), f"Quemador_{op}", folder_id),
-                    str(bomba_vacio.get('voltaje_bomba_vacio', "")), serializa_fotos(bomba_vacio.get('foto_bomba_vacio', []), f"BombaVacio_{op}", folder_id),
-                    str(compresor.get('voltaje_compresor', "")), serializa_fotos(compresor.get('foto_compresor', []), f"Compresor_{op}", folder_id),
-                    str(manometros.get('cantidad_manometros', 0)), serializa_fotos(manometros.get('foto_manometros', []), f"Manometros_{op}", folder_id),
-                    str(vacuometros.get('cantidad_vacuometros', 0)), serializa_fotos(vacuometros.get('foto_vacuometros', []), f"Vacuometros_{op}", folder_id),
-                    str(valvulas.get('cantidad_valvulas', 0)), serializa_fotos(valvulas.get('foto_valvulas', []), f"Valvulas_{op}", folder_id),
-                    str(mangueras.get('cantidad_mangueras', 0)), serializa_fotos(mangueras.get('foto_mangueras', []), f"Mangueras_{op}", folder_id),
-                    str(boquillas.get('cantidad_boquillas', 0)), serializa_fotos(boquillas.get('foto_boquillas', []), f"Boquillas_{op}", folder_id),
-                    str(reguladores.get('cantidad_reguladores', 0)), serializa_fotos(reguladores.get('foto_reguladores', []), f"Reguladores_{op}", folder_id),
-                    str(pinon1.get('tension_pinon1', "")), serializa_fotos(pinon1.get('foto_pinon1', []), f"Pinon1_{op}", folder_id),
-                    str(pinon2.get('tension_pinon2', "")), serializa_fotos(pinon2.get('foto_pinon2', []), f"Pinon2_{op}", folder_id),
-                    str(polea1.get('tension_polea1', "")), serializa_fotos(polea1.get('foto_polea1', []), f"Polea1_{op}", folder_id),
-                    str(polea2.get('tension_polea2', "")), serializa_fotos(polea2.get('foto_polea2', []), f"Polea2_{op}", folder_id),
-                    str(gabinete.get('cantidad_gabinete', 0)), serializa_fotos(gabinete.get('foto_gabinete', []), f"Gabinete_{op}", folder_id),
-                    str(arrancadores.get('cantidad_arrancadores', 0)), serializa_fotos(arrancadores.get('foto_arrancadores', []), f"Arrancadores_{op}", folder_id),
-                    str(control_nivel.get('cantidad_control_nivel', 0)), serializa_fotos(control_nivel.get('foto_control_nivel', []), f"ControlNivel_{op}", folder_id),
-                    str(variadores.get('cantidad_variadores', 0)), serializa_fotos(variadores.get('foto_variadores', []), f"Variadores_{op}", folder_id),
-                    str(sensores.get('cantidad_sensores', 0)), serializa_fotos(sensores.get('foto_sensores', []), f"Sensores_{op}", folder_id),
-                    str(toma_corriente.get('cantidad_toma_corriente', 0)), serializa_fotos(toma_corriente.get('foto_toma_corrientes', []), f"TomaCorriente_{op}", folder_id),
-                    str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
-                    str(accesorios_varios_desc.get("tuberias", "")), serializa_fotos(accesorios_varios_foto.get("tuberias", []), f"Tuberias_{op}", folder_id),
-                    str(accesorios_varios_desc.get("curvas", "")), serializa_fotos(accesorios_varios_foto.get("curvas", []), f"Curvas_{op}", folder_id),
-                    str(accesorios_varios_desc.get("tornilleria", "")), serializa_fotos(accesorios_varios_foto.get("tornilleria", []), f"Tornilleria_{op}", folder_id),
-                    str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
-                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(encargado_ensamblador), str(disenador), str(fecha_entrega)
+                    str(lider_inspeccion), str(encargado_ensamblador), str(disenador), str(fecha_entrega)
                 ]
+                    # ...campos eliminados, solo dejar los campos válidos para acta de entrega o lista de empaque...
+                
 
                 headers = [
                     "cliente", "op", "item", "equipo", "cantidad", "fecha",
@@ -913,7 +636,7 @@ def main():
                 else:
                     sheet.resize(cols=len(headers))
                     sheet.update(f'A{target_row}', [row])
-        st.success("Acta de entrega guardada correctamente en Google Sheets.")
+    st.success("Acta de entrega guardada correctamente en Google Sheets.")
 
         # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
     acta_status = "pendiente"
@@ -985,32 +708,7 @@ def main():
     fecha_entrega = st.session_state.get("fecha_entrega_acta", datetime.date.today())
     row = [
         str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-        str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
-        str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
-        str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
-        str(voltaje_turbina), serializa_fotos(foto_turbina, f"Turbina_{op}", folder_id),
-        str(voltaje_quemador), serializa_fotos(foto_quemador, f"Quemador_{op}", folder_id),
-        str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio, f"BombaVacio_{op}", folder_id),
-        str(voltaje_compresor), serializa_fotos(foto_compresor, f"Compresor_{op}", folder_id),
-        str(cantidad_manometros), serializa_fotos(foto_manometros, f"Manometros_{op}", folder_id),
-        str(cantidad_vacuometros), serializa_fotos(foto_vacuometros, f"Vacuometros_{op}", folder_id),
-        str(cantidad_valvulas), serializa_fotos(foto_valvulas, f"Valvulas_{op}", folder_id),
-        str(cantidad_mangueras), serializa_fotos(foto_mangueras, f"Mangueras_{op}", folder_id),
-        str(cantidad_boquillas), serializa_fotos(foto_boquillas, f"Boquillas_{op}", folder_id),
-        str(cantidad_reguladores), serializa_fotos(foto_reguladores, f"Reguladores_{op}", folder_id),
-        str(tension_pinon1), serializa_fotos(foto_pinon1, f"Pinon1_{op}", folder_id),
-        str(tension_pinon2), serializa_fotos(foto_pinon2, f"Pinon2_{op}", folder_id),
-        str(tension_polea1), serializa_fotos(foto_polea1, f"Polea1_{op}", folder_id),
-        str(tension_polea2), serializa_fotos(foto_polea2, f"Polea2_{op}", folder_id),
-        str(cantidad_gabinete), serializa_fotos(foto_gabinete, f"Gabinete_{op}", folder_id),
-        str(cantidad_arrancadores), serializa_fotos(foto_arrancadores, f"Arrancadores_{op}", folder_id),
-        str(cantidad_control_nivel), serializa_fotos(foto_control_nivel, f"ControlNivel_{op}", folder_id),
-        str(cantidad_variadores), serializa_fotos(foto_variadores, f"Variadores_{op}", folder_id),
-        str(cantidad_sensores), serializa_fotos(foto_sensores, f"Sensores_{op}", folder_id),
-        str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes, f"TomaCorriente_{op}", folder_id),
-        str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
-        str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
-        str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
+        str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
     ]
     headers = [
         "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
