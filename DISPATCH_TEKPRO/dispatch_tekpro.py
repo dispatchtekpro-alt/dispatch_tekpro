@@ -224,6 +224,7 @@ def main():
             headers_lower = [h.strip().lower() for h in all_rows[0]]
             # Mapear todos los campos relevantes
             def get_val(col):
+                col = col.strip().lower()
                 idx = headers_lower.index(col) if col in headers_lower else None
                 return r[idx] if idx is not None and idx < len(r) else ""
             def to_int(val):
@@ -239,6 +240,7 @@ def main():
                 auto_fecha = datetime.datetime.strptime(get_val("fecha"), "%Y-%m-%d").date() if get_val("fecha") else datetime.date.today()
             except Exception:
                 auto_fecha = datetime.date.today()
+        # Mostrar los valores en los campos, asegurando que se llenen correctamente
         cliente = st.text_input("cliente", value=auto_cliente, key="cliente_input")
         op = op_selected
         item = st.text_input("item", value=auto_item, key="item_input")
