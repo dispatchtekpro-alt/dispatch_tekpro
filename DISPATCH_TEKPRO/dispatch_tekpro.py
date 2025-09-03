@@ -778,12 +778,11 @@ def main():
 
     # Subir imágenes a Drive apenas se suban y guardar links en session_state
 
-    # Solo guardar los archivos en session_state, subirlos a Drive al enviar
+    # --- FUNCIONES PARA MANEJO DE ARCHIVOS ---
     def to_url_list(state_key):
         # Devuelve la lista de links (después de subir)
         return ", ".join(st.session_state.get(state_key + "_links", []))
 
-    # Guardar los archivos subidos en session_state (no subir aún)
     def store_files(files, state_key):
         if files:
             st.session_state[state_key + "_files"] = files
