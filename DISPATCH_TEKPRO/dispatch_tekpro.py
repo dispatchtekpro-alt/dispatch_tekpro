@@ -10,6 +10,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials as UserCreds
 import json
 import datetime
+from streamlit_drawable_canvas import st_canvas
 
 
 # Incluir CSS corporativo Tekpro
@@ -666,8 +667,227 @@ def main():
     st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
 
     if menu_opcion == "Lista de empaque":
-        # ...existing code para lista de empaque...
-        pass  # Bloque vacío para evitar error de indentación
+        # --- Botón para guardar lista de empaque ---
+        if op_selected_empaque != "":
+            # Observaciones adicionales
+            observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
+            st.session_state['observaciones_adicionales'] = observaciones_adicionales
+            # --- Botones finales y lógica dinámica de guacales ---
+            if 'guacales' not in st.session_state:
+                st.session_state['guacales'] = [
+                    {'descripcion': '', 'fotos': []}
+                ]
+            guacales = st.session_state['guacales']
+            # Mostrar todos los guacales actuales
+            for i, guacal in enumerate(guacales):
+                st.markdown(f"<h5>Guacal {i+1}</h5>", unsafe_allow_html=True)
+                guacal['descripcion'] = st.text_area(f"Descripción Guacal {i+1}", value=guacal.get('descripcion',''), key=f"descripcion_guacal_{i+1}")
+                uploaded_files = st.file_uploader(f"Fotos Guacal {i+1}", type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_guacal_{i+1}")
+                guacal['fotos'] = uploaded_files if uploaded_files else []
+            # Botones para agregar/quitar guacales
+            col_btn1, col_btn2 = st.columns([1,1])
+            with col_btn1:
+                if st.button("Agregar otro guacal", key="agregar_otro_guacal"):
+                    st.session_state['guacales'].append({'descripcion': '', 'fotos': []})
+                    st.experimental_rerun()
+            with col_btn2:
+                if len(st.session_state['guacales']) > 1:
+                    if st.button("Quitar último guacal", key="quitar_guacal"):
+                        st.session_state['guacales'].pop()
+                        st.experimental_rerun()
+            # --- Artículos seleccionados en el acta de entrega ---
+            st.markdown("<h4>Artículos a empacar</h4>", unsafe_allow_html=True)
+            # Mapear los campos de presencia de artículos en el acta de entrega
+            articulos_map = {
+                "motores": ["motor_check", "Motores"],
+                "reductores": ["reductor_check", "Reductores"],
+                "bombas": ["bomba_check", "Bombas"],
+                "turbina": ["turbina_check", "Turbina"],
+                "quemador": ["quemador_check", "Quemador"],
+                "bomba_vacio": ["bomba_vacio_check", "Bomba de vacío"],
+                "compresor": ["compresor_check", "Compresor"],
+                "manometros": ["manometro_check_accesorios2", "Manómetros"],
+                "vacuometros": ["vacuometro_check_accesorios2", "Vacuómetros"],
+                "valvulas": ["valvula_check_accesorios2", "Válvulas"],
+                "mangueras": ["manguera_check_accesorios2", "Mangueras"],
+                "boquillas": ["boquilla_check_accesorios2", "Boquillas"],
+                "reguladores": ["regulador_check_accesorios2", "Reguladores aire/gas"],
+                "tornillos": ["tornillos_check_accesorios2", "Tornillos"],
+                "curvas": ["curvas_check_accesorios2", "Curvas"],
+                "cables": ["cables_check_accesorios2", "Cables"],
+                "tuberias": ["tuberias_check_accesorios2", "Tuberías"],
+                "pinon1": ["pinon1_check_mecanicos_accesorios", "Piñón 1"],
+                "pinon2": ["pinon2_check_mecanicos2", "Piñón 2"],
+                "polea1": ["polea1_check_mecanicos2", "Polea 1"],
+                "polea2": ["polea2_check_mecanicos2", "Polea 2"]
+            }
+            articulos_presentes = []
+            for key, (check_col, nombre) in articulos_map.items():
+                # Buscar el índice de la columna del checkbox en el acta de entrega
+                idx = headers_lower.index(check_col) if check_col in headers_lower else None
+                if idx is not None and row[idx].strip().lower() in ["true", "1", "si", "yes", "x"]:
+                    articulos_presentes.append((key, nombre))
+            if articulos_presentes:
+                st.markdown("<i>Marca los artículos que realmente se van a empacar:</i>", unsafe_allow_html=True)
+                for key, nombre in articulos_presentes:
+                    st.checkbox(f"Empacar {nombre}", key=f"empacar_{key}_empaque")
+            else:
+                st.info("No hay artículos seleccionados en el acta de entrega para esta OP.")
+            enviar_empaque = st.button("Guardar Lista de Empaque", key="guardar_lista_empaque")
+            if enviar_empaque:
+                # Guardar firma en Drive si existe
+                firma_url = ""
+                if 'firma_logistica_canvas' in st.session_state:
+                    canvas_result = st.session_state['firma_logistica_canvas']
+                    if hasattr(canvas_result, 'image_data') and canvas_result.image_data is not None:
+                        from PIL import Image
+                        import numpy as np
+                        import tempfile
+                        # Convertir a imagen PIL
+                        img = Image.fromarray((canvas_result.image_data).astype(np.uint8))
+                        # Guardar temporalmente
+                        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                            img.save(tmpfile.name)
+                            tmpfile.seek(0)
+                            with open(tmpfile.name, "rb") as f:
+                                firma_url = upload_image_to_drive_oauth(f, f"firma_logistica_{op_selected_empaque}.png", st.secrets.drive_config.FOLDER_ID)
+                # Determinar artículos empacados y no empacados
+                articulos_enviados = []
+                articulos_no_enviados = []
+                for key, (check_col, nombre) in articulos_map.items():
+                    # Solo mostrar los que estaban presentes en el acta de entrega
+                    idx = headers_lower.index(check_col) if check_col in headers_lower else None
+                    if idx is not None and row[idx].strip().lower() in ["true", "1", "si", "yes", "x"]:
+                        if st.session_state.get(f"empacar_{key}_empaque", False):
+                            articulos_enviados.append(nombre)
+                        else:
+                            articulos_no_enviados.append(nombre)
+
+                # Guardar datos en Google Sheets (hoja Lista de empaque)
+                file_name_empaque = "dispatch_tekpro"
+                worksheet_name_empaque = "Lista de empaque"
+                # Subir fotos de todos los guacales a Drive y guardar enlaces
+                guacales_data = []
+                num_guacales = len(st.session_state['guacales'])
+                for idx in range(num_guacales):
+                    guacal = st.session_state['guacales'][idx]
+                    urls_fotos = []
+                    for j, file in enumerate(guacal['fotos']):
+                        if file is not None:
+                            url = upload_image_to_drive_oauth(file, f"guacal{idx+1}_{op}_{j+1}.jpg", st.secrets.drive_config.FOLDER_ID)
+                            urls_fotos.append(url)
+                    guacales_data.append({
+                        'descripcion': guacal['descripcion'],
+                        'fotos': urls_fotos
+                    })
+                # Encabezados base
+                headers_empaque = [
+                    "Op", "Fecha", "Cliente", "Equipo", "Encargado almacén", "Encargado ingeniería y diseño", "Encargado logística", "Firma encargado logística", "Observaciones adicionales", "Artículos enviados", "Artículos no enviados"
+                ]
+                row_empaque = [
+                    op,
+                    fecha,
+                    cliente,
+                    equipo,
+                    encargado_almacen,
+                    encargado_ingenieria,
+                    encargado_logistica,
+                    firma_url,
+                    st.session_state.get('observaciones_adicionales', ''),
+                    ", ".join(articulos_enviados),
+                    ", ".join(articulos_no_enviados)
+                ]
+                # Agregar columnas dinámicamente para cada guacal
+                for idx, guacal in enumerate(guacales_data):
+                    headers_empaque.append(f"Descripción Guacal {idx+1}")
+                    headers_empaque.append(f"Fotos Guacal {idx+1}")
+                    row_empaque.append(guacal['descripcion'])
+                    row_empaque.append(", ".join(guacal['fotos']))
+                # Guardar en sheet
+                try:
+                    sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
+                except Exception:
+                    # Si la hoja no existe, crearla y poner encabezados
+                    sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(title=worksheet_name_empaque, rows=100, cols=len(headers_empaque))
+                    sheet_empaque.append_row(headers_empaque)
+                # Si la hoja está vacía, poner encabezados
+                if not sheet_empaque.get_all_values():
+                    sheet_empaque.append_row(headers_empaque)
+                sheet_empaque.append_row(row_empaque)
+                st.success(f"Lista de empaque guardada en Google Sheets. Enlace de la firma: {firma_url if firma_url else 'No se capturó firma.'}")
+        creds = get_service_account_creds()
+        sheet_client = gspread.authorize(creds)
+        file_name = "dispatch_tekpro"
+        worksheet_name = "Acta de entrega"
+        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales para empaque</b>", unsafe_allow_html=True)
+        # Leer OPs ya diligenciadas en acta de entrega
+        op_options_empaque = []
+        op_to_row_empaque = {}
+        try:
+            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+            all_rows = sheet.get_all_values()
+            if all_rows:
+                headers_lower = [h.strip().lower() for h in all_rows[0]]
+                op_idx = headers_lower.index("op") if "op" in headers_lower else None
+                for r in all_rows[1:]:
+                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
+                        op_options_empaque.append(r[op_idx].strip())
+                        op_to_row_empaque[r[op_idx].strip()] = r
+        except Exception:
+            st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
+        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque")
+        if op_selected_empaque != "":
+            row = op_to_row_empaque.get(op_selected_empaque, [])
+            # Obtener headers
+            headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
+            def get_val(col):
+                col = col.strip().lower()
+                idx = headers_lower.index(col) if col in headers_lower else None
+                return row[idx] if idx is not None and idx < len(row) else ""
+
+            # Campos arrastrados de acta de entrega
+            op = op_selected_empaque
+            fecha = get_val("fecha")
+            cliente = get_val("cliente")
+            equipo = get_val("equipo")
+            encargado_ingenieria = get_val("disenador") if get_val("disenador") else get_val("diseñador")
+
+            # Selectbox para encargado almacén
+            encargados_almacen = ["", "Andrea Ochoa"]
+            encargado_almacen = st.selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
+
+            # Selectbox para encargado logística
+            encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
+            encargado_logistica = st.selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
+
+            # Mostrar los datos
+            st.markdown(f"""
+            <div style='background:#e6f7f7;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
+            <b>OP:</b> {op}<br>
+            <b>Fecha:</b> {fecha}<br>
+            <b>Cliente:</b> {cliente}<br>
+            <b>Equipo:</b> {equipo}<br>
+            <b>Encargado almacén:</b> {encargado_almacen}<br>
+            <b>Encargado ingeniería y diseño:</b> {encargado_ingenieria}<br>
+            <b>Encargado logística:</b> {encargado_logistica}<br>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Espacio para firma encargado logística
+            st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
+            st.info("Por favor, firme en el recuadro de abajo:")
+            canvas_result = st_canvas(
+                fill_color="#00000000",  # Fondo transparente
+                stroke_width=2,
+                stroke_color="#1db6b6",
+                background_color="#f7fafb",
+                height=150,
+                width=400,
+                drawing_mode="freedraw",
+                key="firma_logistica_canvas"
+            )
+            if canvas_result.image_data is not None:
+                st.image(canvas_result.image_data, caption="Firma digital de logística", use_column_width=False)
 
     # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
 
@@ -784,10 +1004,12 @@ def main():
         return ", ".join(st.session_state.get(state_key + "_links", []))
 
     def store_files(files, state_key):
-        if files:
+        if files is not None:
             st.session_state[state_key + "_files"] = files
         else:
             st.session_state[state_key + "_files"] = []
+
+    # Asegurarse de que todas las llamadas a store_files estén después de esta definición
 
     # Reemplazar todos los file_uploader para almacenar archivos, no subir
     # (Esto se hace en cada expander, ejemplo para motores:)
