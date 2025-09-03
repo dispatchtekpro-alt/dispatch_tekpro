@@ -197,6 +197,8 @@ def main():
     )
 
     if menu_opcion == "Acta de entrega":
+        st.markdown("<h1 style='color:#1db6b6;font-family:Montserrat,Arial,sans-serif;font-weight:700;'>ACTA DE ENTREGA TEKPRO</h1>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
         # --- TODO el flujo de acta de entrega aquí ---
         # Incluye todas las variables, lógica, formularios y guardado de acta de entrega
 
@@ -634,7 +636,6 @@ def main():
         fecha_hora_formateada = dt_entrega.strftime("%d-%m-%y-%H:%M:%S")
         st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
 
-        st.markdown("<h2 style='color:#1db6b6;'>ACTA DE ENTREGA TEKPRO</h2>", unsafe_allow_html=True)
         # Botón para enviar el acta de entrega (al final del formulario)
         enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
         # Guardar solo al presionar el botón
@@ -746,6 +747,8 @@ def main():
             st.success("Acta de entrega guardada correctamente en Google Sheets.")
     #/////////////////////////////////////////////////////////////AQUI EMPIEZA CODIGO DE LISTA DE EMPAQUE////////////////////////
     elif menu_opcion == "Lista de empaque":
+        st.markdown("<h1 style='color:#1db6b6;font-family:Montserrat,Arial,sans-serif;font-weight:700;'>ACTA DE EMPAQUE TEKPRO</h1>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
         # --- SOLO lógica y UI de lista de empaque ---
         folder_id = st.secrets.drive_config.FOLDER_ID
         creds = get_service_account_creds()
@@ -756,6 +759,7 @@ def main():
         # Leer OPs ya diligenciadas en acta de entrega
         op_options_empaque = []
         op_to_row_empaque = {}
+        op_selected_empaque = ""
         try:
             sheet = sheet_client.open(file_name).worksheet(worksheet_name)
             all_rows = sheet.get_all_values()
@@ -769,7 +773,7 @@ def main():
         except Exception:
             st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
         op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque")
-        if op_selected_empaque != "":
+        if op_selected_empaque and op_selected_empaque.strip() != "":
             row = op_to_row_empaque.get(op_selected_empaque, [])
             headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
             def get_val(col):
