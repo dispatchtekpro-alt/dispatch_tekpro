@@ -666,8 +666,13 @@ def main():
     fecha_hora_formateada = dt_entrega.strftime("%d-%m-%y-%H:%M:%S")
     st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
 
+    if menu_opcion == "Acta de entrega":
+        st.markdown("<h2 style='color:#1db6b6;'>ACTA DE ENTREGA TEKPRO</h2>", unsafe_allow_html=True)
+
     if menu_opcion == "Lista de empaque":
-        # --- Botón para guardar lista de empaque ---
+        st.markdown("<h2 style='color:#1db6b6;'>ACTA DE EMPAQUE TEKPRO</h2>", unsafe_allow_html=True)
+        # --- SOLO mostrar la sección de lista de empaque ---
+        # (El resto del código de acta de entrega no se ejecuta)
         if op_selected_empaque != "":
             # Observaciones adicionales
             observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
