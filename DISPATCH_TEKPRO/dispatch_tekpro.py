@@ -281,51 +281,27 @@ def main():
                     st.number_input("Cantidad motores", min_value=0, step=1, format="%d", key="cantidad_motores")
                     st.text_input("Voltaje motores", key="voltaje_motores")
                     fotos_motores = st.file_uploader("Foto motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
-                    if fotos_motores:
-                        urls = []
-                        for idx, file in enumerate(fotos_motores):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"motores_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_fotos_motores"] = urls
+                    store_files(fotos_motores, "motores")
             if reductor_checked:
                 with st.expander("Reductores", expanded=True):
                     st.markdown("<b>Reductores</b>", unsafe_allow_html=True)
                     st.number_input("Cantidad reductores", min_value=0, step=1, format="%d", key="cantidad_reductores")
                     st.text_input("Voltaje reductores", key="voltaje_reductores")
                     fotos_reductores = st.file_uploader("Foto reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
-                    if fotos_reductores:
-                        urls = []
-                        for idx, file in enumerate(fotos_reductores):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"reductores_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_fotos_reductores"] = urls
+                    store_files(fotos_reductores, "reductores")
             if bomba_checked:
                 with st.expander("Bombas", expanded=True):
                     st.markdown("<b>Bombas</b>", unsafe_allow_html=True)
                     st.number_input("Cantidad bombas", min_value=0, step=1, format="%d", key="cantidad_bombas")
                     st.text_input("Voltaje bombas", key="voltaje_bombas")
                     fotos_bombas = st.file_uploader("Foto bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
-                    if fotos_bombas:
-                        urls = []
-                        for idx, file in enumerate(fotos_bombas):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"bombas_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_fotos_bombas"] = urls
+                    store_files(fotos_bombas, "bombas")
             if turbina_checked:
                 with st.expander("Turbinas", expanded=True):
                     st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje turbinas", key="voltaje_turbina")
                     fotos_turbina = st.file_uploader("Foto turbinas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_turbina")
-                    if fotos_turbina:
-                        urls = []
-                        for idx, file in enumerate(fotos_turbina):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"turbina_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_foto_turbina"] = urls
+                    store_files(fotos_turbina, "turbina")
             if quemador_checked:
                 with st.expander("Quemadores", expanded=True):
                     st.markdown("<b>Quemadores</b>", unsafe_allow_html=True)
@@ -333,37 +309,19 @@ def main():
                     st.selectbox("Tipo de combustible", ["", "Gas Natural", "GLP", "ACPM"], key="tipo_combustible_quemador")
                     st.selectbox("Método de uso", ["", "Alto/Bajo", "On/Off"], key="metodo_uso_quemador")
                     fotos_quemador = st.file_uploader("Foto quemadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_quemador")
-                    if fotos_quemador:
-                        urls = []
-                        for idx, file in enumerate(fotos_quemador):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"quemador_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_foto_quemador"] = urls
+                    store_files(fotos_quemador, "quemador")
             if bomba_vacio_checked:
                 with st.expander("Bombas de vacío", expanded=True):
                     st.markdown("<b>Bombas de vacío</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje bombas de vacío", key="voltaje_bomba_vacio")
                     fotos_bomba_vacio = st.file_uploader("Foto bombas de vacío", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_bomba_vacio")
-                    if fotos_bomba_vacio:
-                        urls = []
-                        for idx, file in enumerate(fotos_bomba_vacio):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"bomba_vacio_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_foto_bomba_vacio"] = urls
+                    store_files(fotos_bomba_vacio, "bomba_vacio")
             if compresor_checked:
                 with st.expander("Compresores", expanded=True):
                     st.markdown("<b>Compresores</b>", unsafe_allow_html=True)
                     st.text_input("Voltaje compresores", key="voltaje_compresor")
                     fotos_compresor = st.file_uploader("Foto compresores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_compresor")
-                    if fotos_compresor:
-                        urls = []
-                        for idx, file in enumerate(fotos_compresor):
-                            if file is not None:
-                                url = upload_image_to_drive_oauth(file, f"compresor_{idx+1}.jpg", folder_id)
-                                urls.append(url)
-                        st.session_state["links_foto_compresor"] = urls
+                    store_files(fotos_compresor, "compresor")
 
         # Aquí van los bloques únicos de cada lista de chequeo (ya presentes más abajo en el código)
         # ...existing code...
@@ -375,6 +333,7 @@ def main():
             with st.expander("Otros elementos", expanded=True):
                 otros_elementos = st.text_area("Descripción de otros elementos", key="otros_elementos")
                 fotos_otros_elementos = st.file_uploader("Foto(s) de otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
+                store_files(fotos_otros_elementos, "otros_elementos")
         if mostrar_accesorios:
             st.markdown("""
 <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
@@ -812,28 +771,31 @@ def main():
         "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento",
         "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
         "revision de ruidos", "ensayo equipo", "observciones generales",
-        "lider de inspeccion", "Encargado soldador", "diseñador", "fecha de entrega"
+        "lider de inspeccion", "Encargado soldador", "disenador", "fecha de entrega"
     ]
 
     # Construir la fila de datos en el mismo orden que los encabezados
 
     # Subir imágenes a Drive apenas se suban y guardar links en session_state
-    def upload_and_store_links(files, folder_id, prefix, state_key):
-        urls = []
+
+    # Solo guardar los archivos en session_state, subirlos a Drive al enviar
+    def to_url_list(state_key):
+        # Devuelve la lista de links (después de subir)
+        return ", ".join(st.session_state.get(state_key + "_links", []))
+
+    # Guardar los archivos subidos en session_state (no subir aún)
+    def store_files(files, state_key):
         if files:
-            for idx, file in enumerate(files):
-                if file is not None:
-                    url = upload_image_to_drive_oauth(file, f"{prefix}_{idx+1}.jpg", folder_id)
-                    urls.append(url)
-        st.session_state[state_key] = urls
-        return ", ".join(urls)
+            st.session_state[state_key + "_files"] = files
+        else:
+            st.session_state[state_key + "_files"] = []
 
-    # (Eliminado: los file_uploader y campos duplicados fuera de los expanders)
+    # Reemplazar todos los file_uploader para almacenar archivos, no subir
+    # (Esto se hace en cada expander, ejemplo para motores:)
+    # fotos_motores = st.file_uploader(...)
+    # store_files(fotos_motores, "motores")
 
-    def to_url_list(files, folder_id, prefix, state_key):
-        # Usar los links ya guardados en session_state si existen
-        urls = st.session_state.get(state_key, [])
-        return ", ".join(urls)
+    # ...existing code...
 
     row = [
         str(cliente),
@@ -844,65 +806,65 @@ def main():
         str(fecha),
         str(st.session_state.get("cantidad_motores", "")),
         str(st.session_state.get("voltaje_motores", "")),
-        to_url_list(None, folder_id, "motores", "links_fotos_motores"),
+        to_url_list("motores"),
         str(st.session_state.get("cantidad_reductores", "")),
         str(st.session_state.get("voltaje_reductores", "")),
-        to_url_list(None, folder_id, "reductores", "links_fotos_reductores"),
+        to_url_list("reductores"),
         str(st.session_state.get("cantidad_bombas", "")),
         str(st.session_state.get("voltaje_bombas", "")),
-        to_url_list(None, folder_id, "bombas", "links_fotos_bombas"),
+        to_url_list("bombas"),
         str(st.session_state.get("voltaje_turbina", "")),
         str(st.session_state.get("tipo_combustible_turbina", "")),
         str(st.session_state.get("metodo_uso_turbina", "")),
-        to_url_list(None, folder_id, "turbina", "links_foto_turbina"),
+        to_url_list("turbina"),
         str(st.session_state.get("voltaje_quemador", "")),
-        to_url_list(None, folder_id, "quemador", "links_foto_quemador"),
+        to_url_list("quemador"),
         str(st.session_state.get("voltaje_bomba_vacio", "")),
-        to_url_list(None, folder_id, "bomba_vacio", "links_foto_bomba_vacio"),
+        to_url_list("bomba_vacio"),
         str(st.session_state.get("voltaje_compresor", "")),
-        to_url_list(None, folder_id, "compresor", "links_foto_compresor"),
+        to_url_list("compresor"),
         str(st.session_state.get("cantidad_manometros", "")),
-        to_url_list(None, folder_id, "manometros", "links_foto_manometros"),
+        to_url_list("manometros"),
         str(st.session_state.get("cantidad_vacuometros", "")),
-        to_url_list(None, folder_id, "vacuometros", "links_foto_vacuometros"),
+        to_url_list("vacuometros"),
         str(st.session_state.get("cantidad_valvulas", "")),
-        to_url_list(None, folder_id, "valvulas", "links_foto_valvulas"),
+        to_url_list("valvulas"),
         str(st.session_state.get("cantidad_mangueras", "")),
-        to_url_list(None, folder_id, "mangueras", "links_foto_mangueras"),
+        to_url_list("mangueras"),
         str(st.session_state.get("cantidad_boquillas", "")),
-        to_url_list(None, folder_id, "boquillas", "links_foto_boquillas"),
+        to_url_list("boquillas"),
         str(st.session_state.get("cantidad_reguladores", "")),
-        to_url_list(None, folder_id, "reguladores", "links_foto_reguladores"),
+        to_url_list("reguladores"),
         str(st.session_state.get("tension_pinon1", "")),
-        to_url_list(None, folder_id, "pinon1", "links_foto_pinon1"),
+        to_url_list("pinon1"),
         str(st.session_state.get("tension_pinon2", "")),
-        to_url_list(None, folder_id, "pinon2", "links_foto_pinon2"),
+        to_url_list("pinon2"),
         str(st.session_state.get("tension_polea1", "")),
-        to_url_list(None, folder_id, "polea1", "links_foto_polea1"),
+        to_url_list("polea1"),
         str(st.session_state.get("tension_polea2", "")),
-        to_url_list(None, folder_id, "polea2", "links_foto_polea2"),
+        to_url_list("polea2"),
         str(st.session_state.get("cantidad_gabinete", "")),
-        to_url_list(None, folder_id, "gabinete", "links_foto_gabinete"),
+        to_url_list("gabinete"),
         str(st.session_state.get("cantidad_arrancadores", "")),
-        to_url_list(None, folder_id, "arrancadores", "links_foto_arrancadores"),
+        to_url_list("arrancadores"),
         str(st.session_state.get("cantidad_control_nivel", "")),
-        to_url_list(None, folder_id, "control_nivel", "links_foto_control_nivel"),
+        to_url_list("control_nivel"),
         str(st.session_state.get("cantidad_variadores", "")),
-        to_url_list(None, folder_id, "variador", "links_foto_variador"),
+        to_url_list("variador"),
         str(st.session_state.get("cantidad_sensores", "")),
-        to_url_list(None, folder_id, "sensor_temp", "links_foto_sensor_temp"),
+        to_url_list("sensor_temp"),
         str(st.session_state.get("cantidad_toma_corriente", "")),
-        to_url_list(None, folder_id, "toma_corriente", "links_foto_toma_corriente"),
+        to_url_list("toma_corriente"),
         str(st.session_state.get("otros_elementos", "")),
-        to_url_list(None, folder_id, "otros_elementos", "links_fotos_otros_elementos"),
+        to_url_list("otros_elementos"),
         str(st.session_state.get("descripcion_tuberias", "")),
-        to_url_list(None, folder_id, "tuberias", "links_foto_tuberias"),
+        to_url_list("tuberias"),
         str(st.session_state.get("descripcion_cables", "")),
-        to_url_list(None, folder_id, "cables", "links_foto_cables"),
+        to_url_list("cables"),
         str(st.session_state.get("descripcion_curvas", "")),
-        to_url_list(None, folder_id, "curvas", "links_foto_curvas"),
+        to_url_list("curvas"),
         str(st.session_state.get("descripcion_tornilleria", "")),
-        to_url_list(None, folder_id, "tornilleria", "links_foto_tornilleria"),
+        to_url_list("tornilleria"),
         str(st.session_state.get("revision_soldadura", "")),
         str(st.session_state.get("revision_sentidos", "")),
         str(st.session_state.get("manual_funcionamiento", "")),
@@ -913,14 +875,114 @@ def main():
         str(st.session_state.get("ensayo_equipo", "")),
         str(st.session_state.get("observaciones_generales", "")),
         str(st.session_state.get("lider_inspeccion", "")),
-        str(st.session_state.get("encargado_soldador", "")),
+        str(st.session_state.get("soldador", "")),
         str(st.session_state.get("disenador", "")),
-        str(st.session_state.get("fecha_hora_formateada", ""))
+        str(st.session_state.get("fecha_entrega_acta", ""))
     ]
     # Botón para enviar el acta de entrega (al final del formulario)
     enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
     # Guardar solo al presionar el botón
     if enviar_acta:
+        # Subir imágenes a Drive aquí, solo una vez
+        image_keys = [
+            "motores", "reductores", "bombas", "turbina", "quemador", "bomba_vacio", "compresor",
+            "manometros", "vacuometros", "valvulas", "mangueras", "boquillas", "reguladores",
+            "pinon1", "pinon2", "polea1", "polea2", "gabinete", "arrancadores", "control_nivel",
+            "variador", "sensor_temp", "toma_corriente", "otros_elementos", "tuberias", "cables",
+            "curvas", "tornilleria"
+        ]
+        for key in image_keys:
+            files = st.session_state.get(key + "_files", [])
+            urls = []
+            for idx, file in enumerate(files):
+                if file is not None:
+                    url = upload_image_to_drive_oauth(file, f"{key}_{idx+1}.jpg", folder_id)
+                    urls.append(url)
+            st.session_state[key + "_links"] = urls
+
+        # Ahora construir la fila con los links ya subidos
+        row = [
+            str(cliente),
+            str(op),
+            str(item),
+            str(equipo),
+            str(cantidad),
+            str(fecha),
+            str(st.session_state.get("cantidad_motores", "")),
+            str(st.session_state.get("voltaje_motores", "")),
+            to_url_list("motores"),
+            str(st.session_state.get("cantidad_reductores", "")),
+            str(st.session_state.get("voltaje_reductores", "")),
+            to_url_list("reductores"),
+            str(st.session_state.get("cantidad_bombas", "")),
+            str(st.session_state.get("voltaje_bombas", "")),
+            to_url_list("bombas"),
+            str(st.session_state.get("voltaje_turbina", "")),
+            str(st.session_state.get("tipo_combustible_turbina", "")),
+            str(st.session_state.get("metodo_uso_turbina", "")),
+            to_url_list("turbina"),
+            str(st.session_state.get("voltaje_quemador", "")),
+            to_url_list("quemador"),
+            str(st.session_state.get("voltaje_bomba_vacio", "")),
+            to_url_list("bomba_vacio"),
+            str(st.session_state.get("voltaje_compresor", "")),
+            to_url_list("compresor"),
+            str(st.session_state.get("cantidad_manometros", "")),
+            to_url_list("manometros"),
+            str(st.session_state.get("cantidad_vacuometros", "")),
+            to_url_list("vacuometros"),
+            str(st.session_state.get("cantidad_valvulas", "")),
+            to_url_list("valvulas"),
+            str(st.session_state.get("cantidad_mangueras", "")),
+            to_url_list("mangueras"),
+            str(st.session_state.get("cantidad_boquillas", "")),
+            to_url_list("boquillas"),
+            str(st.session_state.get("cantidad_reguladores", "")),
+            to_url_list("reguladores"),
+            str(st.session_state.get("tension_pinon1", "")),
+            to_url_list("pinon1"),
+            str(st.session_state.get("tension_pinon2", "")),
+            to_url_list("pinon2"),
+            str(st.session_state.get("tension_polea1", "")),
+            to_url_list("polea1"),
+            str(st.session_state.get("tension_polea2", "")),
+            to_url_list("polea2"),
+            str(st.session_state.get("cantidad_gabinete", "")),
+            to_url_list("gabinete"),
+            str(st.session_state.get("cantidad_arrancadores", "")),
+            to_url_list("arrancadores"),
+            str(st.session_state.get("cantidad_control_nivel", "")),
+            to_url_list("control_nivel"),
+            str(st.session_state.get("cantidad_variadores", "")),
+            to_url_list("variador"),
+            str(st.session_state.get("cantidad_sensores", "")),
+            to_url_list("sensor_temp"),
+            str(st.session_state.get("cantidad_toma_corriente", "")),
+            to_url_list("toma_corriente"),
+            str(st.session_state.get("otros_elementos", "")),
+            to_url_list("otros_elementos"),
+            str(st.session_state.get("descripcion_tuberias", "")),
+            to_url_list("tuberias"),
+            str(st.session_state.get("descripcion_cables", "")),
+            to_url_list("cables"),
+            str(st.session_state.get("descripcion_curvas", "")),
+            to_url_list("curvas"),
+            str(st.session_state.get("descripcion_tornilleria", "")),
+            to_url_list("tornilleria"),
+            str(st.session_state.get("revision_soldadura", "")),
+            str(st.session_state.get("revision_sentidos", "")),
+            str(st.session_state.get("manual_funcionamiento", "")),
+            str(st.session_state.get("revision_filos", "")),
+            str(st.session_state.get("revision_tratamientos", "")),
+            str(st.session_state.get("revision_tornilleria", "")),
+            str(st.session_state.get("revision_ruidos", "")),
+            str(st.session_state.get("ensayo_equipo", "")),
+            str(st.session_state.get("observaciones_generales", "")),
+            str(st.session_state.get("lider_inspeccion", "")),
+            str(st.session_state.get("soldador", "")),
+            str(st.session_state.get("disenador", "")),
+            str(st.session_state.get("fecha_entrega_acta", ""))
+        ]
         sheet = sheet_client.open(file_name).worksheet(worksheet_name)
         if not sheet.get_all_values():
             sheet.append_row(headers)
