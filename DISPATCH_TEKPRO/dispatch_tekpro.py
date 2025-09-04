@@ -171,6 +171,15 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet = sheet_client.open(file_name).worksheet(worksheet_name)
     sheet.append_row(row)
 
+def store_files(files, state_key):
+    if files is not None:
+        st.session_state[state_key + "_files"] = files
+    else:
+        st.session_state[state_key + "_files"] = []
+
+def to_url_list(state_key):
+    return ", ".join(st.session_state.get(state_key + "_links", []))
+
 def main():
     # --- AUTORIZACIÓN GOOGLE DRIVE OBLIGATORIA ---
     if 'drive_oauth_token' not in st.session_state:
@@ -305,23 +314,26 @@ def main():
             if motor_checked:
                 with st.expander("Motores", expanded=True):
                     st.markdown("<b>Motores</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad motores", min_value=0, step=1, format="%d", key="cantidad_motores")
-                    st.text_input("Voltaje motores", key="voltaje_motores")
-                    fotos_motores = st.file_uploader("Foto motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad motores", min_value=0, step=1, format="%d", key="cantidad_motores")
+                    col[0].text_input("Voltaje motores", key="voltaje_motores")
+                    fotos_motores = col[0].file_uploader("Foto motores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_motores")
                     store_files(fotos_motores, "motores")
             if reductor_checked:
                 with st.expander("Reductores", expanded=True):
                     st.markdown("<b>Reductores</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad reductores", min_value=0, step=1, format="%d", key="cantidad_reductores")
-                    st.text_input("Voltaje reductores", key="voltaje_reductores")
-                    fotos_reductores = st.file_uploader("Foto reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad reductores", min_value=0, step=1, format="%d", key="cantidad_reductores")
+                    col[0].text_input("Voltaje reductores", key="voltaje_reductores")
+                    fotos_reductores = col[0].file_uploader("Foto reductores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_reductores")
                     store_files(fotos_reductores, "reductores")
             if bomba_checked:
                 with st.expander("Bombas", expanded=True):
                     st.markdown("<b>Bombas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad bombas", min_value=0, step=1, format="%d", key="cantidad_bombas")
-                    st.text_input("Voltaje bombas", key="voltaje_bombas")
-                    fotos_bombas = st.file_uploader("Foto bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad bombas", min_value=0, step=1, format="%d", key="cantidad_bombas")
+                    col[0].text_input("Voltaje bombas", key="voltaje_bombas")
+                    fotos_bombas = col[0].file_uploader("Foto bombas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_bombas")
                     store_files(fotos_bombas, "bombas")
             if turbina_checked:
                 with st.expander("Turbinas", expanded=True):
@@ -381,8 +393,9 @@ def main():
             if manometro_checked:
                 with st.expander("Manómetros", expanded=True):
                     st.markdown("<b>Manómetros</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad manómetros", min_value=0, step=1, format="%d", key="cantidad_manometros")
-                    fotos_manometros = st.file_uploader("Foto manómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_manometros")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad manómetros", min_value=0, step=1, format="%d", key="cantidad_manometros")
+                    fotos_manometros = col[0].file_uploader("Foto manómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_manometros")
                     if fotos_manometros:
                         urls = []
                         for idx, file in enumerate(fotos_manometros):
@@ -393,8 +406,9 @@ def main():
             if vacuometro_checked:
                 with st.expander("Vacuómetros", expanded=True):
                     st.markdown("<b>Vacuómetros</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad vacuómetros", min_value=0, step=1, format="%d", key="cantidad_vacuometros")
-                    fotos_vacuometros = st.file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_vacuometros")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad vacuómetros", min_value=0, step=1, format="%d", key="cantidad_vacuometros")
+                    fotos_vacuometros = col[0].file_uploader("Foto vacuómetros", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_vacuometros")
                     if fotos_vacuometros:
                         urls = []
                         for idx, file in enumerate(fotos_vacuometros):
@@ -405,8 +419,9 @@ def main():
             if valvula_checked:
                 with st.expander("Válvulas", expanded=True):
                     st.markdown("<b>Válvulas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad válvulas", min_value=0, step=1, format="%d", key="cantidad_valvulas")
-                    fotos_valvulas = st.file_uploader("Foto válvulas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_valvulas")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad válvulas", min_value=0, step=1, format="%d", key="cantidad_valvulas")
+                    fotos_valvulas = col[0].file_uploader("Foto válvulas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_valvulas")
                     if fotos_valvulas:
                         urls = []
                         for idx, file in enumerate(fotos_valvulas):
@@ -417,8 +432,9 @@ def main():
             if manguera_checked:
                 with st.expander("Mangueras", expanded=True):
                     st.markdown("<b>Mangueras</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad mangueras", min_value=0, step=1, format="%d", key="cantidad_mangueras")
-                    fotos_mangueras = st.file_uploader("Foto mangueras", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_mangueras")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad mangueras", min_value=0, step=1, format="%d", key="cantidad_mangueras")
+                    fotos_mangueras = col[0].file_uploader("Foto mangueras", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_mangueras")
                     if fotos_mangueras:
                         urls = []
                         for idx, file in enumerate(fotos_mangueras):
@@ -429,8 +445,9 @@ def main():
             if boquilla_checked:
                 with st.expander("Boquillas", expanded=True):
                     st.markdown("<b>Boquillas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad boquillas", min_value=0, step=1, format="%d", key="cantidad_boquillas")
-                    fotos_boquillas = st.file_uploader("Foto boquillas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_boquillas")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad boquillas", min_value=0, step=1, format="%d", key="cantidad_boquillas")
+                    fotos_boquillas = col[0].file_uploader("Foto boquillas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_boquillas")
                     if fotos_boquillas:
                         urls = []
                         for idx, file in enumerate(fotos_boquillas):
@@ -441,8 +458,9 @@ def main():
             if regulador_checked:
                 with st.expander("Reguladores aire/gas", expanded=True):
                     st.markdown("<b>Reguladores aire/gas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad reguladores aire/gas", min_value=0, step=1, format="%d", key="cantidad_reguladores")
-                    fotos_reguladores = st.file_uploader("Foto reguladores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_reguladores")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad reguladores aire/gas", min_value=0, step=1, format="%d", key="cantidad_reguladores")
+                    fotos_reguladores = col[0].file_uploader("Foto reguladores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_reguladores")
                     if fotos_reguladores:
                         urls = []
                         for idx, file in enumerate(fotos_reguladores):
@@ -453,8 +471,9 @@ def main():
             if tornillos_checked:
                 with st.expander("Tornillos", expanded=True):
                     st.markdown("<b>Tornillos</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad tornillos", min_value=0, step=1, format="%d", key="cantidad_tornillos")
-                    fotos_tornillos = st.file_uploader("Foto tornillos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tornillos")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad tornillos", min_value=0, step=1, format="%d", key="cantidad_tornillos")
+                    fotos_tornillos = col[0].file_uploader("Foto tornillos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tornillos")
                     if fotos_tornillos:
                         urls = []
                         for idx, file in enumerate(fotos_tornillos):
@@ -465,8 +484,9 @@ def main():
             if curvas_checked:
                 with st.expander("Curvas", expanded=True):
                     st.markdown("<b>Curvas</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad curvas", min_value=0, step=1, format="%d", key="cantidad_curvas")
-                    fotos_curvas = st.file_uploader("Foto curvas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_curvas")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad curvas", min_value=0, step=1, format="%d", key="cantidad_curvas")
+                    fotos_curvas = col[0].file_uploader("Foto curvas", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_curvas")
                     if fotos_curvas:
                         urls = []
                         for idx, file in enumerate(fotos_curvas):
@@ -477,8 +497,9 @@ def main():
             if cables_checked:
                 with st.expander("Cables", expanded=True):
                     st.markdown("<b>Cables</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad cables", min_value=0, step=1, format="%d", key="cantidad_cables")
-                    fotos_cables = st.file_uploader("Foto cables", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_cables")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad cables", min_value=0, step=1, format="%d", key="cantidad_cables")
+                    fotos_cables = col[0].file_uploader("Foto cables", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_cables")
                     if fotos_cables:
                         urls = []
                         for idx, file in enumerate(fotos_cables):
@@ -489,8 +510,9 @@ def main():
             if tuberias_checked:
                 with st.expander("Tuberías", expanded=True):
                     st.markdown("<b>Tuberías</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad tuberías", min_value=0, step=1, format="%d", key="cantidad_tuberias")
-                    fotos_tuberias = st.file_uploader("Foto tuberías", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tuberias")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad tuberías", min_value=0, step=1, format="%d", key="cantidad_tuberias")
+                    fotos_tuberias = col[0].file_uploader("Foto tuberías", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_tuberias")
                     if fotos_tuberias:
                         urls = []
                         for idx, file in enumerate(fotos_tuberias):
@@ -512,8 +534,9 @@ def main():
             if pinon1_checked:
                 with st.expander("Piñón 1", expanded=True):
                     st.markdown("<b>Piñón 1</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión piñón 1", key="tension_pinon1")
-                    fotos_pinon1 = st.file_uploader("Foto piñón 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon1")
+                    col = st.columns(1)
+                    col[0].text_input("Tensión piñón 1", key="tension_pinon1")
+                    fotos_pinon1 = col[0].file_uploader("Foto piñón 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon1")
                     if fotos_pinon1:
                         urls = []
                         for idx, file in enumerate(fotos_pinon1):
@@ -524,8 +547,9 @@ def main():
             if pinon2_checked:
                 with st.expander("Piñón 2", expanded=True):
                     st.markdown("<b>Piñón 2</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión piñón 2", key="tension_pinon2")
-                    fotos_pinon2 = st.file_uploader("Foto piñón 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon2")
+                    col = st.columns(1)
+                    col[0].text_input("Tensión piñón 2", key="tension_pinon2")
+                    fotos_pinon2 = col[0].file_uploader("Foto piñón 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_pinon2")
                     if fotos_pinon2:
                         urls = []
                         for idx, file in enumerate(fotos_pinon2):
@@ -536,8 +560,9 @@ def main():
             if polea1_checked:
                 with st.expander("Polea 1", expanded=True):
                     st.markdown("<b>Polea 1</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión polea 1", key="tension_polea1")
-                    fotos_polea1 = st.file_uploader("Foto polea 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea1")
+                    col = st.columns(1)
+                    col[0].text_input("Tensión polea 1", key="tension_polea1")
+                    fotos_polea1 = col[0].file_uploader("Foto polea 1", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea1")
                     if fotos_polea1:
                         urls = []
                         for idx, file in enumerate(fotos_polea1):
@@ -548,8 +573,9 @@ def main():
             if polea2_checked:
                 with st.expander("Polea 2", expanded=True):
                     st.markdown("<b>Polea 2</b>", unsafe_allow_html=True)
-                    st.text_input("Tensión polea 2", key="tension_polea2")
-                    fotos_polea2 = st.file_uploader("Foto polea 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea2")
+                    col = st.columns(1)
+                    col[0].text_input("Tensión polea 2", key="tension_polea2")
+                    fotos_polea2 = col[0].file_uploader("Foto polea 2", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_polea2")
                     if fotos_polea2:
                         urls = []
                         for idx, file in enumerate(fotos_polea2):
@@ -573,9 +599,10 @@ def main():
             if gabinete_checked:
                 with st.expander("Gabinete eléctrico", expanded=True):
                     st.markdown("<b>Gabinete eléctrico</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad gabinete eléctrico", min_value=0, step=1, format="%d", key="cantidad_gabinete")
-                    descripcion_gabinete = st.text_area("Descripción gabinete eléctrico", key="descripcion_gabinete")
-                    fotos_gabinete = st.file_uploader("Foto gabinete", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_gabinete")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad gabinete eléctrico", min_value=0, step=1, format="%d", key="cantidad_gabinete")
+                    descripcion_gabinete = col[0].text_area("Descripción gabinete eléctrico", key="descripcion_gabinete")
+                    fotos_gabinete = col[0].file_uploader("Foto gabinete", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_gabinete")
                     if fotos_gabinete:
                         urls = []
                         for idx, file in enumerate(fotos_gabinete):
@@ -587,9 +614,10 @@ def main():
             if arrancador_checked:
                 with st.expander("Arrancador", expanded=True):
                     st.markdown("<b>Arrancador</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad arrancadores", min_value=0, step=1, format="%d", key="cantidad_arrancadores")
-                    descripcion_arrancadores = st.text_area("Descripción arrancadores", key="descripcion_arrancadores")
-                    fotos_arrancadores = st.file_uploader("Foto arrancadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_arrancadores")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad arrancadores", min_value=0, step=1, format="%d", key="cantidad_arrancadores")
+                    descripcion_arrancadores = col[0].text_area("Descripción arrancadores", key="descripcion_arrancadores")
+                    fotos_arrancadores = col[0].file_uploader("Foto arrancadores", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_arrancadores")
                     if fotos_arrancadores:
                         urls = []
                         for idx, file in enumerate(fotos_arrancadores):
@@ -601,9 +629,10 @@ def main():
             if control_nivel_checked:
                 with st.expander("Control de nivel", expanded=True):
                     st.markdown("<b>Control de nivel</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad control de nivel", min_value=0, step=1, format="%d", key="cantidad_control_nivel")
-                    descripcion_control_nivel = st.text_area("Descripción control de nivel", key="descripcion_control_nivel")
-                    fotos_control_nivel = st.file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_control_nivel")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad control de nivel", min_value=0, step=1, format="%d", key="cantidad_control_nivel")
+                    descripcion_control_nivel = col[0].text_area("Descripción control de nivel", key="descripcion_control_nivel")
+                    fotos_control_nivel = col[0].file_uploader("Foto control de nivel", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_control_nivel")
                     if fotos_control_nivel:
                         urls = []
                         for idx, file in enumerate(fotos_control_nivel):
@@ -615,9 +644,10 @@ def main():
             if variador_checked:
                 with st.expander("Variador de velocidad", expanded=True):
                     st.markdown("<b>Variador de velocidad</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad variadores de velocidad", min_value=0, step=1, format="%d", key="cantidad_variador")
-                    descripcion_variador = st.text_area("Descripción variador de velocidad", key="descripcion_variador")
-                    fotos_variador = st.file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_variador")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad variadores de velocidad", min_value=0, step=1, format="%d", key="cantidad_variador")
+                    descripcion_variador = col[0].text_area("Descripción variador de velocidad", key="descripcion_variador")
+                    fotos_variador = col[0].file_uploader("Foto variador de velocidad", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_variador")
                     if fotos_variador:
                         urls = []
                         for idx, file in enumerate(fotos_variador):
@@ -629,9 +659,10 @@ def main():
             if sensor_temp_checked:
                 with st.expander("Sensor de temperatura", expanded=True):
                     st.markdown("<b>Sensor de temperatura</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad sensores de temperatura", min_value=0, step=1, format="%d", key="cantidad_sensor_temp")
-                    descripcion_sensor_temp = st.text_area("Descripción sensor de temperatura", key="descripcion_sensor_temp")
-                    fotos_sensor_temp = st.file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_sensor_temp")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad sensores de temperatura", min_value=0, step=1, format="%d", key="cantidad_sensor_temp")
+                    descripcion_sensor_temp = col[0].text_area("Descripción sensor de temperatura", key="descripcion_sensor_temp")
+                    fotos_sensor_temp = col[0].file_uploader("Foto sensor de temperatura", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_sensor_temp")
                     if fotos_sensor_temp:
                         urls = []
                         for idx, file in enumerate(fotos_sensor_temp):
@@ -643,9 +674,10 @@ def main():
             if toma_corriente_checked:
                 with st.expander("Toma corriente", expanded=True):
                     st.markdown("<b>Toma corriente</b>", unsafe_allow_html=True)
-                    st.number_input("Cantidad tomas corriente", min_value=0, step=1, format="%d", key="cantidad_toma_corriente")
-                    descripcion_toma_corriente = st.text_area("Descripción toma corriente", key="descripcion_toma_corriente")
-                    fotos_toma_corriente = st.file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_toma_corriente")
+                    col = st.columns(1)
+                    col[0].number_input("Cantidad tomas corriente", min_value=0, step=1, format="%d", key="cantidad_toma_corriente")
+                    descripcion_toma_corriente = col[0].text_area("Descripción toma corriente", key="descripcion_toma_corriente")
+                    fotos_toma_corriente = col[0].file_uploader("Foto toma corriente", type=["jpg","jpeg","png"], accept_multiple_files=True, key="foto_toma_corriente")
                     if fotos_toma_corriente:
                         urls = []
                         for idx, file in enumerate(fotos_toma_corriente):
@@ -657,37 +689,41 @@ def main():
 
         # Selectboxes de revisión general (ahora debajo de las listas de chequeo)
         st.markdown("<h4>Revisión general</h4>", unsafe_allow_html=True)
-        cols_rev = st.columns(1)
-        with cols_rev[0]:
-            revision_visual = st.selectbox("Revisión visual", ["Selecciona...", "Sí", "No"], key="revision_visual")
-            revision_funcional = st.selectbox("Revisión funcional", ["Selecciona...", "Sí", "No"], key="revision_funcional")
-            revision_soldadura = st.selectbox("Revisión de soldadura", ["Selecciona...", "Sí", "No"], key="revision_soldadura")
-            revision_sentidos = st.selectbox("Revisión de sentidos de giro", ["Selecciona...", "Sí", "No"], key="revision_sentidos")
-            manual_funcionamiento = st.selectbox("Manual de funcionamiento", ["Selecciona...", "Sí", "No"], key="manual_funcionamiento")
-            revision_filos = st.selectbox("Revisión de filos y acabados", ["Selecciona...", "Sí", "No"], key="revision_filos")
-            revision_tratamientos = st.selectbox("Revisión de tratamientos", ["Selecciona...", "Sí", "No"], key="revision_tratamientos")
-            revision_tornilleria = st.selectbox("Revisión de tornillería", ["Selecciona...", "Sí", "No"], key="revision_tornilleria")
-            revision_ruidos = st.selectbox("Revisión de ruidos", ["Selecciona...", "Sí", "No"], key="revision_ruidos")
-            ensayo_equipo = st.selectbox("Ensayo equipo", ["Selecciona...", "Sí", "No"], key="ensayo_equipo")
+        col_rev = st.columns(1)
+        revision_visual = col_rev[0].selectbox("Revisión visual", ["Selecciona...", "Sí", "No"], key="revision_visual")
+        revision_funcional = col_rev[0].selectbox("Revisión funcional", ["Selecciona...", "Sí", "No"], key="revision_funcional")
+        revision_soldadura = col_rev[0].selectbox("Revisión de soldadura", ["Selecciona...", "Sí", "No"], key="revision_soldadura")
+        revision_sentidos = col_rev[0].selectbox("Revisión de sentidos de giro", ["Selecciona...", "Sí", "No"], key="revision_sentidos")
+        manual_funcionamiento = col_rev[0].selectbox("Manual de funcionamiento", ["Selecciona...", "Sí", "No"], key="manual_funcionamiento")
+        revision_filos = col_rev[0].selectbox("Revisión de filos y acabados", ["Selecciona...", "Sí", "No"], key="revision_filos")
+        revision_tratamientos = col_rev[0].selectbox("Revisión de tratamientos", ["Selecciona...", "Sí", "No"], key="revision_tratamientos")
+        revision_tornilleria = col_rev[0].selectbox("Revisión de tornillería", ["Selecciona...", "Sí", "No"], key="revision_tornilleria")
+        revision_ruidos = col_rev[0].selectbox("Revisión de ruidos", ["Selecciona...", "Sí", "No"], key="revision_ruidos")
+        ensayo_equipo = col_rev[0].selectbox("Ensayo equipo", ["Selecciona...", "Sí", "No"], key="ensayo_equipo")
 
         # Observaciones generales
-        observaciones_generales = st.text_area("Observaciones generales", key="observaciones_generales")
+        col_obs = st.columns(1)
+        observaciones_generales = col_obs[0].text_area("Observaciones generales", key="observaciones_generales")
 
         # Líder de inspección
+        col_lider = st.columns(1)
         lideres = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata","Juan David Martinez"]  # Puedes personalizar esta lista
-        lider_inspeccion = st.selectbox("Líder de inspección", lideres, key="lider_inspeccion")
+        lider_inspeccion = col_lider[0].selectbox("Líder de inspección", lideres, key="lider_inspeccion")
 
         # Soldador
+        col_soldador = st.columns(1)
         soldador = ["", "Jaime Ramos", "Jaime Rincon", "Gabriel","Lewis"]  # Puedes personalizar esta lista
-        soldador = st.selectbox("Encargado Soldador", soldador, key="soldador")
+        soldador = col_soldador[0].selectbox("Encargado Soldador", soldador, key="soldador")
 
         # Diseñador
+        col_disenador = st.columns(1)
         disenadores = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata","Juan David Martinez"]  # Puedes personalizar esta lista
-        disenador = st.selectbox("Diseñador", disenadores, key="disenador")
+        disenador = col_disenador[0].selectbox("Diseñador", disenadores, key="disenador")
 
         # Fecha y hora de entrega
-        fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
-        hora_entrega = st.time_input("Hora de entrega", value=datetime.datetime.now().time(), key="hora_entrega_acta")
+        col_fecha = st.columns(1)
+        fecha_entrega = col_fecha[0].date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+        hora_entrega = col_fecha[0].time_input("Hora de entrega", value=datetime.datetime.now().time(), key="hora_entrega_acta")
 
         # Mostrar fecha y hora en formato DD-MM-AA-HH:MM:SS
         dt_entrega = datetime.datetime.combine(fecha_entrega, hora_entrega)
@@ -819,27 +855,67 @@ def main():
             op_options_filtradas = [op for op in op_options if op not in ops_guardadas]
             op_options_filtradas = list(dict.fromkeys(op_options_filtradas))
             op_selected = st.selectbox("Orden de compra (OP)", options=[" "] + op_options_filtradas, key="op_input_selectbox")
-            # ...existing code para diligenciar acta de entrega...
-            # Al guardar, escribir en la hoja 'Actas de entregas diligenciadas'
-            if st.button("Enviar Acta de Entrega", key="enviar_acta_entrega"):
-                # ...existing code para construir row...
-                # Guardar en la hoja de actas diligenciadas
-                try:
-                    sheet_diligenciadas = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
-                except Exception:
-                    # Si la hoja no existe, crearla y poner encabezados
-                    sheet_diligenciadas = sheet_client.open(file_name).add_worksheet(title=worksheet_name_diligenciadas, rows=100, cols=len(headers))
-                    sheet_diligenciadas.append_row(headers)
-                # Si la hoja está vacía, poner encabezados
-                if not sheet_diligenciadas.get_all_values():
-                    sheet_diligenciadas.append_row(headers)
-                sheet_diligenciadas.append_row(row)
-                st.success("Acta de entrega guardada correctamente en 'Actas de entregas diligenciadas'.")
+            # Encabezados según lo solicitado
+            headers = [
+                "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili",
+                "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
+                "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili",
+                "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
+                "voltaje turbina dili", "Tipo combustible turbina dili", "Metodo uso turbina dili", "foto turbina dili",
+                "voltaje quemador dili", "foto quemador dili",
+                "voltaje bomba de vacio dili", "foto bomba de vacio dili",
+                "voltaje compresor dili", "foto compresor dili",
+                "cantidad manometros dili", "foto manometros dili",
+                "cantidad vacuometros dili", "foto vacuometros dili",
+                "cantidad valvulas dili", "foto valvulas dili",
+                "cantidad mangueras dili", "foto mangueras dili",
+                "cantidad boquillas dili", "foto boquillas dili",
+                "cantidad reguladores aire/gas dili", "foto reguladores dili",
+                "tension piñon 1 dili", "foto piñon 1 dili",
+                "tension piñon 2 dili", "foto piñon 2 dili",
+                "tension polea 1 dili", "foto polea 1 dili",
+                "tension polea 2 dili", "foto polea 2 dili",
+                "cantidad gabinete electrico dili", "foto gabinete dili",
+                "cantidad arrancadores dili", "foto arrancadores dili",
+                "cantidad control de nivel dili", "foto control de nivel dili",
+                "cantidad variadores de velociad dili", "foto variadores de velocidad dili",
+                "cantidad sensores de temperatura dili", "foto sensores de temperatura dili",
+                "cantidad toma corriente dili", "foto toma corrientes dili",
+                "descripcion otros elementos dili", "fotos otros elementos dili",
+                "descripcion tuberias dili", "foto tuberias dili",
+                "descripcion cables dili", "foto cables dili",
+                "descripcion curvas dili", "foto curvas dili",
+                "descripcion tornilleria dili", "foto tornilleria dili",
+                "revision de soldadura dili", "revision de sentidos de giro dili", "manual de funcionamiento dili",
+                "revision de filos y acabados dili", "revision de tratamientos dili", "revision de tornilleria dili",
+                "revision de ruidos dili", "ensayo equipo dili", "observciones generales dili",
+                "lider de inspeccion dili", "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
+            ]
+            # Si la hoja no existe, crearla y poner encabezados
+            try:
+                sheet_diligenciadas = sheet_client.open(file_name).add_worksheet(title=worksheet_name_diligenciadas, rows=100, cols=len(headers))
+                sheet_diligenciadas.append_row(headers)
+            except Exception as e:
+                st.error(f"Error al crear la hoja '{worksheet_name_diligenciadas}': {e}")
+                st.stop()
+            # Si la hoja está vacía, poner encabezados
+            if not sheet_diligenciadas.get_all_values():
+                sheet_diligenciadas.append_row(headers)
+            sheet_diligenciadas.append_row(row)
+            st.success("Acta de entrega guardada correctamente en 'Actas de entregas diligenciadas'.")
     #/////////////////////////////////////////////////////////////AQUI EMPIEZA CODIGO DE LISTA DE EMPAQUE////////////////////////
         elif menu_opcion == "Lista de empaque":
-            st.markdown("<h1 style='color:#1db6b6;font-family:Montserrat,Arial,sans-serif;font-weight:700;'>ACTA DE EMPAQUE TEKPRO</h1>", unsafe_allow_html=True)
-            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
-            # --- SOLO lógica y UI de lista de empaque ---
+            # Solo lógica y UI de lista de empaque
+            # Mostrar solo: datos generales, firma encargado logística, guacales, artículos empacados/no empacados, observaciones adicionales, y guardar en Google Sheets
+            # Eliminar cualquier bloque que muestre o procese:
+            # - Listas de chequeo
+            # - Revisión general
+            # - Observaciones generales
+            # - Líder de inspección
+            # - Encargado soldador
+            # - Diseñador
+            # - Fecha de entrega
+            # - Hora de entrega
             folder_id = st.secrets.drive_config.FOLDER_ID
             creds = get_service_account_creds()
             sheet_client = gspread.authorize(creds)
@@ -1075,11 +1151,13 @@ def main():
 
                 # Selectbox para encargado almacén
                 encargados_almacen = ["", "Andrea Ochoa"]
-                encargado_almacen = st.selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
+                col_almacen = st.columns(1)
+                encargado_almacen = col_almacen[0].selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
 
                 # Selectbox para encargado logística
                 encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
-                encargado_logistica = st.selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
+                col_logistica = st.columns(1)
+                encargado_logistica = col_logistica[0].selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
 
                 # Mostrar los datos
                 st.markdown(f"""
@@ -1109,64 +1187,6 @@ def main():
                 )
                 if canvas_result.image_data is not None:
                     st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
-
-        # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
-
-        
-        # Encabezados según lo solicitado
-        headers = [
-        "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili",
-        "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
-        "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili",
-        "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
-        "voltaje turbina dili", "Tipo combustible turbina dili", "Metodo uso turbina dili", "foto turbina dili",
-        "voltaje quemador dili", "foto quemador dili",
-        "voltaje bomba de vacio dili", "foto bomba de vacio dili",
-        "voltaje compresor dili", "foto compresor dili",
-        "cantidad manometros dili", "foto manometros dili",
-        "cantidad vacuometros dili", "foto vacuometros dili",
-        "cantidad valvulas dili", "foto valvulas dili",
-        "cantidad mangueras dili", "foto mangueras dili",
-        "cantidad boquillas dili", "foto boquillas dili",
-        "cantidad reguladores aire/gas dili", "foto reguladores dili",
-        "tension piñon 1 dili", "foto piñon 1 dili",
-        "tension piñon 2 dili", "foto piñon 2 dili",
-        "tension polea 1 dili", "foto polea 1 dili",
-        "tension polea 2 dili", "foto polea 2 dili",
-        "cantidad gabinete electrico dili", "foto gabinete dili",
-        "cantidad arrancadores dili", "foto arrancadores dili",
-        "cantidad control de nivel dili", "foto control de nivel dili",
-        "cantidad variadores de velociad dili", "foto variadores de velocidad dili",
-        "cantidad sensores de temperatura dili", "foto sensores de temperatura dili",
-        "cantidad toma corriente dili", "foto toma corrientes dili",
-        "descripcion otros elementos dili", "fotos otros elementos dili",
-        "descripcion tuberias dili", "foto tuberias dili",
-        "descripcion cables dili", "foto cables dili",
-        "descripcion curvas dili", "foto curvas dili",
-        "descripcion tornilleria dili", "foto tornilleria dili",
-        "revision de soldadura dili", "revision de sentidos de giro dili", "manual de funcionamiento dili",
-        "revision de filos y acabados dili", "revision de tratamientos dili", "revision de tornilleria dili",
-        "revision de ruidos dili", "ensayo equipo dili", "observciones generales dili",
-        "lider de inspeccion dili", "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
-        ]
-
-        # Construir la fila de datos en el mismo orden que los encabezados
-
-        # Subir imágenes a Drive apenas se suban y guardar links en session_state
-
-        # --- FUNCIONES PARA MANEJO DE ARCHIVOS ---
-
-    def to_url_list(state_key):
-        # Devuelve la lista de links (después de subir)
-        return ", ".join(st.session_state.get(state_key + "_links", []))
-
-    def store_files(files, state_key):
-        if files is not None:
-            st.session_state[state_key + "_files"] = files
-        else:
-            st.session_state[state_key + "_files"] = []
-
-        # Asegurarse de que todas las llamadas a store_files estén después de esta definición
 
 if __name__ == "__main__":
     main()
