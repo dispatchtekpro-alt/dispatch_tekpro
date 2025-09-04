@@ -235,10 +235,9 @@ def main():
         op_options_filtradas = list(dict.fromkeys(op_options_filtradas))
         op_selected = st.selectbox("Orden de compra (OP)", options=[" "] + op_options_filtradas, key="op_input_selectbox")
         # --- AUTOLLENADO DE DATOS GENERALES ---
-        # Buscar la fila de la OP seleccionada en all_rows_base
         op_row = None
+        headers_base = [h.strip().lower() for h in all_rows_base[0]] if all_rows_base else []
         if op_selected and op_selected.strip() != " ":
-            headers_base = [h.strip().lower() for h in all_rows_base[0]] if all_rows_base else []
             op_idx = headers_base.index("op") if "op" in headers_base else None
             for r in all_rows_base[1:]:
                 if op_idx is not None and len(r) > op_idx and r[op_idx].strip() == op_selected.strip():
