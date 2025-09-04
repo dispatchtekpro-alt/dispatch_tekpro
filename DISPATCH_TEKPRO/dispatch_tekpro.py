@@ -11,6 +11,9 @@ from google.oauth2.credentials import Credentials as UserCreds
 import json
 import datetime
 from streamlit_drawable_canvas import st_canvas
+from PIL import Image
+import numpy as np
+import tempfile
 
 
 # Incluir CSS corporativo Tekpro
@@ -972,7 +975,83 @@ def main():
         if canvas_result.image_data is not None:
             st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
         observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
-        # Aquí puedes agregar la lógica de guacales y guardar en Google Sheets si lo necesitas
+
+        st.markdown("<h3>Guacales</h3>", unsafe_allow_html=True)
+        if 'guacales' not in st.session_state:
+            st.session_state['guacales'] = []
+
+        def add_guacal():
+            st.session_state['guacales'].append({'descripcion': '', 'fotos': []})
+
+        st.button("Agregar guacal", on_click=add_guacal, key="btn_agregar_guacal")
+
+        for idx, guacal in enumerate(st.session_state['guacales']):
+            with st.expander(f"Guacal {idx+1}", expanded=True):
+                descripcion = st.text_area(f"Descripción del guacal {idx+1}", value=guacal['descripcion'], key=f"descripcion_guacal_{idx+1}")
+                fotos = st.file_uploader(f"Foto(s) del guacal {idx+1}", type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_guacal_{idx+1}")
+                guacal['descripcion'] = descripcion
+                guacal['fotos'] = fotos if fotos else []
+
+        enviar_empaque = st.button("Enviar Lista de Empaque", key="enviar_lista_empaque")
+        if enviar_empaque:
+            # Subir fotos de guacales a Drive y guardar enlaces
+            guacales_data = []
+            for idx, guacal in enumerate(st.session_state['guacales']):
+                urls_fotos = []
+                for j, file in enumerate(guacal['fotos']):
+                    if file is not None:
+                        url = upload_image_to_drive_oauth(file, f"guacal{idx+1}_{op}_{j+1}.jpg", folder_id)
+                        urls_fotos.append(url)
+                guacales_data.append({
+                    'descripcion': guacal['descripcion'],
+                    'fotos': urls_fotos
+                })
+
+            # Subir firma a Drive y guardar enlace
+            firma_url = ""
+            if 'firma_logistica_canvas' in st.session_state:
+                canvas_result = st.session_state['firma_logistica_canvas']
+                if hasattr(canvas_result, 'image_data') and canvas_result.image_data is not None:
+                    img = Image.fromarray((canvas_result.image_data).astype(np.uint8))
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                        img.save(tmpfile.name)
+                        tmpfile.seek(0)
+                        with open(tmpfile.name, "rb") as f:
+                            firma_url = upload_image_to_drive_oauth(f, f"firma_logistica_{op}.png", folder_id)
+
+            # Encabezados base
+            headers_empaque = [
+                "Op", "Fecha", "Cliente", "Equipo", "Encargado almacén", "Encargado ingeniería y diseño", "Encargado logística", "Firma encargado logística", "Observaciones adicionales"
+            ]
+            row_empaque = [
+                op,
+                fecha,
+                cliente,
+                equipo,
+                encargado_almacen,
+                encargado_ingenieria,
+                encargado_logistica,
+                firma_url,
+                observaciones_adicionales
+            ]
+            # Agregar columnas dinámicamente para cada guacal
+            for idx, guacal in enumerate(guacales_data):
+                headers_empaque.append(f"Descripción Guacal {idx+1}")
+                headers_empaque.append(f"Fotos Guacal {idx+1}")
+                row_empaque.append(guacal['descripcion'])
+                row_empaque.append(", ".join(guacal['fotos']))
+            # Guardar en sheet
+            file_name_empaque = "dispatch_tekpro"
+            worksheet_name_empaque = "Lista de empaque"
+            try:
+                sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
+            except Exception:
+                sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(title=worksheet_name_empaque, rows=100, cols=len(headers_empaque))
+                sheet_empaque.append_row(headers_empaque)
+            if not sheet_empaque.get_all_values():
+                sheet_empaque.append_row(headers_empaque)
+            sheet_empaque.append_row(row_empaque)
+            st.success("Lista de empaque guardada correctamente en Google Sheets.")
 
 if __name__ == "__main__":
     main()
