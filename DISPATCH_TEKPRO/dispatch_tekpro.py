@@ -901,78 +901,78 @@ def main():
 
     #/////////////////////////////////////////////////////////////AQUI EMPIEZA CODIGO DE LISTA DE EMPAQUE////////////////////////
     elif menu_opcion == "Lista de empaque":
-            folder_id = st.secrets.drive_config.FOLDER_ID
-            creds = get_service_account_creds()
-            sheet_client = gspread.authorize(creds)
-            file_name = "dispatch_tekpro"
-            worksheet_name = "Acta de entrega"
-            st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales para empaque</b>", unsafe_allow_html=True)
-            op_options_empaque = []
-            op_to_row_empaque = {}
-            all_rows = []
-            try:
-                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-                all_rows = sheet.get_all_values()
-                if all_rows:
-                    headers_lower = [h.strip().lower() for h in all_rows[0]]
-                    op_idx = headers_lower.index("op") if "op" in headers_lower else None
-                    for r in all_rows[1:]:
-                        if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                            op_options_empaque.append(r[op_idx].strip())
-                            op_to_row_empaque[r[op_idx].strip()] = r
-            except Exception:
-                st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
-            op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque_2")
-            op = ""
-            fecha = ""
-            cliente = ""
-            equipo = ""
-            encargado_ingenieria = ""
-            if op_selected_empaque and op_selected_empaque.strip() != "":
-                row = op_to_row_empaque.get(op_selected_empaque, [])
-                headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
-                def get_val(col):
-                    col = col.strip().lower()
-                    idx = headers_lower.index(col) if col in headers_lower else None
-                    return row[idx] if idx is not None and idx < len(row) else ""
-                op = op_selected_empaque
-                fecha = get_val("fecha dili")
-                cliente = get_val("cliente dili")
-                equipo = get_val("equipo dili")
-                encargado_ingenieria = get_val("diseñador dili")
-            encargados_almacen = ["", "Andrea Ochoa"]
-            col_almacen = st.columns(1)
-            encargado_almacen = col_almacen[0].selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
-            encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
-            col_logistica = st.columns(1)
-            encargado_logistica = col_logistica[0].selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
-            st.markdown(f"""
-            <div style='background:#e6f7f7;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
-            <b>OP:</b> {op}<br>
-            <b>Fecha:</b> {fecha}<br>
-            <b>Cliente:</b> {cliente}<br>
-            <b>Equipo:</b> {equipo}<br>
-            <b>Encargado almacén:</b> {encargado_almacen}<br>
-            <b>Encargado ingeniería y diseño:</b> {encargado_ingenieria}<br>
-            <b>Encargado logística:</b> {encargado_logistica}<br>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
-            st.info("Por favor, firme en el recuadro de abajo:")
-            canvas_result = st_canvas(
-                fill_color="#00000000",  # Fondo transparente
-                stroke_width=2,
-                stroke_color="#1db6b6",
-                background_color="#f7fafb",
-                height=150,
-                width=400,
-                drawing_mode="freedraw",
-                key="firma_logistica_canvas"
-            )
-            if canvas_result.image_data is not None:
-                st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
-            observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
-            # Aquí puedes agregar la lógica de guacales y guardar en Google Sheets si lo necesitas
+        folder_id = st.secrets.drive_config.FOLDER_ID
+        creds = get_service_account_creds()
+        sheet_client = gspread.authorize(creds)
+        file_name = "dispatch_tekpro"
+        worksheet_name = "Acta de entrega"
+        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales para empaque</b>", unsafe_allow_html=True)
+        op_options_empaque = []
+        op_to_row_empaque = {}
+        all_rows = []
+        try:
+            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+            all_rows = sheet.get_all_values()
+            if all_rows:
+                headers_lower = [h.strip().lower() for h in all_rows[0]]
+                op_idx = headers_lower.index("op") if "op" in headers_lower else None
+                for r in all_rows[1:]:
+                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
+                        op_options_empaque.append(r[op_idx].strip())
+                        op_to_row_empaque[r[op_idx].strip()] = r
+        except Exception:
+            st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
+        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque_2")
+        op = ""
+        fecha = ""
+        cliente = ""
+        equipo = ""
+        encargado_ingenieria = ""
+        if op_selected_empaque and op_selected_empaque.strip() != "":
+            row = op_to_row_empaque.get(op_selected_empaque, [])
+            headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
+            def get_val(col):
+                col = col.strip().lower()
+                idx = headers_lower.index(col) if col in headers_lower else None
+                return row[idx] if idx is not None and idx < len(row) else ""
+            op = op_selected_empaque
+            fecha = get_val("fecha dili")
+            cliente = get_val("cliente dili")
+            equipo = get_val("equipo dili")
+            encargado_ingenieria = get_val("diseñador dili")
+        encargados_almacen = ["", "Andrea Ochoa"]
+        col_almacen = st.columns(1)
+        encargado_almacen = col_almacen[0].selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
+        encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
+        col_logistica = st.columns(1)
+        encargado_logistica = col_logistica[0].selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
+        st.markdown(f"""
+        <div style='background:#e6f7f7;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
+        <b>OP:</b> {op}<br>
+        <b>Fecha:</b> {fecha}<br>
+        <b>Cliente:</b> {cliente}<br>
+        <b>Equipo:</b> {equipo}<br>
+        <b>Encargado almacén:</b> {encargado_almacen}<br>
+        <b>Encargado ingeniería y diseño:</b> {encargado_ingenieria}<br>
+        <b>Encargado logística:</b> {encargado_logistica}<br>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
+        st.info("Por favor, firme en el recuadro de abajo:")
+        canvas_result = st_canvas(
+            fill_color="#00000000",  # Fondo transparente
+            stroke_width=2,
+            stroke_color="#1db6b6",
+            background_color="#f7fafb",
+            height=150,
+            width=400,
+            drawing_mode="freedraw",
+            key="firma_logistica_canvas"
+        )
+        if canvas_result.image_data is not None:
+            st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
+        observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
+        # Aquí puedes agregar la lógica de guacales y guardar en Google Sheets si lo necesitas
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
