@@ -839,7 +839,7 @@ def main():
                         op_to_row_empaque[r[op_idx].strip()] = r
         except Exception:
             st.warning("No se pudo leer la hoja de actas de entregas diligenciadas para obtener las OP disponibles.")
-        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque")
+        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque_1")
         if op_selected_empaque and op_selected_empaque.strip() != "":
             row = op_to_row_empaque.get(op_selected_empaque, [])
             headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
@@ -849,12 +849,12 @@ def main():
                 return row[idx] if idx is not None and idx < len(row) else ""
             # Solo los campos necesarios para empaque:
             op = op_selected_empaque
-            fecha = get_val("fecha")
-            cliente = get_val("cliente")
-            equipo = get_val("equipo")
-            item = get_val("item")
-            cantidad = get_val("cantidad")
-            encargado_ingenieria = get_val("disenador") if get_val("disenador") else get_val("diseñador")
+            fecha = get_val("fecha dili")
+            cliente = get_val("cliente dili")
+            equipo = get_val("equipo dili")
+            item = get_val("item dili")
+            cantidad = get_val("cantidad dili")
+            encargado_ingenieria = get_val("diseñador dili")
             # Selectbox para encargado almacén
             encargados_almacen = ["", "Andrea Ochoa"]
             encargado_almacen = st.selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
@@ -1019,7 +1019,7 @@ def main():
                         op_to_row_empaque[r[op_idx].strip()] = r
         except Exception:
             st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
-        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque")
+        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", options=[" "] + op_options_empaque, key="op_selectbox_empaque_2")
         if op_selected_empaque != "":
             row = op_to_row_empaque.get(op_selected_empaque, [])
             # Obtener headers
@@ -1031,10 +1031,10 @@ def main():
 
             # Campos arrastrados de acta de entrega
             op = op_selected_empaque
-            fecha = get_val("fecha")
-            cliente = get_val("cliente")
-            equipo = get_val("equipo")
-            encargado_ingenieria = get_val("disenador") if get_val("disenador") else get_val("diseñador")
+            fecha = get_val("fecha dili")
+            cliente = get_val("cliente dili")
+            equipo = get_val("equipo dili")
+            encargado_ingenieria = get_val("diseñador dili")
 
             # Selectbox para encargado almacén
             encargados_almacen = ["", "Andrea Ochoa"]
@@ -1078,39 +1078,39 @@ def main():
     
     # Encabezados según lo solicitado
     headers = [
-        "cliente", "op", "item", "equipo", "cantidad", "fecha",
-        "cantidad motores", "voltaje motores", "fotos motores",
-        "cantidad reductores", "voltaje reductores", "fotos reductores",
-        "cantidad bombas", "voltaje bombas", "fotos bombas",
-        "voltaje turbina", "Tipo combustible turbina", "Metodo uso turbina", "foto turbina",
-        "voltaje quemador", "foto quemador",
-        "voltaje bomba de vacio", "foto bomba de vacio",
-        "voltaje compresor", "foto compresor",
-        "cantidad manometros", "foto manometros",
-        "cantidad vacuometros", "foto vacuometros",
-        "cantidad valvulas", "foto valvulas",
-        "cantidad mangueras", "foto mangueras",
-        "cantidad boquillas", "foto boquillas",
-        "cantidad reguladores aire/gas", "foto reguladores",
-        "tension piñon 1", "foto piñon 1",
-        "tension piñon 2", "foto piñon 2",
-        "tension polea 1", "foto polea 1",
-        "tension polea 2", "foto polea 2",
-        "cantidad gabinete electrico", "foto gabinete",
-        "cantidad arrancadores", "foto arrancadores",
-        "cantidad control de nivel", "foto control de nivel",
-        "cantidad variadores de velociad", "foto variadores de velocidad",
-        "cantidad sensores de temperatura", "foto sensores de temperatura",
-        "cantidad toma corriente", "foto toma corrientes",
-        "descripcion otros elementos", "fotos otros elementos",
-        "descripcion tuberias", "foto tuberias",
-        "descripcion cables", "foto cables",
-        "descripcion curvas", "foto curvas",
-        "descripcion tornilleria", "foto tornilleria",
-        "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento",
-        "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
-        "revision de ruidos", "ensayo equipo", "observciones generales",
-        "lider de inspeccion", "Encargado soldador", "disenador", "fecha de entrega"
+    "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili",
+    "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
+    "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili",
+    "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
+    "voltaje turbina dili", "Tipo combustible turbina dili", "Metodo uso turbina dili", "foto turbina dili",
+    "voltaje quemador dili", "foto quemador dili",
+    "voltaje bomba de vacio dili", "foto bomba de vacio dili",
+    "voltaje compresor dili", "foto compresor dili",
+    "cantidad manometros dili", "foto manometros dili",
+    "cantidad vacuometros dili", "foto vacuometros dili",
+    "cantidad valvulas dili", "foto valvulas dili",
+    "cantidad mangueras dili", "foto mangueras dili",
+    "cantidad boquillas dili", "foto boquillas dili",
+    "cantidad reguladores aire/gas dili", "foto reguladores dili",
+    "tension piñon 1 dili", "foto piñon 1 dili",
+    "tension piñon 2 dili", "foto piñon 2 dili",
+    "tension polea 1 dili", "foto polea 1 dili",
+    "tension polea 2 dili", "foto polea 2 dili",
+    "cantidad gabinete electrico dili", "foto gabinete dili",
+    "cantidad arrancadores dili", "foto arrancadores dili",
+    "cantidad control de nivel dili", "foto control de nivel dili",
+    "cantidad variadores de velociad dili", "foto variadores de velocidad dili",
+    "cantidad sensores de temperatura dili", "foto sensores de temperatura dili",
+    "cantidad toma corriente dili", "foto toma corrientes dili",
+    "descripcion otros elementos dili", "fotos otros elementos dili",
+    "descripcion tuberias dili", "foto tuberias dili",
+    "descripcion cables dili", "foto cables dili",
+    "descripcion curvas dili", "foto curvas dili",
+    "descripcion tornilleria dili", "foto tornilleria dili",
+    "revision de soldadura dili", "revision de sentidos de giro dili", "manual de funcionamiento dili",
+    "revision de filos y acabados dili", "revision de tratamientos dili", "revision de tornilleria dili",
+    "revision de ruidos dili", "ensayo equipo dili", "observciones generales dili",
+    "lider de inspeccion dili", "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
     ]
 
     # Construir la fila de datos en el mismo orden que los encabezados
