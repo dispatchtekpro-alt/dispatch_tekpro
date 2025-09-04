@@ -235,7 +235,7 @@ def main():
         op_options_filtradas = list(dict.fromkeys(op_options_filtradas))
         op_selected = st.selectbox("Orden de compra (OP)", options=[" "] + op_options_filtradas, key="op_input_selectbox")
         # --- AUTOLLENADO DE DATOS GENERALES ---
-        op_row = None
+        op_row = []
         headers_base = [h.strip().lower() for h in all_rows_base[0]] if all_rows_base else []
         if op_selected and op_selected.strip() != " ":
             op_idx = headers_base.index("op") if "op" in headers_base else None
@@ -246,13 +246,11 @@ def main():
         # Definir get_base_val SIEMPRE antes de cualquier uso
 
         def get_base_val(col):
-            # Si existe op_row y headers_base, busca el valor, si no, devuelve ""
-            try:
-                col = col.strip().lower()
-                idx = headers_base.index(col) if col in headers_base else None
-                return op_row[idx] if idx is not None and idx < len(op_row) else ""
-            except Exception:
+            col = col.strip().lower()
+            if not headers_base or not op_row:
                 return ""
+            idx = headers_base.index(col) if col in headers_base else None
+            return op_row[idx] if idx is not None and idx < len(op_row) else ""
 
         # --- SECCIÓN 1: DATOS GENERALES ---
         st.markdown("<h2>Datos generales</h2>", unsafe_allow_html=True)
