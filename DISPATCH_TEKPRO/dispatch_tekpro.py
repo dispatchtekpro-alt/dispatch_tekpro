@@ -243,13 +243,16 @@ def main():
                 if op_idx is not None and len(r) > op_idx and r[op_idx].strip() == op_selected.strip():
                     op_row = r
                     break
+        # Definir get_base_val SIEMPRE antes de cualquier uso
+
         def get_base_val(col):
-            col = col.strip().lower()
-            # Elimina el sufijo ' dili' si existe
-            if col.endswith(" dili"):
-                col = col[:-5]
-            idx = headers_base.index(col) if col in headers_base else None
-            return op_row[idx] if op_row and idx is not None and idx < len(op_row) else ""
+            # Si existe op_row y headers_base, busca el valor, si no, devuelve ""
+            try:
+                col = col.strip().lower()
+                idx = headers_base.index(col) if col in headers_base else None
+                return op_row[idx] if idx is not None and idx < len(op_row) else ""
+            except Exception:
+                return ""
 
         # --- SECCIÓN 1: DATOS GENERALES ---
         st.markdown("<h2>Datos generales</h2>", unsafe_allow_html=True)
