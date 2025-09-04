@@ -191,7 +191,7 @@ def main():
 
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Acta de entrega", "Lista de empaque"],
+        ["Actaaa de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
@@ -872,12 +872,14 @@ def main():
             item = ""
             cantidad = ""
             encargado_ingenieria = ""
-            # Selectbox para encargado almacén
+            # Selectbox para encargado almacén (ancho completo)
             encargados_almacen = ["", "Andrea Ochoa"]
-            encargado_almacen = st.selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
-            # Selectbox para encargado logística
+            col_almacen = st.columns(1)
+            encargado_almacen = col_almacen[0].selectbox("Encargado almacén", encargados_almacen, key="encargado_almacen_empaque")
+            # Selectbox para encargado logística (ancho completo)
             encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
-            encargado_logistica = st.selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
+            col_logistica = st.columns(1)
+            encargado_logistica = col_logistica[0].selectbox("Encargado logística", encargados_logistica, key="encargado_logistica_empaque")
 
             if op_selected_empaque and op_selected_empaque.strip() != "":
                 row = op_to_row_empaque.get(op_selected_empaque, [])
@@ -1167,5 +1169,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
