@@ -191,7 +191,7 @@ def main():
 
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Actaaa de entrega", "Lista de empaque"],
+        ["Acta de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
@@ -265,15 +265,15 @@ def main():
                 fecha_val = datetime.date.today()
             fecha = st.date_input("Fecha", value=fecha_val, key="fecha_input")
 
-    cliente = st.text_input("Cliente", value=get_base_val("cliente"), key="cliente_input")
-    equipo = st.text_input("Equipo", value=get_base_val("equipo"), key="equipo_input")
-    item = st.text_input("Item", value=get_base_val("item"), key="item_input")
-    cantidad_default = get_base_val("cantidad")
-    try:
-        cantidad_val = int(cantidad_default) if cantidad_default else 1
-    except:
-        cantidad_val = 1
-    cantidad = st.number_input("Cantidad", min_value=1, value=cantidad_val, step=1, key="cantidad_input")
+        cliente = st.text_input("Cliente", value=get_base_val("cliente"), key="cliente_input")
+        equipo = st.text_input("Equipo", value=get_base_val("equipo"), key="equipo_input")
+        item = st.text_input("Item", value=get_base_val("item"), key="item_input")
+        cantidad_default = get_base_val("cantidad")
+        try:
+            cantidad_val = int(cantidad_default) if cantidad_default else 1
+        except:
+            cantidad_val = 1
+        cantidad = st.number_input("Cantidad", min_value=1, value=cantidad_val, step=1, key="cantidad_input")
 
         # --- SECCIÓN 2: LISTAS DE CHEQUEO ---
     st.markdown("<h2>Listas de chequeo</h2>", unsafe_allow_html=True)
