@@ -1015,4 +1015,95 @@ def main():
             return True, ""
 
         # Botón para enviar la lista de empaque
-        enviar_empaque = st.button("
+        enviar_empaque = st.button("Enviar Lista de Empaque", key="enviar_lista_empaque")
+        
+        if enviar_empaque:
+            # Validar campos obligatorios
+            if not op or not cliente or not equipo or not encargado_logistica:
+                st.error("Debes completar al menos los campos: OP, Cliente, Equipo y Encargado logística")
+                st.stop()
+            
+            # Subir fotos de guacales a Drive
+            guacales_data = []
+            
+            with st.spinner("Subiendo imágenes de guacales..."):
+                for idx, guacal in enumerate(st.session_state['guacales']):
+                    urls_fotos = upload_images_parallel(
+                        guacal['fotos'], 
+                        f"guacal{idx+1}_{op}", 
+                        folder_id
+                    )
+                    
+                    guacales_data.append({
+                        'descripcion': guacal['descripcion'],
+                        'fotos': urls_fotos
+                    })
+            
+            # Subir firma a Drive
+            firma_url = ""
+            if canvas_result.image_data is not None and np.sum(canvas_result.image_data) > 0:
+                with st.spinner("Guardando firma digital..."):
+                    img = Image.fromarray((canvas_result.image_data).astype(np.uint8))
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+                        img.save(tmpfile.name)
+                        tmpfile.seek(0)
+                        with open(tmpfile.name, "rb") as f:
+                            firma_url = upload_image_to_drive_oauth(f, f"firma_logistica_{op}.png", folder_id)
+            
+            # Encabezados base
+            headers_empaque = [
+                "Op", "Fecha", "Cliente", "Equipo", "Encargado almacén", 
+                "Encargado ingeniería y diseño", "Encargado logística", 
+                "Firma encargado logística", "Observaciones adicionales"
+            ]
+            
+            row_empaque = [
+                op,
+                fecha,
+                cliente,
+                equipo,
+                encargado_almacen,
+                encargado_ingenieria,
+                encargado_logistica,
+                firma_url,
+                observaciones_adicionales
+            ]
+            
+            # Agregar columnas dinámicamente para cada guacal
+            for idx, guacal in enumerate(guacales_data):
+                headers_empaque.append(f"Descripción Guacal {idx+1}")
+                headers_empaque.append(f"Fotos Guacal {idx+1}")
+                row_empaque.append(guacal['descripcion'])
+                row_empaque.append(", ".join(guacal['fotos']))
+            
+            # Guardar en Google Sheets
+            file_name_empaque = "dispatch_tekpro"
+            worksheet_name_empaque = "Lista de empaque"
+            
+            try:
+                # Verificar si existe la hoja
+                try:
+                    sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
+                except:
+                    # Crear la hoja si no existe
+                    sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(
+                        title=worksheet_name_empaque, 
+                        rows=100, 
+                        cols=len(headers_empaque)
+                    )
+                    sheet_empaque.append_row(headers_empaque)
+                
+                # Verificar si la hoja está vacía y necesita encabezados
+                if not sheet_empaque.get_all_values():
+                    sheet_empaque.append_row(headers_empaque)
+                
+                # Guardar la fila de datos
+                sheet_empaque.append_row(row_empaque)
+                st.success("Lista de empaque guardada correctamente en Google Sheets.")
+                
+            except Exception as e:
+                st.error(f"Error al guardar la lista de empaque: {e}")
+
+if __name__ == "__main__":
+    main()
+
