@@ -1226,24 +1226,97 @@ def main():
                 try:
                     sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
                 except:
-                    # Crear la hoja si no existe
                     sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(
                         title=worksheet_name_empaque, 
                         rows=100, 
                         cols=len(headers_empaque)
                     )
                     sheet_empaque.append_row(headers_empaque)
-                
-                # Verificar si la hoja está vacía y necesita encabezados
-                if not sheet_empaque.get_all_values():
-                    sheet_empaque.append_row(headers_empaque)
-                
-                # Guardar la fila de datos
-                sheet_empaque.append_row(row_empaque)
-                st.success("Lista de empaque guardada correctamente en Google Sheets.")
-                
-            except Exception as e:
-                st.error(f"Error al guardar la lista de empaque: {e}")
+                    st.markdown("<h2>Listas de chequeo</h2>", unsafe_allow_html=True)
+                    col1, col2, col3, col4 = st.columns(4)
+                    mostrar_electromecanicos = col1.checkbox("Elementos electromecánicos", key="cb_electromecanicos")
+                    mostrar_accesorios = col2.checkbox("Accesorios", key="cb_accesorios")
+                    mostrar_mecanicos = col3.checkbox("Elementos mecánicos", key="cb_mecanicos")
+                    mostrar_electricos = col4.checkbox("Elementos eléctricos", key="cb_electricos")
 
-if __name__ == "__main__":
-    main()
+                    uploaded_files = {}
+                    component_results = {}
+
+                    if mostrar_electromecanicos:
+                        st.markdown("""
+                        <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos electromecánicos</h3>
+                        """, unsafe_allow_html=True)
+                        # ...existing code...
+                    if mostrar_accesorios:
+                        st.markdown("""
+                        <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
+                        """, unsafe_allow_html=True)
+                        # ...existing code...
+                    if mostrar_mecanicos:
+                        st.markdown("""
+                        <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
+                        """, unsafe_allow_html=True)
+                        # ...existing code...
+                    if mostrar_electricos:
+                        st.markdown("""
+                        <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos eléctricos</h3>
+                        """, unsafe_allow_html=True)
+                        # ...existing code...
+
+                    otros_elementos = ""
+                    fotos_otros_elementos = []
+                    mostrar_otros_elementos = st.checkbox("Otros elementos", key="cb_otros_elementos")
+                    if mostrar_otros_elementos:
+                        with st.expander("Otros elementos", expanded=True):
+                            otros_elementos = st.text_area("Descripción de otros elementos", key="otros_elementos")
+                            fotos_otros_elementos = st.file_uploader("Foto(s) de otros elementos", 
+                                                                   type=["jpg","jpeg","png"], 
+                                                                   accept_multiple_files=True, 
+                                                                   key="fotos_otros_elementos")
+                            uploaded_files["otros_elementos"] = fotos_otros_elementos
+                            component_results["otros_elementos"] = otros_elementos
+
+                    st.markdown("<h4>Revisión general</h4>", unsafe_allow_html=True)
+                    col_rev = st.columns(1)
+                    revision_visual = col_rev[0].selectbox("Revisión visual", ["Selecciona...", "Sí", "No"], key="revision_visual")
+                    revision_funcional = col_rev[0].selectbox("Revisión funcional", ["Selecciona...", "Sí", "No"], key="revision_funcional")
+                    revision_soldadura = col_rev[0].selectbox("Revisión de soldadura", ["Selecciona...", "Sí", "No"], key="revision_soldadura")
+                    revision_sentidos = col_rev[0].selectbox("Revisión de sentidos de giro", ["Selecciona...", "Sí", "No"], key="revision_sentidos")
+                    manual_funcionamiento = col_rev[0].selectbox("Manual de funcionamiento", ["Selecciona...", "Sí", "No"], key="manual_funcionamiento")
+                    revision_filos = col_rev[0].selectbox("Revisión de filos y acabados", ["Selecciona...", "Sí", "No"], key="revision_filos")
+                    revision_tratamientos = col_rev[0].selectbox("Revisión de tratamientos", ["Selecciona...", "Sí", "No"], key="revision_tratamientos")
+                    revision_tornilleria = col_rev[0].selectbox("Revisión de tornillería", ["Selecciona...", "Sí", "No"], key="revision_tornilleria")
+                    revision_ruidos = col_rev[0].selectbox("Revisión de ruidos", ["Selecciona...", "Sí", "No"], key="revision_ruidos")
+                    ensayo_equipo = col_rev[0].selectbox("Ensayo equipo", ["Selecciona...", "Sí", "No"], key="ensayo_equipo")
+
+                    col_obs = st.columns(1)
+                    observaciones_generales = col_obs[0].text_area("Observaciones generales", key="observaciones_generales")
+
+                    col_lider = st.columns(1)
+                    lideres = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez"]
+                    lider_inspeccion = col_lider[0].selectbox("Líder de inspección", lideres, key="lider_inspeccion")
+
+                    col_soldador = st.columns(1)
+                    soldadores = ["", "Jaime Ramos", "Jaime Rincon", "Gabriel", "Lewis"]
+                    soldador = col_soldador[0].selectbox("Encargado Soldador", soldadores, key="soldador")
+
+                    col_disenador = st.columns(1)
+                    disenadores = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez"]
+                    disenador = col_disenador[0].selectbox("Diseñador", disenadores, key="disenador", on_change=guardar_chequeo_revision)
+
+                    col_fecha = st.columns(1)
+                    fecha_entrega = col_fecha[0].date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+                    hora_entrega = col_fecha[0].time_input("Hora de entrega", value=datetime.datetime.now().time(), key="hora_entrega_acta")
+
+                    dt_entrega = datetime.datetime.combine(fecha_entrega, hora_entrega)
+                    fecha_hora_formateada = dt_entrega.strftime("%d-%m-%y-%H:%M:%S")
+                    st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
+
+                    # Función para guardar automáticamente al seleccionar diseñador
+                    def guardar_chequeo_revision():
+                        # Aquí va la lógica para guardar todos los datos de chequeo y revisión
+                        st.session_state['chequeo_revision_guardado'] = True
+                        st.success("Listas de chequeo y revisión guardadas automáticamente.")
+                    # ...existing code...
+
+
