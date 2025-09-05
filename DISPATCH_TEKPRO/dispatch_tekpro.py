@@ -307,68 +307,14 @@ def main():
                     if valor and valor.strip().lower() not in ["", "0", "no"]:
                         articulos_presentes.append(art)
 
-
         # Estado dinámico para número de paquetes
         if 'num_paquetes' not in st.session_state:
             st.session_state['num_paquetes'] = 1
 
-        # Leer artículos de BDD SAG
-        try:
-            bdd_sag_sheet = sheet_client.open(file_name).worksheet("BDD SAG")
-            bdd_sag_rows = bdd_sag_sheet.get_all_values()
-            bdd_sag_headers = bdd_sag_rows[0] if bdd_sag_rows else []
-            # Buscar columnas relevantes: código, descripción, unidad
-            codigo_idx = descripcion_idx = unidad_idx = None
-            for idx, h in enumerate(bdd_sag_headers):
-                h_low = h.strip().lower()
-                if h_low in ["codigo", "código", "code"]:
-                    codigo_idx = idx
-                elif h_low in ["descripcion", "descripción", "artículo", "articulo", "nombre"]:
-                    descripcion_idx = idx
-                elif h_low in ["unidad", "unid.", "unid", "unit"]:
-                    unidad_idx = idx
-            bdd_sag_articulos = []
-            bdd_sag_articulos_fmt = []
-            for row in bdd_sag_rows[1:]:
-                if codigo_idx is not None and descripcion_idx is not None and unidad_idx is not None:
-                    if len(row) > max(codigo_idx, descripcion_idx, unidad_idx):
-                        code = row[codigo_idx].strip()
-                        desc = row[descripcion_idx].strip()
-                        unidad = row[unidad_idx].strip()
-                        label = f"{code}-{desc}-{unidad}"
-                        bdd_sag_articulos.append(label)
-                        bdd_sag_articulos_fmt.append((label, code, desc, unidad))
-                elif descripcion_idx is not None:
-                    # fallback: just description
-                    desc = row[descripcion_idx].strip()
-                    bdd_sag_articulos.append(desc)
-                    bdd_sag_articulos_fmt.append((desc, "", desc, ""))
-        except Exception:
-            bdd_sag_articulos = []
-            bdd_sag_articulos_fmt = []
-
         with st.form("dispatch_form"):
             import datetime
-            # Autocompletar nombre_proyecto y encargado_ingenieria si la OP existe
-            auto_nombre_proyecto = ""
-            auto_encargado_ingenieria = ""
-            if orden_pedido_val and orden_pedido_val in ordenes_existentes:
-                row = ordenes_existentes[orden_pedido_val]
-                headers = acta_rows[0]
-                # Buscar índice de cliente y diseñador
-                cliente_idx = None
-                disenador_idx = None
-                for idx, h in enumerate(headers):
-                    if h.strip().lower() == "cliente":
-                        cliente_idx = idx
-                    if h.strip().lower() == "diseñador":
-                        disenador_idx = idx
-                if cliente_idx is not None and len(row) > cliente_idx:
-                    auto_nombre_proyecto = row[cliente_idx]
-                if disenador_idx is not None and len(row) > disenador_idx:
-                    auto_encargado_ingenieria = row[disenador_idx]
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
-            nombre_proyecto = st.text_input("Nombre de proyecto", value=auto_nombre_proyecto)
+            nombre_proyecto = st.text_input("Nombre de proyecto")
             encargado_ensamblador = st.text_input("Encargado ensamblador")
             encargado_almacen = st.selectbox(
                 "Encargado almacén",
@@ -385,8 +331,7 @@ def main():
                     "Victor Manuel Baena",
                     "Diomer Arbelaez",
                     "Jose Perez"
-                ],
-                index=["", "Alejandro Diaz", "Juan David Martinez", "Juan Andres Zapata", "Daniel Valbuena", "Victor Manuel Baena", "Diomer Arbelaez", "Jose Perez"].index(auto_encargado_ingenieria) if auto_encargado_ingenieria in ["", "Alejandro Diaz", "Juan David Martinez", "Juan Andres Zapata", "Daniel Valbuena", "Victor Manuel Baena", "Diomer Arbelaez", "Jose Perez"] else 0
+                ]
             )
 
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
@@ -404,36 +349,14 @@ def main():
                     if desc_otros and desc_otros.strip():
                         st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
-            # Quitar el <hr> literal, solo dejar la línea de paquetes
+            st.markdown("<hr>")
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             paquetes = []
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
-                articulos_guacal = st.multiselect(
-                    f"Agregar artículos de BDD SAG al paquete {i+1}",
-                    options=bdd_sag_articulos,
-                    key=f"bddsag_paquete_{i+1}"
-                )
-                desc_bdd = ""
-                if articulos_guacal:
-                    desc_bdd = "(" + ",".join(articulos_guacal) + ")"
-                desc_adicional = st.text_area(
-                    f"Descripción adicional paquete {i+1}",
-                    key=f"desc_adic_paquete_{i+1}"
-                )
-                dimensiones = st.text_input(f"DIMENSIONES / DIMENSIONS LXAXH (MT) paquete {i+1}", key=f"dim_paquete_{i+1}")
-                peso_neto = st.text_input(f"PESO NETO / NET WEIGHT (Kg) paquete {i+1}", key=f"peso_neto_paquete_{i+1}")
-                peso_bruto = st.text_input(f"PESO BRUTO / GROSS WEIGHT (Kg) paquete {i+1}", key=f"peso_bruto_paquete_{i+1}")
+                desc = st.text_area(f"Descripción paquete {i+1}", key=f"desc_paquete_{i+1}")
                 fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
-                paquetes.append({
-                    "desc_bdd": desc_bdd,
-                    "desc_adicional": desc_adicional,
-                    "fotos": fotos,
-                    "articulos_guacal": articulos_guacal,
-                    "dimensiones": dimensiones,
-                    "peso_neto": peso_neto,
-                    "peso_bruto": peso_bruto
-                })
+                paquetes.append({"desc": desc, "fotos": fotos})
             if st.form_submit_button("Agregar otro paquete"):
                 st.session_state['num_paquetes'] += 1
                 st.experimental_rerun()
@@ -445,75 +368,40 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
-                # Estructura recomendada de encabezados:
-                # OP, Fecha, Nombre de proyecto, Encargado ensamblador, Encargado almacén, Encargado ingeniería y diseño, Observaciones adicionales,
-                # Artículos enviados, Artículos no enviados,
-                # Descripción Guacal 1, Descripción adicional Guacal 1, Dimensiones Guacal 1, Peso Neto Guacal 1, Peso Bruto Guacal 1, Fotos Guacal 1, ...
-                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-                all_rows = sheet.get_all_values()
-                headers = all_rows[0] if all_rows else []
-                # Determinar artículos enviados/no enviados
-                articulos_enviados = [art for art, checked in articulos_seleccion.items() if checked]
-                articulos_no_enviados = [art for art, checked in articulos_seleccion.items() if not checked]
-                # Construir encabezados dinámicamente según la cantidad de paquetes
-                base_headers = [
-                    "OP", "Fecha", "Nombre de proyecto", "Encargado ensamblador", "Encargado almacén", "Encargado ingeniería y diseño", "Observaciones adicionales",
-                    "Artículos enviados", "Artículos no enviados"
-                ]
-                paquete_headers = []
-                for i in range(st.session_state['num_paquetes']):
-                    n = i+1
-                    paquete_headers.extend([
-                        f"Descripción Guacal {n}",
-                        f"Descripción adicional Guacal {n}",
-                        f"Dimensiones Guacal {n}",
-                        f"Peso Neto Guacal {n}",
-                        f"Peso Bruto Guacal {n}",
-                        f"Fotos Guacal {n}"
-                    ])
-                full_headers = base_headers + paquete_headers
-                # Si los headers actuales no coinciden, actualizarlos
-                if headers != full_headers:
-                    if not all_rows:
-                        sheet.append_row(full_headers)
-                    else:
-                        sheet.resize(rows=1)
-                        sheet.update('A1', [full_headers])
-                # Preparar la fila a guardar
-                row_data = [
-                    str(orden_pedido_val),
+                enviados = [art for art, v in articulos_seleccion.items() if v]
+                no_enviados = [art for art, v in articulos_seleccion.items() if not v]
+                row = [
                     str(fecha),
-                    str(nombre_proyecto),
-                    str(encargado_ensamblador),
-                    str(encargado_almacen),
-                    str(encargado_ingenieria),
-                    str(observaciones),
-                    ", ".join(articulos_enviados),
-                    ", ".join(articulos_no_enviados)
+                    nombre_proyecto,
+                    orden_pedido_val,
+                    encargado_ensamblador,
+                    encargado_almacen,
+                    encargado_ingenieria,
+                    ", ".join(enviados),
+                    ", ".join(no_enviados)
                 ]
-                for i, paquete in enumerate(paquetes):
-                    # Subir fotos a Drive y obtener links
-                    fotos_links = []
+                for idx, paquete in enumerate(paquetes, start=1):
+                    row.append(paquete["desc"])
+                    enlaces = []
                     if paquete["fotos"]:
-                        for idx, f in enumerate(paquete["fotos"], start=1):
+                        for n, foto in enumerate(paquete["fotos"], start=1):
                             try:
-                                import io
-                                file_stream = io.BytesIO(f.read())
-                                image_filename = f"Guacal{i+1}_{orden_pedido_val}_{idx}.jpg"
+                                image_filename = f"Paquete_{orden_pedido_val}_{idx}_{n}.jpg"
+                                file_stream = io.BytesIO(foto.read())
                                 public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
-                                fotos_links.append(public_url)
-                            except Exception as e:
-                                fotos_links.append(f"Error: {e}")
-                    row_data.extend([
-                        paquete["desc_bdd"],
-                        paquete["desc_adicional"],
-                        paquete["dimensiones"],
-                        paquete["peso_neto"],
-                        paquete["peso_bruto"],
-                        ", ".join(fotos_links)
-                    ])
-                sheet.append_row(row_data)
-                st.success("Información de la lista de empaque guardada correctamente en Google Sheets.")
+                                enlaces.append(public_url)
+                                st.success(f"Foto {n} de paquete {idx} subida correctamente")
+                            except Exception as upload_error:
+                                st.error(f"Error al subir la foto {n} de paquete {idx}: {str(upload_error)}")
+                        if enlaces:
+                            row.append(", ".join(enlaces))
+                        else:
+                            row.append("Error al subir foto")
+                    else:
+                        row.append("Sin foto")
+                write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
+                st.success("Despacho guardado correctamente.")
+                st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
 
 
     elif opcion_menu == "ACTA DE ENTREGA":
@@ -1030,3 +918,4 @@ def main():
                 st.success("Acta de entrega guardada correctamente en Google Sheets.")
 
 if __name__ == "__main__":
+    main()
