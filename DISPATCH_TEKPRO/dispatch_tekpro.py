@@ -176,6 +176,33 @@ def upload_image_to_drive_oauth(file, filename, folder_id):
     public_url = f"https://drive.google.com/uc?id={file_id}"
     return public_url
 
+# Función para subir múltiples imágenes en paralelo
+def upload_images_parallel(files, base_name, folder_id):
+    if not files:
+        return []
+    
+    urls = []
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+        for idx, file in enumerate(files):
+            if file is not None:
+                futures.append(
+                    executor.submit(
+                        upload_image_to_drive_oauth, 
+                        file, 
+                        f"{base_name}_{idx+1}.jpg", 
+                        folder_id
+                    )
+                )
+        
+        for future in concurrent.futures.as_completed(futures):
+            url = future.result()
+            if url:
+                urls.append(url)
+                
+    return urls
+
 # Escribir link en Google Sheets
 def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet = sheet_client.open(file_name).worksheet(worksheet_name)
@@ -285,17 +312,19 @@ def main():
         worksheet_name_diligenciadas = "Actas de entregas diligenciadas"
         
         # Leer OPs base desde la hoja plantilla
+        all_rows_base = []
+        op_options = []
         try:
             sheet_base = sheet_client.open(file_name).worksheet(worksheet_name_base)
             all_rows_base = sheet_base.get_all_values()
-            op_options = []
             if all_rows_base:
                 headers_lower = [h.strip().lower() for h in all_rows_base[0]]
                 op_idx = headers_lower.index("op") if "op" in headers_lower else None
                 for r in all_rows_base[1:]:
                     if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
                         op_options.append(r[op_idx].strip())
-        except Exception:
+        except Exception as e:
+            st.warning(f"Error al cargar plantilla: {e}")
             op_options = []
         
         # Leer OPs ya guardadas en la hoja 'Actas de entregas diligenciadas'
@@ -971,10 +1000,12 @@ def main():
         )
         
         # Verificar si la firma tiene contenido
+        firma_valida = False
         if canvas_result.image_data is not None:
             # Verificar si hay algún trazo en la firma
             has_content = np.sum(canvas_result.image_data) > 0
             if has_content:
+                firma_valida = True
                 st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
             else:
                 st.warning("La firma está vacía. Por favor, firme antes de continuar.")
@@ -1019,27 +1050,25 @@ def main():
         
         if enviar_empaque:
             # Validar campos obligatorios
-            if not op or not cliente or not equipo or not encargado_logistica:
-                st.error("Debes completar al menos los campos: OP, Cliente, Equipo y Encargado logística")
-                st.stop()
+            valido, mensaje = validar_empaque()
+            if not valido:
+                st.error(mensaje)
+            else:
+                # Subir fotos de guacales a Drive
+                guacales_data = []
+                
+                with st.spinner("Subiendo imágenes de guacales..."):
+                    for idx, guacal in enumerate(st.session_state['guacales']):
+                        urls_fotos = upload_images_parallel(
+                            guacal['fotos'],
+                            f"guacal{idx+1}_{op}",
+                            folder_id
+                        )
+                        guacales_data.append({
+                            'descripcion': guacal['descripcion'],
+                            'fotos': urls_fotos
+                        })
             
-            # Subir fotos de guacales a Drive
-            guacales_data = []
-            
-            with st.spinner("Subiendo imágenes de guacales..."):
-                for idx, guacal in enumerate(st.session_state['guacales']):
-                    urls_fotos = upload_images_parallel(
-                        guacal['fotos'], 
-                        f"guacal{idx+1}_{op}", 
-                        folder_id
-                    )
-                    
-                    guacales_data.append({
-                        'descripcion': guacal['descripcion'],
-                        'fotos': urls_fotos
-                    })
-            
-            # Subir firma a Drive
             firma_url = ""
             if canvas_result.image_data is not None and np.sum(canvas_result.image_data) > 0:
                 with st.spinner("Guardando firma digital..."):
@@ -1051,12 +1080,28 @@ def main():
                             firma_url = upload_image_to_drive_oauth(f, f"firma_logistica_{op}.png", folder_id)
             
             # Encabezados base
+            # Encabezados fijos y hasta 4 guacales
             headers_empaque = [
-                "Op", "Fecha", "Cliente", "Equipo", "Encargado almacén", 
-                "Encargado ingeniería y diseño", "Encargado logística", 
-                "Firma encargado logística", "Observaciones adicionales"
+                "Op",
+                "Fecha",
+                "Cliente",
+                "Equipo",
+                "Encargado almacén",
+                "Encargado ingeniería y diseño",
+                "Encargado logística",
+                "Firma encargado logística",
+                "Observaciones adicionales",
+                "Artículos enviados",
+                "Artículos no enviados",
+                "Descripción Guacal 1",
+                "Fotos Guacal 1",
+                "Descripción Guacal 2",
+                "Fotos Guacal 2",
+                "Descripción Guacal 3",
+                "Fotos Guacal 3",
+                "Descripción Guacal 4",
+                "Fotos Guacal 4"
             ]
-            
             row_empaque = [
                 op,
                 fecha,
@@ -1066,15 +1111,25 @@ def main():
                 encargado_ingenieria,
                 encargado_logistica,
                 firma_url,
-                observaciones_adicionales
+                observaciones_adicionales,
+                "",  # Artículos enviados
+                "",  # Artículos no enviados
             ]
-            
-            # Agregar columnas dinámicamente para cada guacal
-            for idx, guacal in enumerate(guacales_data):
-                headers_empaque.append(f"Descripción Guacal {idx+1}")
-                headers_empaque.append(f"Fotos Guacal {idx+1}")
-                row_empaque.append(guacal['descripcion'])
-                row_empaque.append(", ".join(guacal['fotos']))
+            # Rellenar hasta 4 guacales, si hay menos poner 0
+            for i in range(4):
+                if i < len(guacales_data):
+                    row_empaque.append(guacales_data[i]['descripcion'] if guacales_data[i]['descripcion'] else "0")
+                    row_empaque.append(", ".join(guacales_data[i]['fotos']) if guacales_data[i]['fotos'] else "0")
+                else:
+                    row_empaque.append("0")
+                    row_empaque.append("0")
+            # Si hay más de 4 guacales, agregar columnas extra
+            if len(guacales_data) > 4:
+                for i in range(4, len(guacales_data)):
+                    headers_empaque.append(f"Descripción Guacal {i+1}")
+                    headers_empaque.append(f"Fotos Guacal {i+1}")
+                    row_empaque.append(guacales_data[i]['descripcion'] if guacales_data[i]['descripcion'] else "0")
+                    row_empaque.append(", ".join(guacales_data[i]['fotos']) if guacales_data[i]['fotos'] else "0")
             
             # Guardar en Google Sheets
             file_name_empaque = "dispatch_tekpro"
@@ -1106,4 +1161,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
