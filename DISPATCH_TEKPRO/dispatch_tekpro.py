@@ -137,47 +137,61 @@ def get_drive_service_oauth():
     return build('drive', 'v3', credentials=creds)
 
 def upload_image_to_drive_oauth(file, filename, folder_id):
+    import time
     if file is None:
         return ""
-    # Esta función puede ser llamada desde hilos, por lo que no debe usar st.stop() ni authorize_drive_oauth() aquí
     drive_service = get_drive_service_oauth()
     if drive_service is None:
-        # En contexto de hilos, solo retorna None para que el hilo principal lo maneje
         return None
     file_metadata = {
         'name': filename,
         'parents': [folder_id]
     }
-    # Determinar el tipo MIME adecuado basado en el tipo de archivo
-    mime_type = 'image/jpeg'  # Default
+    mime_type = 'image/jpeg'
     if hasattr(file, 'type') and file.type:
         mime_type = file.type
     media = MediaIoBaseUpload(file, mimetype=mime_type)
-    uploaded = drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id'
-    ).execute()
-    file_id = uploaded.get('id')
-    # Hacer el archivo público
-    drive_service.permissions().create(
-        fileId=file_id,
-        body={
-            'type': 'anyone',
-            'role': 'reader'
-        }
-    ).execute()
-    public_url = f"https://drive.google.com/uc?id={file_id}"
-    return public_url
+    from googleapiclient.errors import HttpError
+    max_retries = 5
+    delay = 2
+    for attempt in range(max_retries):
+        try:
+            uploaded = drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+            file_id = uploaded.get('id')
+            drive_service.permissions().create(
+                fileId=file_id,
+                body={
+                    'type': 'anyone',
+                    'role': 'reader'
+                }
+            ).execute()
+            public_url = f"https://drive.google.com/uc?id={file_id}"
+            return public_url
+        except HttpError as e:
+            status = getattr(e.resp, 'status', None)
+            if status == 429:
+                time.sleep(delay)
+                delay *= 2
+            else:
+                # Registrar el error y continuar
+                print(f"Error subiendo {filename}: {e}")
+                return None
+        except Exception as e:
+            print(f"Error inesperado subiendo {filename}: {e}")
+            return None
+    return None
 
 # Función para subir múltiples imágenes en paralelo
 def upload_images_parallel(files, base_name, folder_id):
     if not files:
         return []
-    
     urls = []
-    
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    # Limitar a 2 hilos máximo
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
         futures = []
         for idx, file in enumerate(files):
             if file is not None:
@@ -189,12 +203,10 @@ def upload_images_parallel(files, base_name, folder_id):
                         folder_id
                     )
                 )
-        
         for future in concurrent.futures.as_completed(futures):
             url = future.result()
             if url:
                 urls.append(url)
-                
     return urls
 
 # Escribir link en Google Sheets
@@ -291,7 +303,7 @@ def main():
 
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Actaaaa de entrega", "Lista de empaque"],
+        ["Acta de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
@@ -724,18 +736,14 @@ def main():
         # Botón para enviar el acta de entrega
         enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
         if enviar_acta:
-            # Validar datos obligatorios
             valido, mensaje = validar_datos()
             if not valido:
                 st.error(mensaje)
             else:
-                # Inicializar diccionario para URLs de imágenes
                 image_urls = {}
-                
-                # Subir imágenes a Drive en paralelo para mejorar el rendimiento
-                with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Subir imágenes a Drive en paralelo con concurrencia limitada y reintentos
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                     futures = {}
-                    # Preparar todas las subidas
                     for key, files in uploaded_files.items():
                         if files:
                             for idx, file in enumerate(files):
@@ -747,19 +755,14 @@ def main():
                                         folder_id
                                     )
                                     futures[(key, idx)] = future
-                    
-                    # Recopilar resultados
                     for (key, idx), future in futures.items():
                         url = future.result()
                         if url is None:
-                            st.warning("La autorización de Google Drive expiró o es inválida. Por favor, reautoriza para continuar. Tus datos no se perderán.")
-                            authorize_drive_oauth()
-                            st.stop()
+                            st.warning("No se pudo subir la imagen por límite de cuota. Intenta nuevamente más tarde.")
                         if url:
                             if key not in image_urls:
                                 image_urls[key] = []
                             image_urls[key].append(url)
-                
                 # Crear la fila para Google Sheets con todos los datos recopilados
                 row = [
                     str(cliente),
@@ -1160,4 +1163,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
