@@ -3,6 +3,7 @@ import gspread
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2.service_account import Credentials
+from google.oauth2.credentials import Credentials as UserCreds
 import io
 import os
 import urllib.parse
@@ -75,7 +76,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 
-# Cargar credenciales de Service Account
 def get_service_account_creds():
     if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
         return Credentials.from_service_account_info(
@@ -88,6 +88,82 @@ def get_service_account_creds():
     else:
         st.error("No se encontraron credenciales de Service Account.")
         st.stop()
+
+# Autorizar Google Drive con OAuth2
+def authorize_drive_oauth():
+    SCOPES = ['https://www.googleapis.com/auth/drive']
+    from google_auth_oauthlib.flow import Flow
+    redirect_uri = "https://dispatchtekpro.streamlit.app/"
+    st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
+    flow = Flow.from_client_config(
+        {"web": dict(st.secrets.oauth2)},
+        scopes=SCOPES,
+        redirect_uri=redirect_uri
+    )
+    import urllib.parse
+    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
+    st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
+    st.markdown("""
+    <small>Después de autorizar, copia y pega aquí la URL completa a la que fuiste redirigido.<br>
+    El sistema extraerá el código automáticamente.</small>
+    """, unsafe_allow_html=True)
+    url_input = st.text_input("Pega aquí la URL de redirección:", key="oauth_url_input")
+    auth_code = ""
+    if url_input:
+        parsed = urllib.parse.urlparse(url_input)
+        params = urllib.parse.parse_qs(parsed.query)
+        auth_code = params.get("code", [""])[0]
+        if auth_code:
+            st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
+        else:
+            st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
+    validar = st.button("Validar código", key="validar_codigo_oauth")
+    if validar:
+        if auth_code:
+            try:
+                flow.fetch_token(code=auth_code)
+                creds = flow.credentials
+                st.session_state['drive_oauth_token'] = creds.to_json()
+                st.success("¡Autorización exitosa! Puedes continuar con el formulario.")
+            except Exception as e:
+                st.error(f"Error al intercambiar el código: {e}")
+        else:
+            st.warning("Debes pegar la URL de redirección que contiene el código.")
+    st.stop()
+
+def get_drive_service_oauth():
+    import json
+    creds = None
+    if 'drive_oauth_token' in st.session_state:
+        creds = UserCreds.from_authorized_user_info(json.loads(st.session_state['drive_oauth_token']))
+    if creds:
+        return build('drive', 'v3', credentials=creds)
+    else:
+        authorize_drive_oauth()
+
+def upload_image_to_drive_oauth(file, filename, folder_id):
+    drive_service = get_drive_service_oauth()
+    file_metadata = {
+        'name': filename,
+        'parents': [folder_id]
+    }
+    media = MediaIoBaseUpload(file, mimetype='image/jpeg')
+    uploaded = drive_service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields='id'
+    ).execute()
+    file_id = uploaded.get('id')
+    # Hacer el archivo público
+    drive_service.permissions().create(
+        fileId=file_id,
+        body={
+            'type': 'anyone',
+            'role': 'reader'
+        }
+    ).execute()
+    public_url = f"https://drive.google.com/uc?id={file_id}"
+    return public_url
 
 # Autorizar Google Drive con OAuth2
 def authorize_drive_oauth():
