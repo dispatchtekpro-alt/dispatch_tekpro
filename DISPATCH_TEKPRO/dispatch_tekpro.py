@@ -291,7 +291,7 @@ def main():
 
     menu_opcion = st.radio(
         "¿Qué deseas diligenciar?",
-        ["Acta de entrega", "Lista de empaque"],
+        ["Actaaaa de entrega", "Lista de empaque"],
         horizontal=True,
         key="menu_opcion_radio"
     )
@@ -1160,3 +1160,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
