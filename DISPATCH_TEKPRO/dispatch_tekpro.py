@@ -385,6 +385,9 @@ def main():
     )
     
     if menu_opcion == "Acta de entrega":
+        # Solicitar autorización Drive OAuth2 si no está presente
+        if 'drive_oauth_token' not in st.session_state:
+            authorize_drive_oauth()
         st.markdown("<h1 style='color:#1db6b6;font-family:Montserrat,Arial,sans-serif;font-weight:700;'>ACTA DE ENTREGA TEKPRO</h1>", unsafe_allow_html=True)
         st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
         
@@ -982,6 +985,9 @@ def main():
 
     #/////////////////////////////////////////////////////////////LISTA DE EMPAQUE////////////////////////
     elif menu_opcion == "Lista de empaque":
+        # Solicitar autorización Drive OAuth2 si no está presente
+        if 'drive_oauth_token' not in st.session_state:
+            authorize_drive_oauth()
         # Asegurarse de que folder_id está definido
         if not folder_id and hasattr(st, 'secrets') and 'drive_config' in st.secrets and 'FOLDER_ID' in st.secrets.drive_config:
             folder_id = st.secrets.drive_config.FOLDER_ID
