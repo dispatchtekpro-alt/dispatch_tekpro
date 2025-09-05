@@ -144,25 +144,23 @@ def get_drive_service_oauth():
 def upload_image_to_drive_oauth(file, filename, folder_id):
     if file is None:
         return ""
-    
     drive_service = get_drive_service_oauth()
+    if drive_service is None:
+        raise RuntimeError("No se pudo obtener el servicio de Google Drive. Autoriza correctamente antes de subir archivos.")
     file_metadata = {
         'name': filename,
         'parents': [folder_id]
     }
-    
     # Determinar el tipo MIME adecuado basado en el tipo de archivo
     mime_type = 'image/jpeg'  # Default
     if hasattr(file, 'type') and file.type:
         mime_type = file.type
-    
     media = MediaIoBaseUpload(file, mimetype=mime_type)
     uploaded = drive_service.files().create(
         body=file_metadata,
         media_body=media,
         fields='id'
     ).execute()
-    
     file_id = uploaded.get('id')
     # Hacer el archivo público
     drive_service.permissions().create(
@@ -172,7 +170,6 @@ def upload_image_to_drive_oauth(file, filename, folder_id):
             'role': 'reader'
         }
     ).execute()
-    
     public_url = f"https://drive.google.com/uc?id={file_id}"
     return public_url
 
@@ -881,8 +878,11 @@ def main():
                     "lider de inspeccion dili", "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
                 ]
                 
-                # Escribir a la hoja de "Actas de entregas diligenciadas"
-                try:
+                # Verificar conexión con Google Drive antes de guardar
+                drive_service = get_drive_service_oauth()
+                if drive_service is None:
+                    st.error("No se pudo conectar con Google Drive. Por favor autoriza el acceso antes de guardar el acta de entrega.")
+                else:
                     try:
                         sheet_diligenciadas = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
                     except Exception:
@@ -891,16 +891,12 @@ def main():
                             title=worksheet_name_diligenciadas, rows=100, cols=len(headers)
                         )
                         sheet_diligenciadas.append_row(headers)
-                    
                     # Si existe pero está vacía, agregamos los encabezados
                     if not sheet_diligenciadas.get_all_values():
                         sheet_diligenciadas.append_row(headers)
-                    
                     # Añadir la nueva fila de datos
                     sheet_diligenciadas.append_row(row)
                     st.success("Acta de entrega guardada correctamente en 'Actas de entregas diligenciadas'.")
-                except Exception as e:
-                    st.error(f"Error al guardar el acta de entrega: {e}")
 
     #/////////////////////////////////////////////////////////////LISTA DE EMPAQUE////////////////////////
     elif menu_opcion == "Lista de empaque":
