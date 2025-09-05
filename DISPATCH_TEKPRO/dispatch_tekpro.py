@@ -748,6 +748,8 @@ def main():
                     component_results.update(results)
 
         # Otros elementos: checkbox, descripción y foto
+        otros_elementos = ""
+        fotos_otros_elementos = []
         mostrar_otros_elementos = st.checkbox("Otros elementos", key="cb_otros_elementos")
         if mostrar_otros_elementos:
             with st.expander("Otros elementos", expanded=True):
