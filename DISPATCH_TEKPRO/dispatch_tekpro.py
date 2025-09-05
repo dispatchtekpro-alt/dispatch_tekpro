@@ -144,9 +144,14 @@ def get_drive_service_oauth():
 def upload_image_to_drive_oauth(file, filename, folder_id):
     if file is None:
         return ""
-    drive_service = get_drive_service_oauth()
-    if drive_service is None:
-        raise RuntimeError("No se pudo obtener el servicio de Google Drive. Autoriza correctamente antes de subir archivos.")
+    try:
+        drive_service = get_drive_service_oauth()
+        if drive_service is None:
+            raise RuntimeError("No se pudo obtener el servicio de Google Drive. Autoriza correctamente antes de subir archivos.")
+    except Exception as e:
+        st.warning("La autorización de Google Drive expiró o es inválida. Por favor, reautoriza para continuar. Tus datos no se perderán.")
+        authorize_drive_oauth()
+        st.stop()
     file_metadata = {
         'name': filename,
         'parents': [folder_id]
