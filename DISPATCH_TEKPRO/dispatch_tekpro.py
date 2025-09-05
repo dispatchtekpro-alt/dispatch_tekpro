@@ -208,28 +208,27 @@ def authorize_drive_oauth():
             st.warning("Debes pegar la URL de redirección que contiene el código.")
     st.stop()
 
-def get_drive_service_oauth():
-    creds = get_service_account_creds()
-    return build('drive', 'v3', credentials=creds)
-
-def upload_image_to_drive_oauth(file, filename, folder_id):
-    import time
-    if file is None:
-        return ""
+    from PIL import Image
+    import io
     drive_service = get_drive_service_oauth()
-    if drive_service is None:
-        return None
     file_metadata = {
         'name': filename,
         'parents': [folder_id]
     }
-    mime_type = 'image/jpeg'
-    if hasattr(file, 'type') and file.type:
-        mime_type = file.type
-    media = MediaIoBaseUpload(file, mimetype=mime_type)
+    # Comprimir imagen antes de subir
+    try:
+        file.seek(0)
+        img = Image.open(file)
+        img_io = io.BytesIO()
+        img.save(img_io, format='JPEG', quality=70, optimize=True)
+        img_io.seek(0)
+        media = MediaIoBaseUpload(img_io, mimetype='image/jpeg')
+    except Exception:
+        file.seek(0)
+        media = MediaIoBaseUpload(file, mimetype='image/jpeg')
     from googleapiclient.errors import HttpError
-    max_retries = 5
-    delay = 2
+    max_retries = 7
+    delay = 5
     for attempt in range(max_retries):
         try:
             uploaded = drive_service.files().create(
@@ -250,15 +249,16 @@ def upload_image_to_drive_oauth(file, filename, folder_id):
         except HttpError as e:
             status = getattr(e.resp, 'status', None)
             if status == 429:
+                print(f"Intento {attempt+1}: cuota excedida, esperando {delay}s...")
                 time.sleep(delay)
                 delay *= 2
             else:
-                # Registrar el error y continuar
                 print(f"Error subiendo {filename}: {e}")
                 return None
         except Exception as e:
             print(f"Error inesperado subiendo {filename}: {e}")
             return None
+    return None
     return None
 
 # Función para subir múltiples imágenes en paralelo
@@ -266,8 +266,9 @@ def upload_images_parallel(files, base_name, folder_id):
     if not files:
         return []
     urls = []
-    # Limitar a 2 hilos máximo
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    failed = []
+    # Limitar a 1 hilo máximo para ahorrar cuota
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         futures = []
         for idx, file in enumerate(files):
             if file is not None:
@@ -279,10 +280,20 @@ def upload_images_parallel(files, base_name, folder_id):
                         folder_id
                     )
                 )
-        for future in concurrent.futures.as_completed(futures):
+        for idx, future in enumerate(futures):
             url = future.result()
             if url:
                 urls.append(url)
+            else:
+                failed.append(idx)
+    # Si hay fallidas, mostrar botón para reintentar
+    if failed:
+        if st.button("Reintentar subida de imágenes fallidas"):
+            for idx in failed:
+                file = files[idx]
+                url = upload_image_to_drive_oauth(file, f"{base_name}_{idx+1}_retry.jpg", folder_id)
+                if url:
+                    urls.append(url)
     return urls
 
 # Escribir link en Google Sheets
@@ -1225,7 +1236,7 @@ def main():
                 # Verificar si existe la hoja
                 try:
                     sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
-                except:
+                except Exception:
                     sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(
                         title=worksheet_name_empaque, 
                         rows=100, 
@@ -1318,5 +1329,5 @@ def main():
                         st.session_state['chequeo_revision_guardado'] = True
                         st.success("Listas de chequeo y revisión guardadas automáticamente.")
                     # ...existing code...
-
-
+            except Exception as e:
+                st.error(f"Error al guardar la lista de empaque: {e}")
