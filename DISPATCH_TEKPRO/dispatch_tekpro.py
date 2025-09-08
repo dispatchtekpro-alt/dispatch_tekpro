@@ -169,7 +169,8 @@ def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet.append_row(row)
 
 def main():
-
+    # Importar datetime al inicio de la función main
+    import datetime
 
     # Menú de inicio
     col1, col2 = st.columns([4,1])
@@ -312,7 +313,6 @@ def main():
             st.session_state['num_paquetes'] = 1
 
         with st.form("dispatch_form"):
-            import datetime
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
             nombre_proyecto = st.text_input("Nombre de proyecto")
             encargado_ensamblador = st.text_input("Encargado ensamblador")
