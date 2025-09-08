@@ -1,31 +1,4 @@
-import random
-def upload_image_to_drive_oauth(file, filename, folder_id, max_retries=5):
-    """
-    Subida robusta de imagen a Google Drive con compresión y reintentos automáticos ante errores de cuota.
-    """
-    from googleapiclient.errors import HttpError
-    from PIL import Image
-    import io
-    import time
 import streamlit as st
-import gspread
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2.service_account import Credentials
-from google.oauth2.credentials import Credentials as UserCreds
-import io
-import os
-import urllib.parse
-from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials as UserCreds
-import json
-import datetime
-from streamlit_drawable_canvas import st_canvas
-from PIL import Image
-import numpy as np
-import tempfile
-import concurrent.futures
-import time
 
 # Incluir CSS corporativo Tekpro
 st.markdown('''
@@ -80,12 +53,22 @@ h2, h3, .stApp h2, .stApp h3 {
 </style>
 ''', unsafe_allow_html=True)
 
+
+import gspread
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+from google.oauth2.service_account import Credentials
+import io
+import os
+
+
 # Configuración
 SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 
+# Cargar credenciales de Service Account
 def get_service_account_creds():
     if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
         return Credentials.from_service_account_info(
@@ -99,7 +82,9 @@ def get_service_account_creds():
         st.error("No se encontraron credenciales de Service Account.")
         st.stop()
 
-# Autorizar Google Drive con OAuth2
+# Subir imagen a Drive y hacerla pública
+
+# Subir imagen a Drive usando OAuth2 (usuario)
 def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
     from google_auth_oauthlib.flow import Flow
@@ -127,6 +112,8 @@ def authorize_drive_oauth():
             st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
         else:
             st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
+
+    # Botón fuera de cualquier formulario
     validar = st.button("Validar código", key="validar_codigo_oauth")
     if validar:
         if auth_code:
@@ -142,6 +129,7 @@ def authorize_drive_oauth():
     st.stop()
 
 def get_drive_service_oauth():
+    from google.oauth2.credentials import Credentials as UserCreds
     import json
     creds = None
     if 'drive_oauth_token' in st.session_state:
@@ -175,227 +163,15 @@ def upload_image_to_drive_oauth(file, filename, folder_id):
     public_url = f"https://drive.google.com/uc?id={file_id}"
     return public_url
 
-# Autorizar Google Drive con OAuth2
-def authorize_drive_oauth():
-    SCOPES = ['https://www.googleapis.com/auth/drive']
-    
-    redirect_uri = "https://dispatchtekpro.streamlit.app/"
-    st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
-    flow = Flow.from_client_config(
-        {"web": dict(st.secrets.oauth2)},
-        scopes=SCOPES,
-        redirect_uri=redirect_uri
-    )
-    
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
-    st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
-    st.markdown("""
-    <small>Después de autorizar, copia y pega aquí la URL completa a la que fuiste redirigido.<br>
-    El sistema extraerá el código automáticamente.</small>
-    """, unsafe_allow_html=True)
-    url_input = st.text_input("Pega aquí la URL de redirección:", key="oauth_url_input")
-    auth_code = ""
-    if url_input:
-        parsed = urllib.parse.urlparse(url_input)
-        params = urllib.parse.parse_qs(parsed.query)
-        auth_code = params.get("code", [""])[0]
-        if auth_code:
-            st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
-        else:
-            st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
-
-    validar = st.button("Validar código", key="validar_codigo_oauth")
-    if validar:
-        if auth_code:
-            try:
-                flow.fetch_token(code=auth_code)
-                creds = flow.credentials
-                st.session_state['drive_oauth_token'] = creds.to_json()
-                st.success("¡Autorización exitosa! Puedes continuar con el formulario.")
-            except Exception as e:
-                st.error(f"Error al intercambiar el código: {e}")
-        else:
-            st.warning("Debes pegar la URL de redirección que contiene el código.")
-    st.stop()
-
-def get_drive_service_oauth():
-    creds = get_service_account_creds()
-    return build('drive', 'v3', credentials=creds)
-
-import random
-def upload_image_to_drive_oauth(file, filename, folder_id, max_retries=5):
-    """
-    Subida robusta de imagen a Google Drive con compresión y reintentos automáticos ante errores de cuota.
-    """
-    from googleapiclient.errors import HttpError
-    from PIL import Image
-    import io
-    if file is None:
-        return ""
-    drive_service = get_drive_service_oauth()
-    if drive_service is None:
-        return None
-    # Intentar diferentes niveles de compresión
-    qualities = [70, 50, 30]
-    try:
-        image = Image.open(file)
-    except Exception:
-        # Si no es imagen, subir como está
-        image = None
-    for quality in qualities:
-        if image:
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='JPEG', quality=quality)
-            img_byte_arr.seek(0)
-            media = MediaIoBaseUpload(img_byte_arr, mimetype='image/jpeg')
-        else:
-            media = MediaIoBaseUpload(file, mimetype='image/jpeg')
-        file_metadata = {
-            'name': filename,
-            'parents': [folder_id]
-        }
-        delay = 2
-        for attempt in range(max_retries):
-            try:
-                uploaded = drive_service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id'
-                ).execute()
-                file_id = uploaded.get('id')
-                drive_service.permissions().create(
-                    fileId=file_id,
-                    body={
-                        'type': 'anyone',
-                        'role': 'reader'
-                    }
-                ).execute()
-                public_url = f"https://drive.google.com/uc?id={file_id}"
-                return public_url
-            except HttpError as e:
-                status = getattr(e.resp, 'status', None)
-                if status == 429 or 'quota' in str(e).lower():
-                    wait_time = delay + random.uniform(0, 2)
-                    st.warning(f"Google Drive quota error. Reintentando en {wait_time:.1f} segundos...")
-                    time.sleep(wait_time)
-                    delay *= 2
-                else:
-                    st.error(f"Error subiendo {filename}: {e}")
-                    return None
-            except Exception as e:
-                st.error(f"Error inesperado subiendo {filename}: {e}")
-                return None
-        st.warning(f"No se pudo subir la imagen con calidad {quality}. Probando con mayor compresión...")
-    st.error("No se pudo subir la imagen después de varios intentos y compresiones. Por favor intente más tarde.")
-    return None
-
-# Función para subir múltiples imágenes en paralelo
-def upload_images_parallel(files, base_name, folder_id):
-    if not files:
-        return []
-    urls = []
-    # Limitar a 2 hilos máximo
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        futures = []
-        for idx, file in enumerate(files):
-            if file is not None:
-                futures.append(
-                    executor.submit(
-                        upload_image_to_drive_oauth, 
-                        file, 
-                        f"{base_name}_{idx+1}.jpg", 
-                        folder_id,
-                        5
-                    )
-                )
-        for future in concurrent.futures.as_completed(futures):
-            url = future.result()
-            if url:
-                urls.append(url)
-    return urls
-
 # Escribir link en Google Sheets
 def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet = sheet_client.open(file_name).worksheet(worksheet_name)
     sheet.append_row(row)
 
-def store_files(files, state_key):
-    if files is not None:
-        st.session_state[state_key + "_files"] = files
-    else:
-        st.session_state[state_key + "_files"] = []
-
-def to_url_list(state_key):
-    urls = st.session_state.get(state_key + "_links", [])
-    if isinstance(urls, list):
-        return ", ".join(urls)
-    return str(urls)
-
-# Función segura para manejar elementos/componentes reutilizables
-def safe_handle_component(component_name, display_name, has_cantidad=False, has_voltaje=False, 
-                        has_tension=False, has_descripcion=False, has_tipo_combustible=False, 
-                        has_metodo_uso=False):
-    """
-    Maneja la UI de un componente de manera segura sin guardar directamente en session_state
-    """
-    results = {}
-    
-    if has_cantidad:
-        cantidad = st.number_input(f"Cantidad {display_name}", 
-                                min_value=0, step=1, format="%d", 
-                                key=f"cantidad_{component_name}")
-        results[f"cantidad_{component_name}"] = cantidad
-    
-    if has_voltaje:
-        voltaje = st.text_input(f"Voltaje {display_name}", 
-                             key=f"voltaje_{component_name}")
-        results[f"voltaje_{component_name}"] = voltaje
-    
-    if has_tension:
-        tension = st.text_input(f"Tensión {display_name}", 
-                             key=f"tension_{component_name}")
-        results[f"tension_{component_name}"] = tension
-    
-    if has_descripcion:
-        descripcion = st.text_area(f"Descripción {display_name}", 
-                                key=f"descripcion_{component_name}")
-        results[f"descripcion_{component_name}"] = descripcion
-    
-    if has_tipo_combustible:
-        tipo_combustible = st.selectbox(f"Tipo de combustible", 
-                                     ["", "Gas Natural", "GLP", "ACPM"], 
-                                     key=f"tipo_combustible_{component_name}")
-        results[f"tipo_combustible_{component_name}"] = tipo_combustible
-    
-    if has_metodo_uso:
-        metodo_uso = st.selectbox(f"Método de uso", 
-                               ["", "Alto/Bajo", "On/Off"], 
-                               key=f"metodo_uso_{component_name}")
-        results[f"metodo_uso_{component_name}"] = metodo_uso
-    
-    fotos = st.file_uploader(f"Foto {display_name}", 
-                           type=["jpg", "jpeg", "png"], 
-                           accept_multiple_files=True, 
-                           key=f"fotos_{component_name}")
-    
-    # No guardar nada en session_state, solo retornar valores
-    return fotos, results
-
 def main():
-    # Inicializar folder_id globalmente desde el inicio
-    folder_id = ""
-    if hasattr(st, 'secrets') and 'drive_config' in st.secrets and 'FOLDER_ID' in st.secrets.drive_config:
-        folder_id = st.secrets.drive_config.FOLDER_ID
-    
-    # --- AUTORIZACIÓN GOOGLE DRIVE OBLIGATORIA ---
-        # --- AUTORIZACIÓN GOOGLE DRIVE CON SERVICE ACCOUNT ---
-        # Ya no es necesario pedir autorización interactiva, solo verificar credenciales
-        creds = get_service_account_creds()
-        if not creds:
-            st.error("No se encontraron credenciales de Service Account. No se puede continuar.")
-            st.stop()
 
-    # Menú principal y selección de formulario
+
+    # Menú de inicio
     col1, col2 = st.columns([4,1])
     with col1:
         st.markdown("""
@@ -406,873 +182,740 @@ def main():
         st.image("https://drive.google.com/thumbnail?id=19MGYsVVEtnwv8SpdnRw4TainlJBsQLSE", width=150)
     st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
 
-    menu_opcion = st.radio(
-        "¿Qué deseas diligenciar?",
-        ["Acta de entrega", "Lista de empaque"],
-        horizontal=True,
-        key="menu_opcion_radio"
+    opcion_menu = st.radio(
+        "Selecciona una opción:",
+        ["ACTA DE ENTREGA", "LISTA DE EMPAQUE"],
+        horizontal=True
     )
-    
-    if menu_opcion == "Acta de entrega":
-        # Solicitar autorización Drive OAuth2 si no está presente
-        if 'drive_oauth_token' not in st.session_state:
-            authorize_drive_oauth()
-        st.markdown("<h1 style='color:#1db6b6;font-family:Montserrat,Arial,sans-serif;font-weight:700;'>ACTA DE ENTREGA TEKPRO</h1>", unsafe_allow_html=True)
-        st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin-bottom: 1.5em;'>", unsafe_allow_html=True)
-        
-        # Inicializar cliente de Google Sheets
+
+
+    if opcion_menu == "LISTA DE EMPAQUE":
+        # Configuración: carpeta y sheet
+        folder_id = st.secrets.drive_config.FOLDER_ID
+        file_name = st.secrets.drive_config.FILE_NAME
+        worksheet_name = "Lista de empaque"
+
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
-        file_name = "dispatch_tekpro"
-        worksheet_name_base = "Acta de entrega"
-        worksheet_name_diligenciadas = "Actas de entregas diligenciadas"
-        
-        # Leer OPs base desde la hoja plantilla
-        all_rows_base = []
-        op_options = []
+
+        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA, solo mostrar las que estén completas
         try:
-            sheet_base = sheet_client.open(file_name).worksheet(worksheet_name_base)
-            all_rows_base = sheet_base.get_all_values()
-            if all_rows_base:
-                headers_lower = [h.strip().lower() for h in all_rows_base[0]]
-                op_idx = headers_lower.index("op") if "op" in headers_lower else None
-                for r in all_rows_base[1:]:
-                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                        op_options.append(r[op_idx].strip())
-        except Exception as e:
-            st.warning(f"Error al cargar plantilla: {e}")
-            op_options = []
-        
-        # Leer OPs ya guardadas en la hoja 'Actas de entregas diligenciadas'
-        ops_guardadas = set()
-        try:
-            sheet_diligenciadas = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
-            all_rows_diligenciadas = sheet_diligenciadas.get_all_values()
-            if all_rows_diligenciadas:
-                headers_lower = [h.strip().lower() for h in all_rows_diligenciadas[0]]
-                op_idx = headers_lower.index("op dili") if "op dili" in headers_lower else None
-                for r in all_rows_diligenciadas[1:]:
-                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                        ops_guardadas.add(r[op_idx].strip())
-        except Exception:
-            ops_guardadas = set()
-        
-        # Filtrar OPs no diligenciadas
-        op_options_filtradas = [op for op in op_options if op not in ops_guardadas]
-        op_options_filtradas = list(dict.fromkeys(op_options_filtradas))  # Eliminar duplicados
-        op_selected = st.selectbox("Orden de compra (OP)", options=[" "] + op_options_filtradas, key="op_input_selectbox")
-        
-        # Buscar información relacionada con la OP seleccionada
-        op_row = []
-        headers_base = [h.strip().lower() for h in all_rows_base[0]] if all_rows_base else []
-        if op_selected and op_selected.strip() != " ":
-            op_idx = headers_base.index("op") if "op" in headers_base else None
-            for r in all_rows_base[1:]:
-                if op_idx is not None and len(r) > op_idx and r[op_idx].strip() == op_selected.strip():
-                    op_row = r
+            acta_sheet = sheet_client.open(file_name).worksheet("Acta de entrega")
+            acta_rows = acta_sheet.get_all_values()
+            headers = acta_rows[0] if acta_rows else []
+            # Usar encabezados estándar proporcionados por el usuario
+            encabezados_estandar = [
+                "cliente", "OP", "Item", "Equipo", "Cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
+                "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
+                "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
+                "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
+                "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
+                "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
+                "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
+                "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
+                "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos",
+                "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
+                "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "recibe", "fecha de entrega"
+            ]
+            # Buscar índice de OP (exacto)
+            op_idx = None
+            for idx, h in enumerate(headers):
+                if h.strip().lower() == "op":
+                    op_idx = idx
                     break
-        
-        # Función para obtener valores de la fila de la OP
-        def get_base_val(col):
-            col = col.strip().lower()
-            if not headers_base or not op_row:
-                return ""
-            idx = headers_base.index(col) if col in headers_base else None
-            return op_row[idx] if idx is not None and idx < len(op_row) else ""
+            ordenes_existentes = {}
+            ordenes_list = []
+            # Definir los campos relevantes para considerar una OP como completa (igual que en ACTA DE ENTREGA)
+            campos_relevantes = [
+                "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
+            ]
+            for row in acta_rows[1:]:
+                if op_idx is not None and len(row) > op_idx:
+                    orden = row[op_idx]
+                    # Verificar si la OP está completa
+                    completa = False
+                    for campo in campos_relevantes:
+                        if campo in headers:
+                            idx_campo = headers.index(campo)
+                            if idx_campo < len(row):
+                                valor = row[idx_campo]
+                                if valor and str(valor).strip() not in ["", "0", "no", "No"]:
+                                    completa = True
+                                    break
+                    if completa:
+                        ordenes_existentes[orden] = row
+                        ordenes_list.append(orden)
+        except Exception:
+            ordenes_existentes = {}
+            ordenes_list = []
 
-        # --- SECCIÓN 1: DATOS GENERALES ---
-        st.markdown("<h2>Datos generales</h2>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            op = st.text_input("Orden de compra (OP)", value=op_selected if op_selected else "", key="op_input")
-        with col2:
-            fecha_default = get_base_val("fecha dili") if get_base_val("fecha dili") else datetime.date.today().strftime("%Y-%m-%d")
-            try:
-                fecha_val = datetime.datetime.strptime(fecha_default, "%Y-%m-%d").date()
-            except:
-                fecha_val = datetime.date.today()
-            fecha = st.date_input("Fecha", value=fecha_val, key="fecha_input")
-
-        cliente = st.text_input("Cliente", value=get_base_val("cliente"), key="cliente_input")
-        equipo = st.text_input("Equipo", value=get_base_val("equipo"), key="equipo_input")
-        item = st.text_input("Item", value=get_base_val("item"), key="item_input")
-        
-        cantidad_default = get_base_val("cantidad")
-        try:
-            cantidad_val = int(cantidad_default) if cantidad_default else 1
-        except:
-            cantidad_val = 1
-        cantidad = st.number_input("Cantidad", min_value=1, value=cantidad_val, step=1, key="cantidad_input")
-
-        # --- SECCIÓN 2: LISTAS DE CHEQUEO ---
-        st.markdown("<h2>Listas de chequeo</h2>", unsafe_allow_html=True)
-        col1, col2, col3, col4 = st.columns(4)
-        mostrar_electromecanicos = col1.checkbox("Elementos electromecánicos", key="cb_electromecanicos")
-        mostrar_accesorios = col2.checkbox("Accesorios", key="cb_accesorios")
-        mostrar_mecanicos = col3.checkbox("Elementos mecánicos", key="cb_mecanicos")
-        mostrar_electricos = col4.checkbox("Elementos eléctricos", key="cb_electricos")
-
-        # Diccionario para almacenar archivos subidos y resultados de componentes
-        uploaded_files = {}
-        component_results = {}
-
-        # Lista de chequeo general elementos electromecánicos
-        if mostrar_electromecanicos:
-            st.markdown("""
-            <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos electromecánicos</h3>
-            """, unsafe_allow_html=True)
-            
-            motor_checked = st.checkbox("¿Hay motores?", key="motor_check")
-            reductor_checked = st.checkbox("¿Hay reductores?", key="reductor_check")
-            bomba_checked = st.checkbox("¿Hay bombas?", key="bomba_check")
-            turbina_checked = st.checkbox("¿Hay turbinas?", key="turbina_check")
-            quemador_checked = st.checkbox("¿Hay quemadores?", key="quemador_check")
-            bomba_vacio_checked = st.checkbox("¿Hay bombas de vacío?", key="bomba_vacio_check")
-            compresor_checked = st.checkbox("¿Hay compresores?", key="compresor_check")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            # Manejar componentes electromecánicos
-            if motor_checked:
-                with st.expander("Motores", expanded=True):
-                    st.markdown("<b>Motores</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("motores", "motores", has_cantidad=True, has_voltaje=True)
-                    uploaded_files["motores"] = fotos
-                    component_results.update(results)
-
-            if reductor_checked:
-                with st.expander("Reductores", expanded=True):
-                    st.markdown("<b>Reductores</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("reductores", "reductores", has_cantidad=True, has_voltaje=True)
-                    uploaded_files["reductores"] = fotos
-                    component_results.update(results)
-
-            if bomba_checked:
-                with st.expander("Bombas", expanded=True):
-                    st.markdown("<b>Bombas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("bombas", "bombas", has_cantidad=True, has_voltaje=True)
-                    uploaded_files["bombas"] = fotos
-                    component_results.update(results)
-                    
-            if turbina_checked:
-                with st.expander("Turbinas", expanded=True):
-                    st.markdown("<b>Turbinas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("turbina", "turbinas", has_voltaje=True, 
-                                                        has_tipo_combustible=True, has_metodo_uso=True)
-                    uploaded_files["turbina"] = fotos
-                    component_results.update(results)
-                    
-            if quemador_checked:
-                with st.expander("Quemadores", expanded=True):
-                    st.markdown("<b>Quemadores</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("quemador", "quemadores", has_voltaje=True, 
-                                                        has_tipo_combustible=True, has_metodo_uso=True)
-                    uploaded_files["quemador"] = fotos
-                    component_results.update(results)
-                    
-            if bomba_vacio_checked:
-                with st.expander("Bombas de vacío", expanded=True):
-                    st.markdown("<b>Bombas de vacío</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("bomba_vacio", "bombas de vacío", has_voltaje=True)
-                    uploaded_files["bomba_vacio"] = fotos
-                    component_results.update(results)
-                    
-            if compresor_checked:
-                with st.expander("Compresores", expanded=True):
-                    st.markdown("<b>Compresores</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("compresor", "compresores", has_voltaje=True)
-                    uploaded_files["compresor"] = fotos
-                    component_results.update(results)
-
-        # Lista de chequeo de accesorios
-        if mostrar_accesorios:
-            st.markdown("""
-            <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general accesorios</h3>
-            """, unsafe_allow_html=True)
-            
-            manometro_checked = st.checkbox("¿Hay manómetros?", key="manometro_check_accesorios2")
-            vacuometro_checked = st.checkbox("¿Hay vacuómetros?", key="vacuometro_check_accesorios2")
-            valvula_checked = st.checkbox("¿Hay válvulas?", key="valvula_check_accesorios2")
-            manguera_checked = st.checkbox("¿Hay mangueras?", key="manguera_check_accesorios2")
-            boquilla_checked = st.checkbox("¿Hay boquillas?", key="boquilla_check_accesorios2")
-            regulador_checked = st.checkbox("¿Hay reguladores aire/gas?", key="regulador_check_accesorios2")
-            tornillos_checked = st.checkbox("¿Hay tornillos?", key="tornillos_check_accesorios2")
-            curvas_checked = st.checkbox("¿Hay curvas de ascenso o descenso?", key="curvas_check_accesorios2")
-            cables_checked = st.checkbox("¿Hay cables?", key="cables_check_accesorios2")
-            tuberias_checked = st.checkbox("¿Hay tuberías?", key="tuberias_check_accesorios2")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            # Manejar componentes de accesorios
-            if manometro_checked:
-                with st.expander("Manómetros", expanded=True):
-                    st.markdown("<b>Manómetros</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("manometros", "manómetros", has_cantidad=True)
-                    uploaded_files["manometros"] = fotos
-                    component_results.update(results)
-                    
-            if vacuometro_checked:
-                with st.expander("Vacuómetros", expanded=True):
-                    st.markdown("<b>Vacuómetros</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("vacuometros", "vacuómetros", has_cantidad=True)
-                    uploaded_files["vacuometros"] = fotos
-                    component_results.update(results)
-                    
-            if valvula_checked:
-                with st.expander("Válvulas", expanded=True):
-                    st.markdown("<b>Válvulas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("valvulas", "válvulas", has_cantidad=True)
-                    uploaded_files["valvulas"] = fotos
-                    component_results.update(results)
-                    
-            if manguera_checked:
-                with st.expander("Mangueras", expanded=True):
-                    st.markdown("<b>Mangueras</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("mangueras", "mangueras", has_cantidad=True)
-                    uploaded_files["mangueras"] = fotos
-                    component_results.update(results)
-                    
-            if boquilla_checked:
-                with st.expander("Boquillas", expanded=True):
-                    st.markdown("<b>Boquillas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("boquillas", "boquillas", has_cantidad=True)
-                    uploaded_files["boquillas"] = fotos
-                    component_results.update(results)
-                    
-            if regulador_checked:
-                with st.expander("Reguladores aire/gas", expanded=True):
-                    st.markdown("<b>Reguladores aire/gas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("reguladores", "reguladores aire/gas", has_cantidad=True)
-                    uploaded_files["reguladores"] = fotos
-                    component_results.update(results)
-                    
-            if tornillos_checked:
-                with st.expander("Tornillos", expanded=True):
-                    st.markdown("<b>Tornillos</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("tornillos", "tornillos", has_cantidad=True)
-                    uploaded_files["tornillos"] = fotos
-                    component_results.update(results)
-                    
-            if curvas_checked:
-                with st.expander("Curvas", expanded=True):
-                    st.markdown("<b>Curvas</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("curvas", "curvas", has_cantidad=True, has_descripcion=True)
-                    uploaded_files["curvas"] = fotos
-                    component_results.update(results)
-                    
-            if cables_checked:
-                with st.expander("Cables", expanded=True):
-                    st.markdown("<b>Cables</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("cables", "cables", has_cantidad=True, has_descripcion=True)
-                    uploaded_files["cables"] = fotos
-                    component_results.update(results)
-                    
-            if tuberias_checked:
-                with st.expander("Tuberías", expanded=True):
-                    st.markdown("<b>Tuberías</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("tuberias", "tuberías", has_cantidad=True, has_descripcion=True)
-                    uploaded_files["tuberias"] = fotos
-                    component_results.update(results)
-
-        # Lista de chequeo de elementos mecánicos
-        if mostrar_mecanicos:
-            st.markdown("""
-            <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos mecánicos</h3>
-            """, unsafe_allow_html=True)
-            
-            pinon1_checked = st.checkbox("¿Hay piñón 1?", key="pinon1_check_mecanicos_accesorios")
-            pinon2_checked = st.checkbox("¿Hay piñón 2?", key="pinon2_check_mecanicos2")
-            polea1_checked = st.checkbox("¿Hay polea 1?", key="polea1_check_mecanicos2")
-            polea2_checked = st.checkbox("¿Hay polea 2?", key="polea2_check_mecanicos2")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            # Manejar componentes mecánicos
-            if pinon1_checked:
-                with st.expander("Piñón 1", expanded=True):
-                    st.markdown("<b>Piñón 1</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("pinon1", "piñón 1", has_tension=True)
-                    uploaded_files["pinon1"] = fotos
-                    component_results.update(results)
-                    
-            if pinon2_checked:
-                with st.expander("Piñón 2", expanded=True):
-                    st.markdown("<b>Piñón 2</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("pinon2", "piñón 2", has_tension=True)
-                    uploaded_files["pinon2"] = fotos
-                    component_results.update(results)
-                    
-            if polea1_checked:
-                with st.expander("Polea 1", expanded=True):
-                    st.markdown("<b>Polea 1</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("polea1", "polea 1", has_tension=True)
-                    uploaded_files["polea1"] = fotos
-                    component_results.update(results)
-                    
-            if polea2_checked:
-                with st.expander("Polea 2", expanded=True):
-                    st.markdown("<b>Polea 2</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("polea2", "polea 2", has_tension=True)
-                    uploaded_files["polea2"] = fotos
-                    component_results.update(results)
-
-        # Lista de chequeo de elementos eléctricos
-        if mostrar_electricos:
-            st.markdown("""
-            <h3 style='color:#1db6b6;font-weight:700;'>Lista de chequeo general elementos eléctricos</h3>
-            """, unsafe_allow_html=True)
-            
-            gabinete_checked = st.checkbox("¿Hay gabinete eléctrico?", key="gabinete_check")
-            arrancador_checked = st.checkbox("¿Hay arrancador?", key="arrancador_check")
-            control_nivel_checked = st.checkbox("¿Hay control de nivel?", key="control_nivel_check")
-            variador_checked = st.checkbox("¿Hay variador de velocidad?", key="variador_check")
-            sensor_temp_checked = st.checkbox("¿Hay sensor de temperatura?", key="sensor_temp_check")
-            toma_corriente_checked = st.checkbox("¿Hay toma corriente?", key="toma_corriente_check")
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-            # Manejar componentes eléctricos
-            if gabinete_checked:
-                with st.expander("Gabinete eléctrico", expanded=True):
-                    st.markdown("<b>Gabinete eléctrico</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("gabinete", "gabinete eléctrico", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["gabinete"] = fotos
-                    component_results.update(results)
-                    
-            if arrancador_checked:
-                with st.expander("Arrancador", expanded=True):
-                    st.markdown("<b>Arrancador</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("arrancadores", "arrancadores", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["arrancadores"] = fotos
-                    component_results.update(results)
-                    
-            if control_nivel_checked:
-                with st.expander("Control de nivel", expanded=True):
-                    st.markdown("<b>Control de nivel</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("control_nivel", "control de nivel", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["control_nivel"] = fotos
-                    component_results.update(results)
-                    
-            if variador_checked:
-                with st.expander("Variador de velocidad", expanded=True):
-                    st.markdown("<b>Variador de velocidad</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("variador", "variador de velocidad", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["variador"] = fotos
-                    component_results.update(results)
-                    
-            if sensor_temp_checked:
-                with st.expander("Sensor de temperatura", expanded=True):
-                    st.markdown("<b>Sensor de temperatura</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("sensor_temp", "sensor de temperatura", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["sensor_temp"] = fotos
-                    component_results.update(results)
-                    
-            if toma_corriente_checked:
-                with st.expander("Toma corriente", expanded=True):
-                    st.markdown("<b>Toma corriente</b>", unsafe_allow_html=True)
-                    fotos, results = safe_handle_component("toma_corriente", "toma corriente", 
-                                                        has_cantidad=True, has_descripcion=True)
-                    uploaded_files["toma_corriente"] = fotos
-                    component_results.update(results)
-
-        # Otros elementos: checkbox, descripción y foto
-        otros_elementos = ""
-        fotos_otros_elementos = []
-        mostrar_otros_elementos = st.checkbox("Otros elementos", key="cb_otros_elementos")
-        if mostrar_otros_elementos:
-            with st.expander("Otros elementos", expanded=True):
-                otros_elementos = st.text_area("Descripción de otros elementos", key="otros_elementos")
-                fotos_otros_elementos = st.file_uploader("Foto(s) de otros elementos", 
-                                                       type=["jpg","jpeg","png"], 
-                                                       accept_multiple_files=True, 
-                                                       key="fotos_otros_elementos")
-                uploaded_files["otros_elementos"] = fotos_otros_elementos
-                component_results["otros_elementos"] = otros_elementos
-
-        # Selectboxes de revisión general
-        st.markdown("<h4>Revisión general</h4>", unsafe_allow_html=True)
-        col_rev = st.columns(1)
-        revision_visual = col_rev[0].selectbox("Revisión visual", ["Selecciona...", "Sí", "No"], key="revision_visual")
-        revision_funcional = col_rev[0].selectbox("Revisión funcional", ["Selecciona...", "Sí", "No"], key="revision_funcional")
-        revision_soldadura = col_rev[0].selectbox("Revisión de soldadura", ["Selecciona...", "Sí", "No"], key="revision_soldadura")
-        revision_sentidos = col_rev[0].selectbox("Revisión de sentidos de giro", ["Selecciona...", "Sí", "No"], key="revision_sentidos")
-        manual_funcionamiento = col_rev[0].selectbox("Manual de funcionamiento", ["Selecciona...", "Sí", "No"], key="manual_funcionamiento")
-        revision_filos = col_rev[0].selectbox("Revisión de filos y acabados", ["Selecciona...", "Sí", "No"], key="revision_filos")
-        revision_tratamientos = col_rev[0].selectbox("Revisión de tratamientos", ["Selecciona...", "Sí", "No"], key="revision_tratamientos")
-        revision_tornilleria = col_rev[0].selectbox("Revisión de tornillería", ["Selecciona...", "Sí", "No"], key="revision_tornilleria")
-        revision_ruidos = col_rev[0].selectbox("Revisión de ruidos", ["Selecciona...", "Sí", "No"], key="revision_ruidos")
-        ensayo_equipo = col_rev[0].selectbox("Ensayo equipo", ["Selecciona...", "Sí", "No"], key="ensayo_equipo")
-
-        # Observaciones generales
-        col_obs = st.columns(1)
-        observaciones_generales = col_obs[0].text_area("Observaciones generales", key="observaciones_generales")
-
-        # Líder de inspección
-        col_lider = st.columns(1)
-        lideres = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez"]
-        lider_inspeccion = col_lider[0].selectbox("Líder de inspección", lideres, key="lider_inspeccion")
-
-        # Soldador
-        col_soldador = st.columns(1)
-        soldadores = ["", "Jaime Ramos", "Jaime Rincon", "Gabriel", "Lewis"]
-        soldador = col_soldador[0].selectbox("Encargado Soldador", soldadores, key="soldador")
-
-        # Diseñador
-        col_disenador = st.columns(1)
-        disenadores = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez"]
-        disenador = col_disenador[0].selectbox("Diseñador", disenadores, key="disenador")
-
-        # Fecha y hora de entrega
-        col_fecha = st.columns(1)
-        fecha_entrega = col_fecha[0].date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
-        hora_entrega = col_fecha[0].time_input("Hora de entrega", value=datetime.datetime.now().time(), key="hora_entrega_acta")
-
-        # Mostrar fecha y hora en formato DD-MM-AA-HH:MM:SS
-        dt_entrega = datetime.datetime.combine(fecha_entrega, hora_entrega)
-        fecha_hora_formateada = dt_entrega.strftime("%d-%m-%y-%H:%M:%S")
-        st.info(f"Fecha y hora de entrega: {fecha_hora_formateada}")
-
-        # Validar datos antes de enviar
-        def validar_datos():
-            if not op or op.strip() == "":
-                return False, "La Orden de Compra (OP) es obligatoria."
-            if not cliente or cliente.strip() == "":
-                return False, "El Cliente es obligatorio."
-            if not equipo or equipo.strip() == "":
-                return False, "El Equipo es obligatorio."
-            return True, ""
-
-        # Botón para enviar el acta de entrega
-        enviar_acta = st.button("Enviar Acta de Entrega", key="enviar_acta_entrega")
-        if enviar_acta:
-            valido, mensaje = validar_datos()
-            if not valido:
-                st.error(mensaje)
-            else:
-                image_urls = {}
-                # Subir imágenes a Drive en paralelo con concurrencia limitada y reintentos
-                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-                    futures = {}
-                    for key, files in uploaded_files.items():
-                        if files:
-                            for idx, file in enumerate(files):
-                                if file is not None:
-                                    future = executor.submit(
-                                        upload_image_to_drive_oauth,
-                                        file, 
-                                        f"{key}_{idx+1}.jpg", 
-                                        folder_id
-                                    )
-                                    futures[(key, idx)] = future
-                    for (key, idx), future in futures.items():
-                        url = future.result()
-                        if url is None:
-                            st.warning("No se pudo subir la imagen por límite de cuota. Intenta nuevamente más tarde.")
-                        if url:
-                            if key not in image_urls:
-                                image_urls[key] = []
-                            image_urls[key].append(url)
-                # Crear la fila para Google Sheets con todos los datos recopilados
-                row = [
-                    str(cliente),
-                    str(op),
-                    str(item),
-                    str(equipo),
-                    str(cantidad),
-                    str(fecha),
-                    str(component_results.get("cantidad_motores", "")),
-                    str(component_results.get("voltaje_motores", "")),
-                    ", ".join(image_urls.get("motores", [])),
-                    str(component_results.get("cantidad_reductores", "")),
-                    str(component_results.get("voltaje_reductores", "")),
-                    ", ".join(image_urls.get("reductores", [])),
-                    str(component_results.get("cantidad_bombas", "")),
-                    str(component_results.get("voltaje_bombas", "")),
-                    ", ".join(image_urls.get("bombas", [])),
-                    str(component_results.get("voltaje_turbina", "")),
-                    str(component_results.get("tipo_combustible_turbina", "")),
-                    str(component_results.get("metodo_uso_turbina", "")),
-                    ", ".join(image_urls.get("turbina", [])),
-                    str(component_results.get("voltaje_quemador", "")),
-                    ", ".join(image_urls.get("quemador", [])),
-                    str(component_results.get("voltaje_bomba_vacio", "")),
-                    ", ".join(image_urls.get("bomba_vacio", [])),
-                    str(component_results.get("voltaje_compresor", "")),
-                    ", ".join(image_urls.get("compresor", [])),
-                    str(component_results.get("cantidad_manometros", "")),
-                    ", ".join(image_urls.get("manometros", [])),
-                    str(component_results.get("cantidad_vacuometros", "")),
-                    ", ".join(image_urls.get("vacuometros", [])),
-                    str(component_results.get("cantidad_valvulas", "")),
-                    ", ".join(image_urls.get("valvulas", [])),
-                    str(component_results.get("cantidad_mangueras", "")),
-                    ", ".join(image_urls.get("mangueras", [])),
-                    str(component_results.get("cantidad_boquillas", "")),
-                    ", ".join(image_urls.get("boquillas", [])),
-                    str(component_results.get("cantidad_reguladores", "")),
-                    ", ".join(image_urls.get("reguladores", [])),
-                    str(component_results.get("tension_pinon1", "")),
-                    ", ".join(image_urls.get("pinon1", [])),
-                    str(component_results.get("tension_pinon2", "")),
-                    ", ".join(image_urls.get("pinon2", [])),
-                    str(component_results.get("tension_polea1", "")),
-                    ", ".join(image_urls.get("polea1", [])),
-                    str(component_results.get("tension_polea2", "")),
-                    ", ".join(image_urls.get("polea2", [])),
-                    str(component_results.get("cantidad_gabinete", "")),
-                    ", ".join(image_urls.get("gabinete", [])),
-                    str(component_results.get("cantidad_arrancadores", "")),
-                    ", ".join(image_urls.get("arrancadores", [])),
-                    str(component_results.get("cantidad_control_nivel", "")),
-                    ", ".join(image_urls.get("control_nivel", [])),
-                    str(component_results.get("cantidad_variador", "")),
-                    ", ".join(image_urls.get("variador", [])),
-                    str(component_results.get("cantidad_sensor_temp", "")),  # Corregido de cantidad_sensores
-                    ", ".join(image_urls.get("sensor_temp", [])),
-                    str(component_results.get("cantidad_toma_corriente", "")),
-                    ", ".join(image_urls.get("toma_corriente", [])),
-                    str(otros_elementos),
-                    ", ".join(image_urls.get("otros_elementos", [])),
-                    str(component_results.get("descripcion_tuberias", "")),
-                    ", ".join(image_urls.get("tuberias", [])),
-                    str(component_results.get("descripcion_cables", "")),
-                    ", ".join(image_urls.get("cables", [])),
-                    str(component_results.get("descripcion_curvas", "")),
-                    ", ".join(image_urls.get("curvas", [])),
-                    str(component_results.get("descripcion_tornillos", "")),
-                    ", ".join(image_urls.get("tornillos", [])),
-                    str(revision_soldadura),
-                    str(revision_sentidos),
-                    str(manual_funcionamiento),
-                    str(revision_filos),
-                    str(revision_tratamientos),
-                    str(revision_tornilleria),
-                    str(revision_ruidos),
-                    str(ensayo_equipo),
-                    str(observaciones_generales),
-                    str(lider_inspeccion),
-                    str(soldador),
-                    str(disenador),
-                    str(fecha_entrega)
-                ]
-                
-                # Encabezados según lo solicitado
-                headers = [
-                    "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili",
-                    "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
-                    "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili",
-                    "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
-                    "voltaje turbina dili", "Tipo combustible turbina dili", "Metodo uso turbina dili", "foto turbina dili",
-                    "voltaje quemador dili", "foto quemador dili",
-                    "voltaje bomba de vacio dili", "foto bomba de vacio dili",
-                    "voltaje compresor dili", "foto compresor dili",
-                    "cantidad manometros dili", "foto manometros dili",
-                    "cantidad vacuometros dili", "foto vacuometros dili",
-                    "cantidad valvulas dili", "foto valvulas dili",
-                    "cantidad mangueras dili", "foto mangueras dili",
-                    "cantidad boquillas dili", "foto boquillas dili",
-                    "cantidad reguladores aire/gas dili", "foto reguladores dili",
-                    "tension piñon 1 dili", "foto piñon 1 dili",
-                    "tension piñon 2 dili", "foto piñon 2 dili",
-                    "tension polea 1 dili", "foto polea 1 dili",
-                    "tension polea 2 dili", "foto polea 2 dili",
-                    "cantidad gabinete electrico dili", "foto gabinete dili",
-                    "cantidad arrancadores dili", "foto arrancadores dili",
-                    "cantidad control de nivel dili", "foto control de nivel dili",
-                    "cantidad variadores de velociad dili", "foto variadores de velocidad dili",
-                    "cantidad sensores de temperatura dili", "foto sensores de temperatura dili",
-                    "cantidad toma corriente dili", "foto toma corrientes dili",
-                    "descripcion otros elementos dili", "fotos otros elementos dili",
-                    "descripcion tuberias dili", "foto tuberias dili",
-                    "descripcion cables dili", "foto cables dili",
-                    "descripcion curvas dili", "foto curvas dili",
-                    "descripcion tornilleria dili", "foto tornilleria dili",
-                    "revision de soldadura dili", "revision de sentidos de giro dili", "manual de funcionamiento dili",
-                    "revision de filos y acabados dili", "revision de tratamientos dili", "revision de tornilleria dili",
-                    "revision de ruidos dili", "ensayo equipo dili", "observciones generales dili",
-                    "lider de inspeccion dili", "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
-                ]
-                
-                # Verificar conexión con Google Drive antes de guardar
-                drive_service = get_drive_service_oauth()
-                if drive_service is None:
-                    st.error("No se pudo conectar con Google Drive. Por favor autoriza el acceso antes de guardar el acta de entrega.")
-                else:
-                    try:
-                        sheet_diligenciadas = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
-                    except Exception:
-                        # Si no existe, la creamos
-                        sheet_diligenciadas = sheet_client.open(file_name).add_worksheet(
-                            title=worksheet_name_diligenciadas, rows=100, cols=len(headers)
-                        )
-                        sheet_diligenciadas.append_row(headers)
-                    # Si existe pero está vacía, agregamos los encabezados
-                    if not sheet_diligenciadas.get_all_values():
-                        sheet_diligenciadas.append_row(headers)
-                    # Añadir la nueva fila de datos
-                    sheet_diligenciadas.append_row(row)
-                    st.success("Acta de entrega guardada correctamente en 'Actas de entregas diligenciadas'.")
-
-    #/////////////////////////////////////////////////////////////LISTA DE EMPAQUE////////////////////////
-    elif menu_opcion == "Lista de empaque":
-        # Solicitar autorización Drive OAuth2 si no está presente
         if 'drive_oauth_token' not in st.session_state:
             authorize_drive_oauth()
-        # Asegurarse de que folder_id está definido
-        if not folder_id and hasattr(st, 'secrets') and 'drive_config' in st.secrets and 'FOLDER_ID' in st.secrets.drive_config:
-            folder_id = st.secrets.drive_config.FOLDER_ID
-        
+
+        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
+        orden_pedido_val = st.selectbox(
+            "Selecciona una orden de pedido existente:",
+            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
+            key="orden_pedido_selectbox"
+        )
+        if 'mostrar_nueva_op' not in st.session_state:
+            st.session_state['mostrar_nueva_op'] = False
+        if st.button("Agregar nueva OP"):
+            st.session_state['mostrar_nueva_op'] = True
+        nueva_op = ""
+        if st.session_state['mostrar_nueva_op']:
+            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
+            if nueva_op:
+                orden_pedido_val = nueva_op
+
+        # Obtener solo los artículos presentes usando encabezados estándar
+        articulos_presentes = []
+        if orden_pedido_val and orden_pedido_val in ordenes_existentes:
+            row = ordenes_existentes[orden_pedido_val]
+            headers = acta_rows[0]
+            # Mapeo de nombre de artículo a columna de cantidad
+            mapeo_articulos = {
+                "Motores": "cantidad motores",
+                "Reductores": "cantidad reductores",
+                "Bombas": "cantidad bombas",
+                "Turbina": "voltaje turbina",
+                "Quemador": "voltaje quemador",
+                "Bomba de vacío": "voltaje bomba de vacio",
+                "Compresor": "voltaje compresor",
+                "Manómetros": "cantidad manometros",
+                "Vacuómetros": "cantidad vacuometros",
+                "Válvulas": "cantidad valvulas",
+                "Mangueras": "cantidad mangueras",
+                "Boquillas": "cantidad boquillas",
+                "Reguladores aire/gas": "cantidad reguladores aire/gas",
+                "Piñón 1": "tension piñon 1",
+                "Piñón 2": "tension piñon 2",
+                "Polea 1": "tension polea 1",
+                "Polea 2": "tension polea 2",
+                "Gabinete eléctrico": "cantidad gabinete electrico",
+                "Arrancadores": "cantidad arrancadores",
+                "Control de nivel": "cantidad control de nivel",
+                "Variadores de velocidad": "cantidad variadores de velociad",
+                "Sensores de temperatura": "cantidad sensores de temperatura",
+                "Toma corriente": "cantidad toma corriente",
+                "Otros elementos": "otros elementos"
+            }
+            for art, col in mapeo_articulos.items():
+                if col in headers:
+                    idx = headers.index(col)
+                    valor = row[idx] if idx < len(row) else ""
+                    if valor and valor.strip().lower() not in ["", "0", "no"]:
+                        articulos_presentes.append(art)
+
+        # Estado dinámico para número de paquetes
+        if 'num_paquetes' not in st.session_state:
+            st.session_state['num_paquetes'] = 1
+
+        with st.form("dispatch_form"):
+            import datetime
+            fecha = st.date_input("Fecha del día", value=datetime.date.today())
+            nombre_proyecto = st.text_input("Nombre de proyecto")
+            encargado_ensamblador = st.text_input("Encargado ensamblador")
+            encargado_almacen = st.selectbox(
+                "Encargado almacén",
+                ["", "Andrea Ochoa", "Juan Pablo"]
+            )
+            encargado_ingenieria = st.selectbox(
+                "Encargado ingeniería y diseño",
+                [
+                    "",
+                    "Alejandro Diaz",
+                    "Juan David Martinez",
+                    "Juan Andres Zapata",
+                    "Daniel Valbuena",
+                    "Victor Manuel Baena",
+                    "Diomer Arbelaez",
+                    "Jose Perez"
+                ]
+            )
+
+            st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
+            articulos_seleccion = {}
+            for art in articulos_presentes:
+                articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
+                # Si es 'Otros elementos', mostrar la descripción registrada en el acta justo debajo
+                if art.lower() == "otros elementos":
+                    desc_otros = ""
+                    # Buscar columna de descripción de otros elementos
+                    for idx, h in enumerate(headers):
+                        if "otros elementos" in h.lower():
+                            desc_otros = row[idx] if idx < len(row) else ""
+                            break
+                    if desc_otros and desc_otros.strip():
+                        st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
+
+            st.markdown("<hr>")
+            st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
+            paquetes = []
+            for i in range(st.session_state['num_paquetes']):
+                st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
+                desc = st.text_area(f"Descripción paquete {i+1}", key=f"desc_paquete_{i+1}")
+                fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
+                paquetes.append({"desc": desc, "fotos": fotos})
+            if st.form_submit_button("Agregar otro paquete"):
+                st.session_state['num_paquetes'] += 1
+                st.experimental_rerun()
+
+            observaciones = st.text_area("Observaciones adicionales")
+            submitted = st.form_submit_button("Guardar despacho")
+
+        if submitted:
+            if not articulos_presentes:
+                st.error("No hay artículos para empacar en esta OP.")
+            else:
+                enviados = [art for art, v in articulos_seleccion.items() if v]
+                no_enviados = [art for art, v in articulos_seleccion.items() if not v]
+                row = [
+                    str(fecha),
+                    nombre_proyecto,
+                    orden_pedido_val,
+                    encargado_ensamblador,
+                    encargado_almacen,
+                    encargado_ingenieria,
+                    ", ".join(enviados),
+                    ", ".join(no_enviados)
+                ]
+                for idx, paquete in enumerate(paquetes, start=1):
+                    row.append(paquete["desc"])
+                    enlaces = []
+                    if paquete["fotos"]:
+                        for n, foto in enumerate(paquete["fotos"], start=1):
+                            try:
+                                image_filename = f"Paquete_{orden_pedido_val}_{idx}_{n}.jpg"
+                                file_stream = io.BytesIO(foto.read())
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                enlaces.append(public_url)
+                                st.success(f"Foto {n} de paquete {idx} subida correctamente")
+                            except Exception as upload_error:
+                                st.error(f"Error al subir la foto {n} de paquete {idx}: {str(upload_error)}")
+                        if enlaces:
+                            row.append(", ".join(enlaces))
+                        else:
+                            row.append("Error al subir foto")
+                    else:
+                        row.append("Sin foto")
+                write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
+                st.success("Despacho guardado correctamente.")
+                st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+
+
+    elif opcion_menu == "ACTA DE ENTREGA":
+        # Autorización Google Drive OAuth2 igual que en LISTA DE EMPAQUE
+        if 'drive_oauth_token' not in st.session_state:
+            authorize_drive_oauth()
+
+        st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
+        st.markdown("<b>Encabezado del acta de entrega</b>", unsafe_allow_html=True)
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
-        file_name = "dispatch_tekpro"
+        folder_id = st.secrets.drive_config.FOLDER_ID
+        file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
-        
-        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales para empaque</b>", unsafe_allow_html=True)
-        
-        # Obtener OPs disponibles
-        op_options_empaque = []
-        op_to_row_empaque = {}
-        all_rows = []
-        
+
+
+        # --- Botones para mostrar/ocultar secciones de artículos (comportamiento clásico) ---
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos electromecánicos")
+        botones_articulos = [
+            ("mostrar_motores", "¿Hay motores?"),
+            ("mostrar_reductor", "¿Hay reductor?"),
+            ("mostrar_bomba", "¿Hay bomba?"),
+            ("mostrar_turbina", "¿Hay turbina?"),
+            ("mostrar_quemador", "¿Hay quemador?"),
+            ("mostrar_bomba_vacio", "¿Hay bomba de vacío?"),
+            ("mostrar_compresor", "¿Hay compresor?")
+        ]
+        for key, label in botones_articulos:
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general accesorios")
+        botones_accesorios = [
+            ("mostrar_manometros", "¿Hay manómetros?"),
+            ("mostrar_vacuometros", "¿Hay vacuómetros?"),
+            ("mostrar_valvulas", "¿Hay válvulas?"),
+            ("mostrar_mangueras", "¿Hay mangueras?"),
+            ("mostrar_boquillas", "¿Hay boquillas?"),
+            ("mostrar_reguladores", "¿Hay reguladores aire/gas?")
+        ]
+        for key, label in botones_accesorios:
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos mecánicos")
+        botones_mecanicos = [
+            ("mostrar_pinon1", "¿Hay piñón 1?"),
+            ("mostrar_pinon2", "¿Hay piñón 2?"),
+            ("mostrar_polea1", "¿Hay polea 1?"),
+            ("mostrar_polea2", "¿Hay polea 2?")
+        ]
+        for key, label in botones_mecanicos:
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Lista de chequeo general elementos eléctricos")
+        botones_electricos = [
+            ("mostrar_gabinete", "¿Hay gabinete eléctrico?"),
+            ("mostrar_arrancador", "¿Hay arrancador?"),
+            ("mostrar_control_nivel", "¿Hay control de nivel?"),
+            ("mostrar_variador", "¿Hay variador de velocidad?"),
+            ("mostrar_sensor_temp", "¿Hay sensor de temperatura?"),
+            ("mostrar_toma_corriente", "¿Hay toma corriente?")
+        ]
+        for key, label in botones_electricos:
+            default_value = st.session_state.get(key, False)
+            checkbox_value = st.checkbox(label, value=default_value, key=f"cb_{key}")
+            if st.session_state.get(key, None) != checkbox_value:
+                st.session_state[key] = checkbox_value
+
+        # --- Formulario principal ---
+
+        # --- Estado de acta de entrega (completa/pendiente) ---
+        import datetime
+        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
+        # --- Autocompletar datos generales si la OP existe en el sheet, usando selectbox ---
+        auto_cliente = ""
+        auto_equipo = ""
+        auto_item = ""
+        auto_cantidad = ""
+        auto_fecha = datetime.date.today()
+        op_options = []
+        op_to_row = {}
         try:
             sheet = sheet_client.open(file_name).worksheet(worksheet_name)
             all_rows = sheet.get_all_values()
             if all_rows:
-                headers_lower = [h.strip().lower() for h in all_rows[0]]
-                op_idx = headers_lower.index("op") if "op" in headers_lower else None
-                for r in all_rows[1:]:
-                    if op_idx is not None and len(r) > op_idx and r[op_idx].strip():
-                        op_options_empaque.append(r[op_idx].strip())
-                        op_to_row_empaque[r[op_idx].strip()] = r
+                headers = [h.strip().lower() for h in all_rows[0]]
+                op_idx = headers.index("op") if "op" in headers else None
+                for row in all_rows[1:]:
+                    if op_idx is not None and len(row) > op_idx:
+                        op_val = row[op_idx].strip()
+                        if op_val:
+                            op_options.append(op_val)
+                            op_to_row[op_val] = row
         except Exception:
-            st.warning("No se pudo leer la hoja de acta de entrega para obtener las OP disponibles.")
-        
-        op_selected_empaque = st.selectbox("Selecciona la OP a empacar", 
-                                         options=[" "] + op_options_empaque, 
-                                         key="op_selectbox_empaque_2")
-        
-        op = ""
-        fecha = ""
-        cliente = ""
-        equipo = ""
-        encargado_ingenieria = ""
-        
-        if op_selected_empaque and op_selected_empaque.strip() != "":
-            row = op_to_row_empaque.get(op_selected_empaque, [])
-            headers_lower = [h.strip().lower() for h in all_rows[0]] if all_rows else []
-            
-            def get_val(col):
-                col = col.strip().lower()
-                idx = headers_lower.index(col) if col in headers_lower else None
-                return row[idx] if idx is not None and idx < len(row) else ""
-            
-            op = op_selected_empaque
-            fecha = get_val("fecha dili")
-            cliente = get_val("cliente dili")
-            equipo = get_val("equipo dili")
-            encargado_ingenieria = get_val("diseñador dili")
-        
-        # Selección de encargados
-        encargados_almacen = ["", "Andrea Ochoa"]
-        col_almacen = st.columns(1)
-        encargado_almacen = col_almacen[0].selectbox("Encargado almacén", 
-                                                   encargados_almacen, 
-                                                   key="encargado_almacen_empaque")
-        
-        encargados_logistica = ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
-        col_logistica = st.columns(1)
-        encargado_logistica = col_logistica[0].selectbox("Encargado logística", 
-                                                       encargados_logistica, 
-                                                       key="encargado_logistica_empaque")
-        
-        # Mostrar resumen
-        st.markdown(f"""
-        <div style='background:#e6f7f7;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'>
-        <b>OP:</b> {op}<br>
-        <b>Fecha:</b> {fecha}<br>
-        <b>Cliente:</b> {cliente}<br>
-        <b>Equipo:</b> {equipo}<br>
-        <b>Encargado almacén:</b> {encargado_almacen}<br>
-        <b>Encargado ingeniería y diseño:</b> {encargado_ingenieria}<br>
-        <b>Encargado logística:</b> {encargado_logistica}<br>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Firma de logística
-        st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
-        st.info("Por favor, firme en el recuadro de abajo:")
-        
-        canvas_result = st_canvas(
-            fill_color="#00000000",  # Fondo transparente
-            stroke_width=2,
-            stroke_color="#1db6b6",
-            background_color="#f7fafb",
-            height=150,
-            width=400,
-            drawing_mode="freedraw",
-            key="firma_logistica_canvas"
-        )
-        
-        # Verificar si la firma tiene contenido
-        firma_valida = False
-        if canvas_result.image_data is not None:
-            # Verificar si hay algún trazo en la firma
-            has_content = np.sum(canvas_result.image_data) > 0
-            if has_content:
-                firma_valida = True
-                st.image(canvas_result.image_data, caption="Firma digital de logística", use_container_width=False)
-            else:
-                st.warning("La firma está vacía. Por favor, firme antes de continuar.")
-        
-        # Observaciones adicionales
-        observaciones_adicionales = st.text_area("Observaciones adicionales", key="observaciones_adicionales")
-
-        # Manejo de guacales
-        st.markdown("<h3>Guacales</h3>", unsafe_allow_html=True)
-        if 'guacales' not in st.session_state:
-            st.session_state['guacales'] = []
-
-        def add_guacal():
-            st.session_state['guacales'].append({'descripcion': '', 'fotos': []})
-
-        st.button("Agregar guacal", on_click=add_guacal, key="btn_agregar_guacal")
-
-        for idx, guacal in enumerate(st.session_state['guacales']):
-            with st.expander(f"Guacal {idx+1}", expanded=True):
-                descripcion = st.text_area(f"Descripción del guacal {idx+1}", 
-                                        value=guacal['descripcion'], 
-                                        key=f"descripcion_guacal_{idx+1}")
-                fotos = st.file_uploader(f"Foto(s) del guacal {idx+1}", 
-                                       type=["jpg","jpeg","png"], 
-                                       accept_multiple_files=True, 
-                                       key=f"fotos_guacal_{idx+1}")
-                guacal['descripcion'] = descripcion
-                guacal['fotos'] = fotos if fotos else []
-
-        # Validación antes de enviar lista de empaque
-        def validar_empaque():
-            if not op or op.strip() == "":
-                return False, "Debe seleccionar una OP válida."
-            if not encargado_logistica or encargado_logistica.strip() == "":
-                return False, "Debe seleccionar un encargado de logística."
-            if len(st.session_state['guacales']) == 0:
-                return False, "Debe agregar al menos un guacal."
-            return True, ""
-
-        # Botón para enviar la lista de empaque
-        enviar_empaque = st.button("Enviar Lista de Empaque", key="enviar_lista_empaque")
-        
-        if enviar_empaque:
-            # Validar campos obligatorios
-            valido, mensaje = validar_empaque()
-            if not valido:
-                st.error(mensaje)
-            else:
-                # Subir fotos de guacales a Drive
-                guacales_data = []
-                
-                with st.spinner("Subiendo imágenes de guacales..."):
-                    for idx, guacal in enumerate(st.session_state['guacales']):
-                        urls_fotos = upload_images_parallel(
-                            guacal['fotos'],
-                            f"guacal{idx+1}_{op}",
-                            folder_id
-                        )
-                        guacales_data.append({
-                            'descripcion': guacal['descripcion'],
-                            'fotos': urls_fotos
-                        })
-            
-            firma_url = ""
-            if canvas_result.image_data is not None and np.sum(canvas_result.image_data) > 0:
-                with st.spinner("Guardando firma digital..."):
-                    img = Image.fromarray((canvas_result.image_data).astype(np.uint8))
-                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
-                        img.save(tmpfile.name)
-                        tmpfile.seek(0)
-                        with open(tmpfile.name, "rb") as f:
-                            firma_url = upload_image_to_drive_oauth(f, f"firma_logistica_{op}.png", folder_id)
-            
-            # Encabezados base
-            # Encabezados fijos y hasta 4 guacales
-            headers_empaque = [
-                "Op",
-                "Fecha",
-                "Cliente",
-                "Equipo",
-                "Encargado almacén",
-                "Encargado ingeniería y diseño",
-                "Encargado logística",
-                "Firma encargado logística",
-                "Observaciones adicionales",
-                "Artículos enviados",
-                "Artículos no enviados",
-                "Descripción Guacal 1",
-                "Fotos Guacal 1",
-                "Descripción Guacal 2",
-                "Fotos Guacal 2",
-                "Descripción Guacal 3",
-                "Fotos Guacal 3",
-                "Descripción Guacal 4",
-                "Fotos Guacal 4"
-            ]
-            row_empaque = [
-                op,
-                fecha,
-                cliente,
-                equipo,
-                encargado_almacen,
-                encargado_ingenieria,
-                encargado_logistica,
-                firma_url,
-                observaciones_adicionales,
-                "",  # Artículos enviados
-                "",  # Artículos no enviados
-            ]
-            # Rellenar hasta 4 guacales, si hay menos poner 0
-            for i in range(4):
-                if i < len(guacales_data):
-                    row_empaque.append(guacales_data[i]['descripcion'] if guacales_data[i]['descripcion'] else "0")
-                    row_empaque.append(", ".join(guacales_data[i]['fotos']) if guacales_data[i]['fotos'] else "0")
-                else:
-                    row_empaque.append("0")
-                    row_empaque.append("0")
-            # Si hay más de 4 guacales, agregar columnas extra
-            if len(guacales_data) > 4:
-                for i in range(4, len(guacales_data)):
-                    headers_empaque.append(f"Descripción Guacal {i+1}")
-                    headers_empaque.append(f"Fotos Guacal {i+1}")
-                    row_empaque.append(guacales_data[i]['descripcion'] if guacales_data[i]['descripcion'] else "0")
-                    row_empaque.append(", ".join(guacales_data[i]['fotos']) if guacales_data[i]['fotos'] else "0")
-            
-            # Guardar en Google Sheets
-            file_name_empaque = "dispatch_tekpro"
-            worksheet_name_empaque = "Lista de empaque"
-            
+            pass
+        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
+        if op_selected != "(Nueva OP)":
+            row = op_to_row.get(op_selected, [])
             try:
-                # Verificar si existe la hoja
+                headers = [h.strip().lower() for h in all_rows[0]]
+                cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                item_idx = headers.index("item") if "item" in headers else None
+                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                fecha_idx = headers.index("fecha") if "fecha" in headers else None
+                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
                 try:
-                    sheet_empaque = sheet_client.open(file_name_empaque).worksheet(worksheet_name_empaque)
-                except:
-                    # Crear la hoja si no existe
-                    sheet_empaque = sheet_client.open(file_name_empaque).add_worksheet(
-                        title=worksheet_name_empaque, 
-                        rows=100, 
-                        cols=len(headers_empaque)
-                    )
-                    sheet_empaque.append_row(headers_empaque)
-                
-                # Verificar si la hoja está vacía y necesita encabezados
-                if not sheet_empaque.get_all_values():
-                    sheet_empaque.append_row(headers_empaque)
-                
-                # Guardar la fila de datos
-                sheet_empaque.append_row(row_empaque)
-                st.success("Lista de empaque guardada correctamente en Google Sheets.")
-                
-            except Exception as e:
-                st.error(f"Error al guardar la lista de empaque: {e}")
+                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                except Exception:
+                    auto_fecha = datetime.date.today()
+            except Exception:
+                pass
+        else:
+            op_selected = ""
+        cliente = st.text_input("cliente", value=auto_cliente)
+        op = op_selected
+        equipo = st.text_input("equipo", value=auto_equipo)
+        item = st.text_input("item", value=auto_item)
+        cantidad = st.text_input("cantidad", value=auto_cantidad)
+        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
+        acta_status = "pendiente"
+        if op:
+            try:
+                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                all_rows = sheet.get_all_values()
+                op_idx = None
+                if all_rows:
+                    headers = all_rows[0]
+                    for idx, h in enumerate(headers):
+                        if h.strip().lower() == "op":
+                            op_idx = idx
+                            break
+                    # Buscar la fila de la OP
+                    if op_idx is not None:
+                        for row in all_rows[1:]:
+                            if len(row) > op_idx and row[op_idx].strip() == op.strip():
+                                # Considerar campos relevantes para determinar si está completa
+                                campos_relevantes = [
+                                    "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
+                                ]
+                                completa = False
+                                for campo in campos_relevantes:
+                                    if campo in headers:
+                                        idx_campo = headers.index(campo)
+                                        if idx_campo < len(row):
+                                            valor = row[idx_campo]
+                                            if valor and str(valor).strip() not in ["", "0", "no", "No"]:
+                                                completa = True
+                                                break
+                                if completa:
+                                    acta_status = "completa"
+                                break
+            except Exception:
+                pass
+        if acta_status == "completa":
+            st.markdown("""
+                <div style='background:#e6f7e6;border:2px solid #1db6b6;color:#1db6b6;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
+                ✅ Acta de entrega completa
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+                <div style='background:#fff3e6;border:2px solid #f7b267;color:#f7b267;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
+                ⏳ Acta de entrega pendiente
+                </div>
+            """, unsafe_allow_html=True)
+
+        with st.form("acta_entrega_form"):
+
+            # --- Secciones visuales para cada artículo ---
+            def seccion_articulo(nombre, mostrar, campos):
+                if mostrar:
+                    with st.expander(f"{nombre}", expanded=False):
+                        st.markdown(f"""
+                            <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                            <b style='font-size:1.1em;color:#1db6b6'>{nombre}</b>
+                        """, unsafe_allow_html=True)
+                        resultados = {}
+                        for campo in campos:
+                            if campo['tipo'] == 'number':
+                                resultados[campo['nombre']] = st.number_input(campo['label'], min_value=0, step=1, format="%d")
+                            elif campo['tipo'] == 'text':
+                                resultados[campo['nombre']] = st.text_input(campo['label'])
+                            elif campo['tipo'] == 'text_area':
+                                resultados[campo['nombre']] = st.text_area(campo['label'])
+                            elif campo['tipo'] == 'file':
+                                resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        return resultados
+                else:
+                    return {campo['nombre']: 0 if campo['tipo'] == 'number' else "" for campo in campos}
+
+            # --- Agrupación por listas de chequeo principales ---
+            # 1. Elementos electromecánicos
+            with st.expander("Lista de chequeo general elementos electromecánicos", expanded=False):
+                motores_campos = [
+                    {'nombre': 'cantidad_motores', 'label': 'Cantidad de motores', 'tipo': 'number'},
+                    {'nombre': 'voltaje_motores', 'label': 'Voltaje de motores', 'tipo': 'text'},
+                    {'nombre': 'fotos_motores', 'label': 'Fotos motores', 'tipo': 'file'}
+                ]
+                motores = seccion_articulo("Motores", st.session_state.get('mostrar_motores', False), motores_campos)
+                cantidad_motores = motores['cantidad_motores']
+                voltaje_motores = motores['voltaje_motores']
+                fotos_motores = motores['fotos_motores']
+
+                reductores_campos = [
+                    {'nombre': 'cantidad_reductores', 'label': 'Cantidad de reductores', 'tipo': 'number'},
+                    {'nombre': 'voltaje_reductores', 'label': 'Voltaje de reductores', 'tipo': 'text'},
+                    {'nombre': 'fotos_reductores', 'label': 'Fotos reductores', 'tipo': 'file'}
+                ]
+                reductores = seccion_articulo("Reductores", st.session_state.get('mostrar_reductor', False), reductores_campos)
+                cantidad_reductores = reductores['cantidad_reductores']
+                voltaje_reductores = reductores['voltaje_reductores']
+                fotos_reductores = reductores['fotos_reductores']
+
+                bombas_campos = [
+                    {'nombre': 'cantidad_bombas', 'label': 'Cantidad de bombas', 'tipo': 'number'},
+                    {'nombre': 'voltaje_bombas', 'label': 'Voltaje de bombas', 'tipo': 'text'},
+                    {'nombre': 'fotos_bombas', 'label': 'Fotos bombas', 'tipo': 'file'}
+                ]
+                bombas = seccion_articulo("Bombas", st.session_state.get('mostrar_bomba', False), bombas_campos)
+                cantidad_bombas = bombas['cantidad_bombas']
+                voltaje_bombas = bombas['voltaje_bombas']
+                fotos_bombas = bombas['fotos_bombas']
+
+                turbina_campos = [
+                    {'nombre': 'voltaje_turbina', 'label': 'Voltaje turbina', 'tipo': 'text'},
+                    {'nombre': 'foto_turbina', 'label': 'Foto turbina', 'tipo': 'file'}
+                ]
+                turbina = seccion_articulo("Turbina", st.session_state.get('mostrar_turbina', False), turbina_campos)
+                voltaje_turbina = turbina['voltaje_turbina']
+                foto_turbina = turbina['foto_turbina']
+
+                quemador_campos = [
+                    {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
+                    {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
+                ]
+                quemador = seccion_articulo("Quemador", st.session_state.get('mostrar_quemador', False), quemador_campos)
+                voltaje_quemador = quemador['voltaje_quemador']
+                foto_quemador = quemador['foto_quemador']
+
+                bomba_vacio_campos = [
+                    {'nombre': 'voltaje_bomba_vacio', 'label': 'Voltaje bomba de vacío', 'tipo': 'text'},
+                    {'nombre': 'foto_bomba_vacio', 'label': 'Foto bomba de vacío', 'tipo': 'file'}
+                ]
+                bomba_vacio = seccion_articulo("Bomba de vacío", st.session_state.get('mostrar_bomba_vacio', False), bomba_vacio_campos)
+                voltaje_bomba_vacio = bomba_vacio['voltaje_bomba_vacio']
+                foto_bomba_vacio = bomba_vacio['foto_bomba_vacio']
+
+                compresor_campos = [
+                    {'nombre': 'voltaje_compresor', 'label': 'Voltaje compresor', 'tipo': 'text'},
+                    {'nombre': 'foto_compresor', 'label': 'Foto compresor', 'tipo': 'file'}
+                ]
+                compresor = seccion_articulo("Compresor", st.session_state.get('mostrar_compresor', False), compresor_campos)
+                voltaje_compresor = compresor['voltaje_compresor']
+                foto_compresor = compresor['foto_compresor']
+
+            # 2. Accesorios
+            with st.expander("Lista de chequeo general accesorios", expanded=False):
+                manometros_campos = [
+                    {'nombre': 'cantidad_manometros', 'label': 'Cantidad manómetros', 'tipo': 'number'},
+                    {'nombre': 'foto_manometros', 'label': 'Foto manómetros', 'tipo': 'file'}
+                ]
+                manometros = seccion_articulo("Manómetros", st.session_state.get('mostrar_manometros', False), manometros_campos)
+                cantidad_manometros = manometros['cantidad_manometros']
+                foto_manometros = manometros['foto_manometros']
+
+                vacuometros_campos = [
+                    {'nombre': 'cantidad_vacuometros', 'label': 'Cantidad vacuómetros', 'tipo': 'number'},
+                    {'nombre': 'foto_vacuometros', 'label': 'Foto vacuómetros', 'tipo': 'file'}
+                ]
+                vacuometros = seccion_articulo("Vacuómetros", st.session_state.get('mostrar_vacuometros', False), vacuometros_campos)
+                cantidad_vacuometros = vacuometros['cantidad_vacuometros']
+                foto_vacuometros = vacuometros['foto_vacuometros']
+
+                valvulas_campos = [
+                    {'nombre': 'cantidad_valvulas', 'label': 'Cantidad válvulas', 'tipo': 'number'},
+                    {'nombre': 'foto_valvulas', 'label': 'Foto válvulas', 'tipo': 'file'}
+                ]
+                valvulas = seccion_articulo("Válvulas", st.session_state.get('mostrar_valvulas', False), valvulas_campos)
+                cantidad_valvulas = valvulas['cantidad_valvulas']
+                foto_valvulas = valvulas['foto_valvulas']
+
+                mangueras_campos = [
+                    {'nombre': 'cantidad_mangueras', 'label': 'Cantidad mangueras', 'tipo': 'number'},
+                    {'nombre': 'foto_mangueras', 'label': 'Foto mangueras', 'tipo': 'file'}
+                ]
+                mangueras = seccion_articulo("Mangueras", st.session_state.get('mostrar_mangueras', False), mangueras_campos)
+                cantidad_mangueras = mangueras['cantidad_mangueras']
+                foto_mangueras = mangueras['foto_mangueras']
+
+                boquillas_campos = [
+                    {'nombre': 'cantidad_boquillas', 'label': 'Cantidad boquillas', 'tipo': 'number'},
+                    {'nombre': 'foto_boquillas', 'label': 'Foto boquillas', 'tipo': 'file'}
+                ]
+                boquillas = seccion_articulo("Boquillas", st.session_state.get('mostrar_boquillas', False), boquillas_campos)
+                cantidad_boquillas = boquillas['cantidad_boquillas']
+                foto_boquillas = boquillas['foto_boquillas']
+
+                reguladores_campos = [
+                    {'nombre': 'cantidad_reguladores', 'label': 'Cantidad reguladores aire/gas', 'tipo': 'number'},
+                    {'nombre': 'foto_reguladores', 'label': 'Foto reguladores', 'tipo': 'file'}
+                ]
+                reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
+                cantidad_reguladores = reguladores['cantidad_reguladores']
+                foto_reguladores = reguladores['foto_reguladores']
+
+            # 3. Elementos mecánicos
+            with st.expander("Lista de chequeo general elementos mecánicos", expanded=False):
+                pinon1_campos = [
+                    {'nombre': 'tension_pinon1', 'label': 'Tensión piñón 1', 'tipo': 'text'},
+                    {'nombre': 'foto_pinon1', 'label': 'Foto piñón 1', 'tipo': 'file'}
+                ]
+                pinon1 = seccion_articulo("Piñón 1", st.session_state.get('mostrar_pinon1', False), pinon1_campos)
+                tension_pinon1 = pinon1['tension_pinon1']
+                foto_pinon1 = pinon1['foto_pinon1']
+
+                pinon2_campos = [
+                    {'nombre': 'tension_pinon2', 'label': 'Tensión piñón 2', 'tipo': 'text'},
+                    {'nombre': 'foto_pinon2', 'label': 'Foto piñón 2', 'tipo': 'file'}
+                ]
+                pinon2 = seccion_articulo("Piñón 2", st.session_state.get('mostrar_pinon2', False), pinon2_campos)
+                tension_pinon2 = pinon2['tension_pinon2']
+                foto_pinon2 = pinon2['foto_pinon2']
+
+                polea1_campos = [
+                    {'nombre': 'tension_polea1', 'label': 'Tensión polea 1', 'tipo': 'text'},
+                    {'nombre': 'foto_polea1', 'label': 'Foto polea 1', 'tipo': 'file'}
+                ]
+                polea1 = seccion_articulo("Polea 1", st.session_state.get('mostrar_polea1', False), polea1_campos)
+                tension_polea1 = polea1['tension_polea1']
+                foto_polea1 = polea1['foto_polea1']
+
+                polea2_campos = [
+                    {'nombre': 'tension_polea2', 'label': 'Tensión polea 2', 'tipo': 'text'},
+                    {'nombre': 'foto_polea2', 'label': 'Foto polea 2', 'tipo': 'file'}
+                ]
+                polea2 = seccion_articulo("Polea 2", st.session_state.get('mostrar_polea2', False), polea2_campos)
+                tension_polea2 = polea2['tension_polea2']
+                foto_polea2 = polea2['foto_polea2']
+
+            # 4. Elementos eléctricos
+            with st.expander("Lista de chequeo general elementos eléctricos", expanded=False):
+                gabinete_campos = [
+                    {'nombre': 'cantidad_gabinete', 'label': 'Cantidad gabinete eléctrico', 'tipo': 'number'},
+                    {'nombre': 'foto_gabinete', 'label': 'Foto gabinete', 'tipo': 'file'}
+                ]
+                gabinete = seccion_articulo("Gabinete eléctrico", st.session_state.get('mostrar_gabinete', False), gabinete_campos)
+                cantidad_gabinete = gabinete['cantidad_gabinete']
+                foto_gabinete = gabinete['foto_gabinete']
+
+                arrancadores_campos = [
+                    {'nombre': 'cantidad_arrancadores', 'label': 'Cantidad arrancadores', 'tipo': 'number'},
+                    {'nombre': 'foto_arrancadores', 'label': 'Foto arrancadores', 'tipo': 'file'}
+                ]
+                arrancadores = seccion_articulo("Arrancadores", st.session_state.get('mostrar_arrancador', False), arrancadores_campos)
+                cantidad_arrancadores = arrancadores['cantidad_arrancadores']
+                foto_arrancadores = arrancadores['foto_arrancadores']
+
+                control_nivel_campos = [
+                    {'nombre': 'cantidad_control_nivel', 'label': 'Cantidad control de nivel', 'tipo': 'number'},
+                    {'nombre': 'foto_control_nivel', 'label': 'Foto control de nivel', 'tipo': 'file'}
+                ]
+                control_nivel = seccion_articulo("Control de nivel", st.session_state.get('mostrar_control_nivel', False), control_nivel_campos)
+                cantidad_control_nivel = control_nivel['cantidad_control_nivel']
+                foto_control_nivel = control_nivel['foto_control_nivel']
+
+                variadores_campos = [
+                    {'nombre': 'cantidad_variadores', 'label': 'Cantidad variadores de velocidad', 'tipo': 'number'},
+                    {'nombre': 'foto_variadores', 'label': 'Foto variadores de velocidad', 'tipo': 'file'}
+                ]
+                variadores = seccion_articulo("Variadores de velocidad", st.session_state.get('mostrar_variador', False), variadores_campos)
+                cantidad_variadores = variadores['cantidad_variadores']
+                foto_variadores = variadores['foto_variadores']
+
+                sensores_campos = [
+                    {'nombre': 'cantidad_sensores', 'label': 'Cantidad sensores de temperatura', 'tipo': 'number'},
+                    {'nombre': 'foto_sensores', 'label': 'Foto sensores de temperatura', 'tipo': 'file'}
+                ]
+                sensores = seccion_articulo("Sensores de temperatura", st.session_state.get('mostrar_sensor_temp', False), sensores_campos)
+                cantidad_sensores = sensores['cantidad_sensores']
+                foto_sensores = sensores['foto_sensores']
+
+                toma_corriente_campos = [
+                    {'nombre': 'cantidad_toma_corriente', 'label': 'Cantidad toma corriente', 'tipo': 'number'},
+                    {'nombre': 'foto_toma_corrientes', 'label': 'Foto toma corrientes', 'tipo': 'file'}
+                ]
+                toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
+                cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
+                foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
+            col_otros1, col_otros2 = st.columns([2,2])
+            with col_otros1:
+                otros_elementos = st.text_area("otros elementos")
+            with col_otros2:
+                fotos_otros_elementos = st.file_uploader("Fotos otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
+            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+            st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
+            revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
+            revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"])
+            manual_funcionamiento = st.selectbox("manual de funcionamiento", ["", "Sí", "No"])
+            revision_filos = st.selectbox("revision de filos y acabados", ["", "Sí", "No"])
+            revision_tratamientos = st.selectbox("revision de tratamientos", ["", "Sí", "No"])
+            revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"])
+            revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"])
+            ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"])
+            st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+            st.markdown("<b>Información final</b>", unsafe_allow_html=True)
+            observaciones_generales = st.text_area("observciones generales")
+
+            lider_inspeccion = st.text_input("lider de inspeccion")
+            disenador = st.selectbox(
+                "diseñador",
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
+            )
+            encargado_logistica = st.text_input("encargado logistica")
+            cedula_logistica = st.text_input("cedula logistica")
+            fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+
+            submitted = st.form_submit_button("Guardar acta de entrega")
+
+            # Validación: solo encabezado y responsables son obligatorios
+
+            if submitted:
+                # Serializar todos los campos a string y manejar file_uploader
+                def serializa_fotos(valor, nombre_base, folder_id):
+                    enlaces = []
+                    if isinstance(valor, list):
+                        for idx, f in enumerate(valor, start=1):
+                            try:
+                                import io
+                                file_stream = io.BytesIO(f.read())
+                                image_filename = f"{nombre_base}_{idx}.jpg"
+                                public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                                enlaces.append(public_url)
+                            except Exception as e:
+                                enlaces.append(f"Error: {e}")
+                        return ", ".join(enlaces) if enlaces else ""
+                    elif hasattr(valor, 'name'):
+                        try:
+                            import io
+                            file_stream = io.BytesIO(valor.read())
+                            image_filename = f"{nombre_base}.jpg"
+                            public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
+                            return public_url
+                        except Exception as e:
+                            return f"Error: {e}"
+                    else:
+                        return str(valor) if valor is not None else ""
+
+                row = [
+                    str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
+                    str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
+                    str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
+                    str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
+                    str(voltaje_turbina), serializa_fotos(foto_turbina, f"Turbina_{op}", folder_id),
+                    str(voltaje_quemador), serializa_fotos(foto_quemador, f"Quemador_{op}", folder_id),
+                    str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio, f"BombaVacio_{op}", folder_id),
+                    str(voltaje_compresor), serializa_fotos(foto_compresor, f"Compresor_{op}", folder_id),
+                    str(cantidad_manometros), serializa_fotos(foto_manometros, f"Manometros_{op}", folder_id),
+                    str(cantidad_vacuometros), serializa_fotos(foto_vacuometros, f"Vacuometros_{op}", folder_id),
+                    str(cantidad_valvulas), serializa_fotos(foto_valvulas, f"Valvulas_{op}", folder_id),
+                    str(cantidad_mangueras), serializa_fotos(foto_mangueras, f"Mangueras_{op}", folder_id),
+                    str(cantidad_boquillas), serializa_fotos(foto_boquillas, f"Boquillas_{op}", folder_id),
+                    str(cantidad_reguladores), serializa_fotos(foto_reguladores, f"Reguladores_{op}", folder_id),
+                    str(tension_pinon1), serializa_fotos(foto_pinon1, f"Pinon1_{op}", folder_id),
+                    str(tension_pinon2), serializa_fotos(foto_pinon2, f"Pinon2_{op}", folder_id),
+                    str(tension_polea1), serializa_fotos(foto_polea1, f"Polea1_{op}", folder_id),
+                    str(tension_polea2), serializa_fotos(foto_polea2, f"Polea2_{op}", folder_id),
+                    str(cantidad_gabinete), serializa_fotos(foto_gabinete, f"Gabinete_{op}", folder_id),
+                    str(cantidad_arrancadores), serializa_fotos(foto_arrancadores, f"Arrancadores_{op}", folder_id),
+                    str(cantidad_control_nivel), serializa_fotos(foto_control_nivel, f"ControlNivel_{op}", folder_id),
+                    str(cantidad_variadores), serializa_fotos(foto_variadores, f"Variadores_{op}", folder_id),
+                    str(cantidad_sensores), serializa_fotos(foto_sensores, f"Sensores_{op}", folder_id),
+                    str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes, f"TomaCorriente_{op}", folder_id),
+                    str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
+                    str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
+                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
+                ]
+                headers = [
+                    "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
+                    "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
+                    "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
+                    "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
+                    "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
+                    "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
+                    "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
+                    "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
+                    "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "fotos otros elementos",
+                    "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
+                    "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "encargado logistica", "cedula logistica", "fecha de entrega"
+                ]
+                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                if not sheet.get_all_values():
+                    sheet.append_row(headers)
+                sheet.append_row(row)
+                st.success("Acta de entrega guardada correctamente en Google Sheets.")
 
 if __name__ == "__main__":
     main()
