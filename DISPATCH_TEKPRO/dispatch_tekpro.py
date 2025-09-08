@@ -513,7 +513,11 @@ def main():
             ("mostrar_valvulas", "¿Hay válvulas?"),
             ("mostrar_mangueras", "¿Hay mangueras?"),
             ("mostrar_boquillas", "¿Hay boquillas?"),
-            ("mostrar_reguladores", "¿Hay reguladores aire/gas?")
+            ("mostrar_reguladores", "¿Hay reguladores aire/gas?"),
+            ("mostrar_tuberia", "¿Hay tubería?"),
+            ("mostrar_cables", "¿Hay cables?"),
+            ("mostrar_curvas", "¿Hay curvas?"),
+            ("mostrar_tornilleria_acc", "¿Hay tornillería?")
         ]
         for key, label in botones_accesorios:
             default_value = st.session_state.get(key, False)
@@ -574,12 +578,15 @@ def main():
                                 resultados[campo['nombre']] = st.text_area(campo['label'])
                             elif campo['tipo'] == 'file':
                                 resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
+                            elif campo['tipo'] == 'select':
+                                if 'opciones' in campo:
+                                    resultados[campo['nombre']] = st.selectbox(campo['label'], campo['opciones'], key=f"select_{campo['nombre']}")
+                                else:
+                                    resultados[campo['nombre']] = st.selectbox(campo['label'], ["", "Opción 1", "Opción 2"], key=f"select_{campo['nombre']}")
                         st.markdown("</div>", unsafe_allow_html=True)
                         return resultados
                 else:
-                    return {campo['nombre']: 0 if campo['tipo'] == 'number' else "" for campo in campos}
-
-            # --- Agrupación por listas de chequeo principales ---
+                    return {campo['nombre']: 0 if campo['tipo'] == 'number' else "" for campo in campos}            # --- Agrupación por listas de chequeo principales ---
             # 1. Elementos electromecánicos
             with st.expander("Lista de chequeo general elementos electromecánicos", expanded=False):
                 motores_campos = [
@@ -622,10 +629,14 @@ def main():
 
                 quemador_campos = [
                     {'nombre': 'voltaje_quemador', 'label': 'Voltaje quemador', 'tipo': 'text'},
+                    {'nombre': 'tipo_combustible_quemador', 'label': 'Tipo combustible quemador', 'tipo': 'select', 'opciones': ["", "ACPM", "GAS"]},
+                    {'nombre': 'metodo_uso_quemador', 'label': 'Método de uso quemador', 'tipo': 'text'},
                     {'nombre': 'foto_quemador', 'label': 'Foto quemador', 'tipo': 'file'}
                 ]
                 quemador = seccion_articulo("Quemador", st.session_state.get('mostrar_quemador', False), quemador_campos)
                 voltaje_quemador = quemador['voltaje_quemador']
+                tipo_combustible_quemador = quemador.get('tipo_combustible_quemador', "")
+                metodo_uso_quemador = quemador.get('metodo_uso_quemador', "")
                 foto_quemador = quemador['foto_quemador']
 
                 bomba_vacio_campos = [
@@ -693,6 +704,38 @@ def main():
                 reguladores = seccion_articulo("Reguladores aire/gas", st.session_state.get('mostrar_reguladores', False), reguladores_campos)
                 cantidad_reguladores = reguladores['cantidad_reguladores']
                 foto_reguladores = reguladores['foto_reguladores']
+
+                tuberia_campos = [
+                    {'nombre': 'descripcion_tuberia', 'label': 'Descripción tubería', 'tipo': 'text_area'},
+                    {'nombre': 'foto_tuberia', 'label': 'Foto tubería', 'tipo': 'file'}
+                ]
+                tuberia = seccion_articulo("Tubería", st.session_state.get('mostrar_tuberia', False), tuberia_campos)
+                descripcion_tuberia = tuberia.get('descripcion_tuberia', "")
+                foto_tuberia = tuberia.get('foto_tuberia', "")
+
+                cables_campos = [
+                    {'nombre': 'descripcion_cables', 'label': 'Descripción cables', 'tipo': 'text_area'},
+                    {'nombre': 'foto_cables', 'label': 'Foto cables', 'tipo': 'file'}
+                ]
+                cables = seccion_articulo("Cables", st.session_state.get('mostrar_cables', False), cables_campos)
+                descripcion_cables = cables.get('descripcion_cables', "")
+                foto_cables = cables.get('foto_cables', "")
+
+                curvas_campos = [
+                    {'nombre': 'descripcion_curvas', 'label': 'Descripción curvas', 'tipo': 'text_area'},
+                    {'nombre': 'foto_curvas', 'label': 'Foto curvas', 'tipo': 'file'}
+                ]
+                curvas = seccion_articulo("Curvas", st.session_state.get('mostrar_curvas', False), curvas_campos)
+                descripcion_curvas = curvas.get('descripcion_curvas', "")
+                foto_curvas = curvas.get('foto_curvas', "")
+
+                tornilleria_acc_campos = [
+                    {'nombre': 'descripcion_tornilleria', 'label': 'Descripción tornillería', 'tipo': 'text_area'},
+                    {'nombre': 'foto_tornilleria', 'label': 'Foto tornillería', 'tipo': 'file'}
+                ]
+                tornilleria_acc = seccion_articulo("Tornillería", st.session_state.get('mostrar_tornilleria_acc', False), tornilleria_acc_campos)
+                descripcion_tornilleria = tornilleria_acc.get('descripcion_tornilleria', "")
+                foto_tornilleria = tornilleria_acc.get('foto_tornilleria', "")
 
             # 3. Elementos mecánicos
             with st.expander("Lista de chequeo general elementos mecánicos", expanded=False):
@@ -792,17 +835,17 @@ def main():
             revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"])
             revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"])
             ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"])
+            
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
             observaciones_generales = st.text_area("observciones generales")
 
             lider_inspeccion = st.text_input("lider de inspeccion")
+            encargado_soldador = st.text_input("Encargado soldador")
             disenador = st.selectbox(
                 "diseñador",
                 ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
             )
-            encargado_logistica = st.text_input("encargado logistica")
-            cedula_logistica = st.text_input("cedula logistica")
             fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
             submitted = st.form_submit_button("Guardar acta de entrega")
@@ -842,7 +885,7 @@ def main():
                     str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
                     str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
                     str(voltaje_turbina), serializa_fotos(foto_turbina, f"Turbina_{op}", folder_id),
-                    str(voltaje_quemador), serializa_fotos(foto_quemador, f"Quemador_{op}", folder_id),
+                    str(tipo_combustible_quemador), str(metodo_uso_quemador), str(voltaje_quemador), serializa_fotos(foto_quemador, f"Quemador_{op}", folder_id),
                     str(voltaje_bomba_vacio), serializa_fotos(foto_bomba_vacio, f"BombaVacio_{op}", folder_id),
                     str(voltaje_compresor), serializa_fotos(foto_compresor, f"Compresor_{op}", folder_id),
                     str(cantidad_manometros), serializa_fotos(foto_manometros, f"Manometros_{op}", folder_id),
@@ -862,30 +905,61 @@ def main():
                     str(cantidad_sensores), serializa_fotos(foto_sensores, f"Sensores_{op}", folder_id),
                     str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes, f"TomaCorriente_{op}", folder_id),
                     str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
-                    str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
-                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), str(lider_inspeccion), str(disenador), str(encargado_logistica), str(cedula_logistica), str(fecha_entrega)
+                    str(descripcion_tuberia), serializa_fotos(foto_tuberia, f"Tuberia_{op}", folder_id),
+                    str(descripcion_cables), serializa_fotos(foto_cables, f"Cables_{op}", folder_id),
+                    str(descripcion_curvas), serializa_fotos(foto_curvas, f"Curvas_{op}", folder_id),
+                    str(descripcion_tornilleria), serializa_fotos(foto_tornilleria, f"Tornilleria_{op}", folder_id),
+                    str(revision_soldadura), str(revision_sentidos), str(manual_funcionamiento), 
+                    str(revision_filos), str(revision_tratamientos), str(revision_tornilleria),
+                    str(revision_ruidos), str(ensayo_equipo), str(observaciones_generales), 
+                    str(lider_inspeccion), str(encargado_soldador), str(disenador), str(fecha_entrega)
                 ]
                 headers = [
-                    "cliente", "op", "item", "equipo", "cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
-                    "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
-                    "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
-                    "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
-                    "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
-                    "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
-                    "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
-                    "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
-                    "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos", "fotos otros elementos",
-                    "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
-                    "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "encargado logistica", "cedula logistica", "fecha de entrega"
+                    "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili", 
+                    "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
+                    "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili", 
+                    "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
+                    "voltaje turbina dili", "foto turbina dili", 
+                    "Tipo combustible quemador dili", "Metodo de uso quemador dili", "voltaje quemador dili", "foto quemador dili", 
+                    "voltaje bomba de vacio dili", "foto bomba de vacio dili",
+                    "voltaje compresor dili", "foto compresor dili", 
+                    "cantidad manometros dili", "foto manometros dili", 
+                    "cantidad vacuometros dili", "foto vacuometros dili",
+                    "cantidad valvulas dili", "foto valvulas dili", 
+                    "cantidad mangueras dili", "foto mangueras dili", 
+                    "cantidad boquillas dili", "foto boquillas dili",
+                    "cantidad reguladores aire/gas dili", "foto reguladores dili", 
+                    "tension piñon 1 dili", "foto piñon 1 dili", 
+                    "tension piñon 2 dili", "foto piñon 2 dili",
+                    "tension polea 1 dili", "foto polea 1 dili", 
+                    "tension polea 2 dili", "foto polea 2 dili", 
+                    "cantidad gabinete electrico dili", "foto gabinete dili",
+                    "cantidad arrancadores dili", "foto arrancadores dili", 
+                    "cantidad control de nivel dili", "foto control de nivel dili", 
+                    "cantidad variadores de velociad dili", "foto variadores de velocidad dili",
+                    "cantidad sensores de temperatura dili", "foto sensores de temperatura dili", 
+                    "cantidad toma corriente dili", "foto toma corrientes dili", 
+                    "descripcion otros elementos dili", "fotos otros elementos dili",
+                    "descripcion tuberias dili", "foto tuberias dili", 
+                    "descripcion cables dili", "foto cables dili", 
+                    "descripcion curvas dili", "foto curvas dili",
+                    "descripcion tornilleria dili", "foto tornilleria dili",
+                    "revision de soldadura dili", "revision de sentidos de giro dili", 
+                    "manual de funcionamiento dili", "revision de filos y acabados dili", 
+                    "revision de tratamientos dili", "revision de tornilleria dili",
+                    "revision de ruidos dili", "ensayo equipo dili", 
+                    "observciones generales dili", "lider de inspeccion dili", 
+                    "Encargado soldador dili", "diseñador dili", "fecha de entrega dili"
                 ]
                 
                 worksheet_name_diligenciadas = "actas de entregas diligenciadas"
                 try:
+                    # Solo intenta abrir la hoja existente
                     sheet = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
                 except gspread.exceptions.WorksheetNotFound:
-                    # Si la hoja no existe, la crea con los encabezados
-                    sheet = sheet_client.open(file_name).add_worksheet(title=worksheet_name_diligenciadas, rows="100", cols=len(headers) + 5)
-                    sheet.append_row(headers)
+                    # Si la hoja no existe, mostrar error y no continuar
+                    st.error(f"La hoja '{worksheet_name_diligenciadas}' no existe. Contacta al administrador para que la cree.")
+                    return
 
                 # Si la hoja existe pero está vacía, agrega los encabezados
                 if not sheet.get_all_values():
