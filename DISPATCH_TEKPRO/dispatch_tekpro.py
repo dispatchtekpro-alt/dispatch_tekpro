@@ -416,9 +416,60 @@ def main():
         folder_id = st.secrets.drive_config.FOLDER_ID
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
+        # --- DATOS GENERALES ---
+        auto_cliente = ""
+        auto_equipo = ""
+        auto_item = ""
+        auto_cantidad = ""
+        auto_fecha = datetime.date.today()
+        op_options = []
+        op_to_row = {}
+        try:
+            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+            all_rows = sheet.get_all_values()
+            if all_rows:
+                headers = [h.strip().lower() for h in all_rows[0]]
+                op_idx = headers.index("op") if "op" in headers else None
+                for row in all_rows[1:]:
+                    if op_idx is not None and len(row) > op_idx:
+                        op_val = row[op_idx].strip()
+                        if op_val:
+                            op_options.append(op_val)
+                            op_to_row[op_val] = row
+        except Exception:
+            pass
+        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
+        if op_selected != "(Nueva OP)":
+            row = op_to_row.get(op_selected, [])
+            try:
+                headers = [h.strip().lower() for h in all_rows[0]]
+                cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                item_idx = headers.index("item") if "item" in headers else None
+                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                fecha_idx = headers.index("fecha") if "fecha" in headers else None
+                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                try:
+                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                except Exception:
+                    auto_fecha = datetime.date.today()
+            except Exception:
+                pass
+        else:
+            op_selected = ""
+        cliente = st.text_input("cliente", value=auto_cliente)
+        op = op_selected
+        equipo = st.text_input("equipo", value=auto_equipo)
+        item = st.text_input("item", value=auto_item)
+        cantidad = st.text_input("cantidad", value=auto_cantidad)
+        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
-        # --- Botones para mostrar/ocultar secciones de artículos (comportamiento clásico) ---
+        # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos electromecánicos")
         botones_articulos = [
@@ -485,59 +536,7 @@ def main():
         # --- Formulario principal ---
 
         # --- Estado de acta de entrega (completa/pendiente) ---
-        import datetime
-        st.markdown("<div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;'><b>Datos generales del acta de entrega</b>", unsafe_allow_html=True)
-        # --- Autocompletar datos generales si la OP existe en el sheet, usando selectbox ---
-        auto_cliente = ""
-        auto_equipo = ""
-        auto_item = ""
-        auto_cantidad = ""
-        auto_fecha = datetime.date.today()
-        op_options = []
-        op_to_row = {}
-        try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
-            if all_rows:
-                headers = [h.strip().lower() for h in all_rows[0]]
-                op_idx = headers.index("op") if "op" in headers else None
-                for row in all_rows[1:]:
-                    if op_idx is not None and len(row) > op_idx:
-                        op_val = row[op_idx].strip()
-                        if op_val:
-                            op_options.append(op_val)
-                            op_to_row[op_val] = row
-        except Exception:
-            pass
-        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
-        if op_selected != "(Nueva OP)":
-            row = op_to_row.get(op_selected, [])
-            try:
-                headers = [h.strip().lower() for h in all_rows[0]]
-                cliente_idx = headers.index("cliente") if "cliente" in headers else None
-                equipo_idx = headers.index("equipo") if "equipo" in headers else None
-                item_idx = headers.index("item") if "item" in headers else None
-                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
-                fecha_idx = headers.index("fecha") if "fecha" in headers else None
-                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
-                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
-                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
-                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
-                try:
-                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
-                except Exception:
-                    auto_fecha = datetime.date.today()
-            except Exception:
-                pass
-        else:
-            op_selected = ""
-        cliente = st.text_input("cliente", value=auto_cliente)
-        op = op_selected
-        equipo = st.text_input("equipo", value=auto_equipo)
-        item = st.text_input("item", value=auto_item)
-        cantidad = st.text_input("cantidad", value=auto_cantidad)
-        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
-        st.markdown("</div>", unsafe_allow_html=True)
+
 
         # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
         acta_status = "pendiente"
