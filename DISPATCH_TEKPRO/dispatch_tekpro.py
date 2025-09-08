@@ -1,3 +1,12 @@
+import random
+def upload_image_to_drive_oauth(file, filename, folder_id, max_retries=5):
+    """
+    Subida robusta de imagen a Google Drive con compresión y reintentos automáticos ante errores de cuota.
+    """
+    from googleapiclient.errors import HttpError
+    from PIL import Image
+    import io
+    import time
 import streamlit as st
 import gspread
 from googleapiclient.discovery import build
@@ -16,6 +25,7 @@ from PIL import Image
 import numpy as np
 import tempfile
 import concurrent.futures
+import time
 
 # Incluir CSS corporativo Tekpro
 st.markdown('''
@@ -212,53 +222,71 @@ def get_drive_service_oauth():
     creds = get_service_account_creds()
     return build('drive', 'v3', credentials=creds)
 
-def upload_image_to_drive_oauth(file, filename, folder_id):
-    import time
+import random
+def upload_image_to_drive_oauth(file, filename, folder_id, max_retries=5):
+    """
+    Subida robusta de imagen a Google Drive con compresión y reintentos automáticos ante errores de cuota.
+    """
+    from googleapiclient.errors import HttpError
+    from PIL import Image
+    import io
     if file is None:
         return ""
     drive_service = get_drive_service_oauth()
     if drive_service is None:
         return None
-    file_metadata = {
-        'name': filename,
-        'parents': [folder_id]
-    }
-    mime_type = 'image/jpeg'
-    if hasattr(file, 'type') and file.type:
-        mime_type = file.type
-    media = MediaIoBaseUpload(file, mimetype=mime_type)
-    from googleapiclient.errors import HttpError
-    max_retries = 5
-    delay = 2
-    for attempt in range(max_retries):
-        try:
-            uploaded = drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-            file_id = uploaded.get('id')
-            drive_service.permissions().create(
-                fileId=file_id,
-                body={
-                    'type': 'anyone',
-                    'role': 'reader'
-                }
-            ).execute()
-            public_url = f"https://drive.google.com/uc?id={file_id}"
-            return public_url
-        except HttpError as e:
-            status = getattr(e.resp, 'status', None)
-            if status == 429:
-                time.sleep(delay)
-                delay *= 2
-            else:
-                # Registrar el error y continuar
-                print(f"Error subiendo {filename}: {e}")
+    # Intentar diferentes niveles de compresión
+    qualities = [70, 50, 30]
+    try:
+        image = Image.open(file)
+    except Exception:
+        # Si no es imagen, subir como está
+        image = None
+    for quality in qualities:
+        if image:
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='JPEG', quality=quality)
+            img_byte_arr.seek(0)
+            media = MediaIoBaseUpload(img_byte_arr, mimetype='image/jpeg')
+        else:
+            media = MediaIoBaseUpload(file, mimetype='image/jpeg')
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id]
+        }
+        delay = 2
+        for attempt in range(max_retries):
+            try:
+                uploaded = drive_service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
+                file_id = uploaded.get('id')
+                drive_service.permissions().create(
+                    fileId=file_id,
+                    body={
+                        'type': 'anyone',
+                        'role': 'reader'
+                    }
+                ).execute()
+                public_url = f"https://drive.google.com/uc?id={file_id}"
+                return public_url
+            except HttpError as e:
+                status = getattr(e.resp, 'status', None)
+                if status == 429 or 'quota' in str(e).lower():
+                    wait_time = delay + random.uniform(0, 2)
+                    st.warning(f"Google Drive quota error. Reintentando en {wait_time:.1f} segundos...")
+                    time.sleep(wait_time)
+                    delay *= 2
+                else:
+                    st.error(f"Error subiendo {filename}: {e}")
+                    return None
+            except Exception as e:
+                st.error(f"Error inesperado subiendo {filename}: {e}")
                 return None
-        except Exception as e:
-            print(f"Error inesperado subiendo {filename}: {e}")
-            return None
+        st.warning(f"No se pudo subir la imagen con calidad {quality}. Probando con mayor compresión...")
+    st.error("No se pudo subir la imagen después de varios intentos y compresiones. Por favor intente más tarde.")
     return None
 
 # Función para subir múltiples imágenes en paralelo
@@ -276,7 +304,8 @@ def upload_images_parallel(files, base_name, folder_id):
                         upload_image_to_drive_oauth, 
                         file, 
                         f"{base_name}_{idx+1}.jpg", 
-                        folder_id
+                        folder_id,
+                        5
                     )
                 )
         for future in concurrent.futures.as_completed(futures):
