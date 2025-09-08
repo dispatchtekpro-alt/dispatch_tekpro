@@ -410,63 +410,81 @@ def main():
             authorize_drive_oauth()
 
         st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
-        st.markdown("<b>Encabezado del acta de entrega</b>", unsafe_allow_html=True)
+
+        with st.expander("Datos Generales del Proyecto", expanded=True):
+            st.markdown("""
+                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                <b style='font-size:1.1em;color:#1db6b6'>Información Principal</b>
+            """, unsafe_allow_html=True)
+            # --- DATOS GENERALES ---
+            auto_cliente = ""
+            auto_equipo = ""
+            auto_item = ""
+            auto_cantidad = ""
+            auto_fecha = datetime.date.today()
+            op_options = []
+            op_to_row = {}
+            try:
+                # Asegurarse de que sheet_client está inicializado
+                creds = get_service_account_creds()
+                sheet_client = gspread.authorize(creds)
+                file_name = st.secrets.drive_config.FILE_NAME
+                worksheet_name = "Acta de entrega" # Asegúrate que este es el worksheet correcto para las OPs
+                
+                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                all_rows = sheet.get_all_values()
+                if all_rows:
+                    headers = [h.strip().lower() for h in all_rows[0]]
+                    op_idx = headers.index("op") if "op" in headers else None
+                    for row in all_rows[1:]:
+                        if op_idx is not None and len(row) > op_idx:
+                            op_val = row[op_idx].strip()
+                            if op_val:
+                                op_options.append(op_val)
+                                op_to_row[op_val] = row
+            except Exception as e:
+                st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
+                pass
+
+            op_selected = st.selectbox("Orden de Pedido (OP)", options=["SELECCIONA"] + list(set(op_options)))
+            
+            if op_selected != "SELECCIONA":
+                row = op_to_row.get(op_selected, [])
+                try:
+                    headers = [h.strip().lower() for h in all_rows[0]]
+                    cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                    equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                    item_idx = headers.index("item") if "item" in headers else None
+                    cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                    fecha_idx = headers.index("fecha") if "fecha" in headers else None
+
+                    auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                    auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                    auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                    auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                    try:
+                        auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                    except Exception:
+                        auto_fecha = datetime.date.today()
+                except Exception:
+                    pass
+            else:
+                op_selected = ""
+
+            cliente = st.text_input("Cliente", value=auto_cliente)
+            op = st.text_input("OP (si es nueva)", value=op_selected, key="op_input")
+            equipo = st.text_input("Equipo", value=auto_equipo)
+            item = st.text_input("Item", value=auto_item)
+            cantidad = st.text_input("Cantidad", value=auto_cantidad)
+            fecha = st.date_input("Fecha", value=auto_fecha, key="fecha_acta")
+            st.markdown("</div>", unsafe_allow_html=True)
+        
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
         folder_id = st.secrets.drive_config.FOLDER_ID
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
-        # --- DATOS GENERALES ---
-        auto_cliente = ""
-        auto_equipo = ""
-        auto_item = ""
-        auto_cantidad = ""
-        auto_fecha = datetime.date.today()
-        op_options = []
-        op_to_row = {}
-        try:
-            sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-            all_rows = sheet.get_all_values()
-            if all_rows:
-                headers = [h.strip().lower() for h in all_rows[0]]
-                op_idx = headers.index("op") if "op" in headers else None
-                for row in all_rows[1:]:
-                    if op_idx is not None and len(row) > op_idx:
-                        op_val = row[op_idx].strip()
-                        if op_val:
-                            op_options.append(op_val)
-                            op_to_row[op_val] = row
-        except Exception:
-            pass
-        op_selected = st.selectbox("op", options=["(Nueva OP)"] + op_options)
-        if op_selected != "(Nueva OP)":
-            row = op_to_row.get(op_selected, [])
-            try:
-                headers = [h.strip().lower() for h in all_rows[0]]
-                cliente_idx = headers.index("cliente") if "cliente" in headers else None
-                equipo_idx = headers.index("equipo") if "equipo" in headers else None
-                item_idx = headers.index("item") if "item" in headers else None
-                cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
-                fecha_idx = headers.index("fecha") if "fecha" in headers else None
-                auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
-                auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
-                auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
-                auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
-                try:
-                    auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
-                except Exception:
-                    auto_fecha = datetime.date.today()
-            except Exception:
-                pass
-        else:
-            op_selected = ""
-        cliente = st.text_input("cliente", value=auto_cliente)
-        op = op_selected
-        equipo = st.text_input("equipo", value=auto_equipo)
-        item = st.text_input("item", value=auto_item)
-        cantidad = st.text_input("cantidad", value=auto_cantidad)
-        fecha = st.date_input("fecha", value=auto_fecha, key="fecha_acta")
-        st.markdown("</div>", unsafe_allow_html=True)
+       
 
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
@@ -533,58 +551,8 @@ def main():
             if st.session_state.get(key, None) != checkbox_value:
                 st.session_state[key] = checkbox_value
 
-        # --- Formulario principal ---
-
-        # --- Estado de acta de entrega (completa/pendiente) ---
 
 
-        # Verificar estado de acta de entrega para la OP (solo completa si hay datos relevantes)
-        acta_status = "pendiente"
-        if op:
-            try:
-                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
-                all_rows = sheet.get_all_values()
-                op_idx = None
-                if all_rows:
-                    headers = all_rows[0]
-                    for idx, h in enumerate(headers):
-                        if h.strip().lower() == "op":
-                            op_idx = idx
-                            break
-                    # Buscar la fila de la OP
-                    if op_idx is not None:
-                        for row in all_rows[1:]:
-                            if len(row) > op_idx and row[op_idx].strip() == op.strip():
-                                # Considerar campos relevantes para determinar si está completa
-                                campos_relevantes = [
-                                    "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
-                                ]
-                                completa = False
-                                for campo in campos_relevantes:
-                                    if campo in headers:
-                                        idx_campo = headers.index(campo)
-                                        if idx_campo < len(row):
-                                            valor = row[idx_campo]
-                                            if valor and str(valor).strip() not in ["", "0", "no", "No"]:
-                                                completa = True
-                                                break
-                                if completa:
-                                    acta_status = "completa"
-                                break
-            except Exception:
-                pass
-        if acta_status == "completa":
-            st.markdown("""
-                <div style='background:#e6f7e6;border:2px solid #1db6b6;color:#1db6b6;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
-                ✅ Acta de entrega completa
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-                <div style='background:#fff3e6;border:2px solid #f7b267;color:#f7b267;padding:0.8em 1.2em;border-radius:8px;font-weight:600;font-size:1.1em;margin-bottom:1em;text-align:center;'>
-                ⏳ Acta de entrega pendiente
-                </div>
-            """, unsafe_allow_html=True)
 
         with st.form("acta_entrega_form"):
 
@@ -910,11 +878,21 @@ def main():
                     "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
                     "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "encargado logistica", "cedula logistica", "fecha de entrega"
                 ]
-                sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                
+                worksheet_name_diligenciadas = "actas de entregas diligenciadas"
+                try:
+                    sheet = sheet_client.open(file_name).worksheet(worksheet_name_diligenciadas)
+                except gspread.exceptions.WorksheetNotFound:
+                    # Si la hoja no existe, la crea con los encabezados
+                    sheet = sheet_client.open(file_name).add_worksheet(title=worksheet_name_diligenciadas, rows="100", cols=len(headers) + 5)
+                    sheet.append_row(headers)
+
+                # Si la hoja existe pero está vacía, agrega los encabezados
                 if not sheet.get_all_values():
                     sheet.append_row(headers)
+                
                 sheet.append_row(row)
-                st.success("Acta de entrega guardada correctamente en Google Sheets.")
+                st.success("Acta de entrega guardada correctamente en 'actas de entregas diligenciadas'.")
 
 if __name__ == "__main__":
     main()
