@@ -384,32 +384,31 @@ def main():
             st.session_state['num_paquetes'] = 1
 
         # Mostrar información del cliente y equipo antes del formulario
-        if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente and auto_equipo:
+        if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente:
             st.markdown(f"""
             <div style='background:#f7fafb; padding:1em; border-left:4px solid #1db6b6; border-radius:4px; margin-bottom:20px;'>
                 <p style='margin:0; font-weight:bold; color:#1db6b6;'>Información del proyecto</p>
                 <p style='margin:5px 0;'><b>Cliente:</b> {auto_cliente}</p>
-                <p style='margin:5px 0;'><b>Equipo:</b> {auto_equipo}</p>
+                <p style='margin:5px 0;'><b>Equipo:</b> {auto_equipo if auto_equipo and auto_equipo != "Si" and auto_equipo != "Sí" else ""}</p>
             </div>
             """, unsafe_allow_html=True)
 
         with st.form("dispatch_form"):
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
-            # Mostrar datos arrastrados de actas diligenciadas o del acta de entrega
-            nombre_proyecto = st.text_input("Nombre de proyecto", value=auto_equipo)
-            
-            # Encargado logística como selectbox con opciones específicas
-            encargado_logistica = st.selectbox(
-                "Encargado logística",
-                ["", "Angela", "Jhon", "Juan Rendon"]
-            )
-            
+
             # Encargado almacén como selectbox con solo Andrea Ochoa
             encargado_almacen = st.selectbox(
                 "Encargado almacén",
                 ["", "Andrea Ochoa"]
             )
             
+
+            # Encargado logística como selectbox con opciones específicas
+            encargado_logistica = st.selectbox(
+                "Encargado logística",
+                ["", "Angela", "Jhon", "Juan Rendon"]
+            )
+                       
             # Campo para firma de logística utilizando canvas
             st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
             firma_logistica = st_canvas(
@@ -461,7 +460,7 @@ def main():
             
             if not articulos_presentes:
                 st.warning("No se encontraron artículos con fotos diligenciadas para esta OP. No hay elementos para empacar.")
-                st.markdown("<hr>", unsafe_allow_html=True)
+                
             else:
                 st.info(f"Se encontraron {len(articulos_presentes)} artículos con fotos diligenciadas.")
                 articulos_seleccion = {}
@@ -482,14 +481,27 @@ def main():
             st.markdown("<hr>")
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             paquetes = []
+            
+            # Verificar si está ocurriendo un rerun por agregar guacal
+            if 'agregando_guacal' in st.session_state and st.session_state['agregando_guacal']:
+                st.session_state['agregando_guacal'] = False
+                st.experimental_rerun()
+                
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
                 desc = st.text_area(f"Descripción guacal {i+1}", key=f"desc_paquete_{i+1}")
                 fotos = st.file_uploader(f"Fotos guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 paquetes.append({"desc": desc, "fotos": fotos})
-            if st.form_submit_button("Agregar otro guacal"):
+                
+            agregar_guacal = st.form_submit_button("Agregar otro guacal")
+            if agregar_guacal:
                 st.session_state['num_paquetes'] += 1
-                st.experimental_rerun()
+                st.session_state['agregando_guacal'] = True
+                try:
+                    st.experimental_rerun()
+                except Exception as e:
+                    st.warning(f"Reiniciando interfaz para agregar un guacal... ({str(e)})")
+                    st.experimental_rerun()
 
             observaciones = st.text_area("Observaciones adicionales")
             submitted = st.form_submit_button("Guardar despacho")
