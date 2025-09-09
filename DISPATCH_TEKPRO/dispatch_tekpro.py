@@ -181,6 +181,9 @@ def enviar_correo(destinatario, asunto, mensaje):
         smtp_server = st.secrets.email_config.SMTP_SERVER
         smtp_port = st.secrets.email_config.SMTP_PORT
         
+        # Mostrar información de depuración (sin mostrar la contraseña)
+        st.info(f"Intentando enviar correo desde {correo_remitente} vía {smtp_server}:{smtp_port}")
+        
         # Crear mensaje
         msg = MIMEMultipart()
         msg['From'] = correo_remitente
@@ -191,12 +194,25 @@ def enviar_correo(destinatario, asunto, mensaje):
         msg.attach(MIMEText(mensaje, 'html'))
         
         # Iniciar sesión en el servidor SMTP y enviar el correo
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(correo_remitente, password)
-            server.send_message(msg)
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()  # Algunos servidores requieren un segundo EHLO después de STARTTLS
+                server.login(correo_remitente, password)
+                server.send_message(msg)
+            return True, "Correo enviado correctamente"
+        except smtplib.SMTPAuthenticationError:
+            return False, """Error de autenticación SMTP. Si estás usando Gmail, necesitas:
+            1. Habilitar la verificación en dos pasos en tu cuenta Google
+            2. Crear una 'Contraseña de aplicación' específica para esta aplicación
+            3. Usar esa contraseña en lugar de tu contraseña normal
+            
+            Puedes crear una contraseña de aplicación aquí:
+            https://myaccount.google.com/apppasswords"""
+        except smtplib.SMTPException as smtp_error:
+            return False, f"Error SMTP: {str(smtp_error)}"
         
-        return True, "Correo enviado correctamente"
     except Exception as e:
         return False, f"Error al enviar correo: {str(e)}"
 
