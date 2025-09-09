@@ -321,15 +321,7 @@ def main():
             ordenes_list if ordenes_list else ["No hay órdenes registradas"],
             key="orden_pedido_selectbox"
         )
-        if 'mostrar_nueva_op' not in st.session_state:
-            st.session_state['mostrar_nueva_op'] = False
-        if st.button("Agregar nueva OP"):
-            st.session_state['mostrar_nueva_op'] = True
-        nueva_op = ""
-        if st.session_state['mostrar_nueva_op']:
-            nueva_op = st.text_input("Escribe la nueva orden de pedido:", key="orden_pedido_nueva")
-            if nueva_op:
-                orden_pedido_val = nueva_op
+       
 
         # Variables para almacenar información de cliente, equipo y diseñador
         auto_cliente = ""
