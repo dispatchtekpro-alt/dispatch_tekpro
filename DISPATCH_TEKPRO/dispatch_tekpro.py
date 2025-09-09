@@ -1,4 +1,5 @@
 import streamlit as st
+
 # Incluir CSS corporativo Tekpro
 st.markdown('''
 <style>
@@ -523,7 +524,11 @@ def main():
             # Verificar si está ocurriendo un rerun por agregar guacal
             if 'agregando_guacal' in st.session_state and st.session_state['agregando_guacal']:
                 st.session_state['agregando_guacal'] = False
-                st.experimental_rerun()
+                try:
+                    st.rerun()
+                except Exception as e:
+                    st.warning(f"Error al reiniciar: {e}")
+                    pass
                 
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
@@ -536,10 +541,13 @@ def main():
                 st.session_state['num_paquetes'] += 1
                 st.session_state['agregando_guacal'] = True
                 try:
-                    st.experimental_rerun()
+                    st.rerun()
                 except Exception as e:
                     st.warning(f"Reiniciando interfaz para agregar un guacal... ({str(e)})")
-                    st.experimental_rerun()
+                    try:
+                        st.rerun()
+                    except:
+                        st.error("No se pudo reiniciar la aplicación. Intenta recargar la página.")
 
             observaciones = st.text_area("Observaciones adicionales")
             submitted = st.form_submit_button("Guardar despacho")
