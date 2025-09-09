@@ -61,6 +61,9 @@ from google.oauth2.service_account import Credentials
 import io
 import os
 from streamlit_drawable_canvas import st_canvas
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 # Configuración
@@ -168,6 +171,34 @@ def upload_image_to_drive_oauth(file, filename, folder_id):
 def write_link_to_sheet(sheet_client, file_name, worksheet_name, row):
     sheet = sheet_client.open(file_name).worksheet(worksheet_name)
     sheet.append_row(row)
+
+# Función para enviar correo electrónico
+def enviar_correo(destinatario, asunto, mensaje):
+    try:
+        # Obtener credenciales del correo desde los secretos
+        correo_remitente = st.secrets.email_config.EMAIL
+        password = st.secrets.email_config.PASSWORD
+        smtp_server = st.secrets.email_config.SMTP_SERVER
+        smtp_port = st.secrets.email_config.SMTP_PORT
+        
+        # Crear mensaje
+        msg = MIMEMultipart()
+        msg['From'] = correo_remitente
+        msg['To'] = destinatario
+        msg['Subject'] = asunto
+        
+        # Agregar cuerpo del mensaje
+        msg.attach(MIMEText(mensaje, 'html'))
+        
+        # Iniciar sesión en el servidor SMTP y enviar el correo
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(correo_remitente, password)
+            server.send_message(msg)
+        
+        return True, "Correo enviado correctamente"
+    except Exception as e:
+        return False, f"Error al enviar correo: {str(e)}"
 
 def main():
     # Importar datetime al inicio de la función main
@@ -1187,6 +1218,49 @@ def main():
                 
                 sheet.append_row(row)
                 st.success("Acta de entrega guardada correctamente en 'actas de entregas diligenciadas'.")
+
+                # Sección para enviar correo de notificación
+                st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
+                st.subheader("Enviar notificación por correo")
+                
+                with st.expander("Notificar completado de acta de entrega", expanded=True):
+                    # Destinatario fijo
+                    email_destinatario = "baenavictormanuel@gmail.com"
+                    
+                    # Asunto y mensaje predeterminados
+                    asunto = f"Acta de entrega completada - OP: {op}"
+                    mensaje = f"""
+                    <html>
+                    <body style="font-family: Arial, sans-serif; color: #333;">
+                        <div style="background-color: #f7fafb; padding: 20px; border-left: 5px solid #1db6b6;">
+                            <h2 style="color: #1db6b6;">Notificación de Acta de Entrega</h2>
+                            <p>Se ha completado el acta de entrega con la siguiente información:</p>
+                            <ul>
+                                <li><strong>OP:</strong> {op}</li>
+                                <li><strong>Cliente:</strong> {cliente}</li>
+                                <li><strong>Equipo:</strong> {equipo}</li>
+                                <li><strong>Item:</strong> {item}</li>
+                                <li><strong>Fecha:</strong> {fecha}</li>
+                            </ul>
+                            <p>El acta fue realizada por: <strong>{lider_inspeccion}</strong></p>
+                            <p>Observaciones generales: {observaciones_generales}</p>
+                            <p>Esta es una notificación automática del sistema Dispatch Tekpro.</p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    
+                    # Mostrar vista previa del mensaje
+                    with st.expander("Vista previa del mensaje", expanded=False):
+                        st.markdown(mensaje, unsafe_allow_html=True)
+                    
+                    # Botón para enviar correo
+                    if st.button("Enviar notificación"):
+                        exito, mensaje_resultado = enviar_correo(email_destinatario, asunto, mensaje)
+                        if exito:
+                            st.success(f"Correo enviado correctamente a {email_destinatario}")
+                        else:
+                            st.error(mensaje_resultado)
 
 if __name__ == "__main__":
     main()
