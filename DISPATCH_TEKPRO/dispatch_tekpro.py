@@ -478,7 +478,7 @@ def main():
                         if desc_otros and desc_otros.strip():
                             st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
-            st.markdown("<hr>")
+            
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             paquetes = []
             
