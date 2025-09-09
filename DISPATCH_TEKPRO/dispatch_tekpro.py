@@ -60,6 +60,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2.service_account import Credentials
 import io
 import os
+from streamlit_drawable_canvas import st_canvas
 
 
 # Configuración
@@ -296,6 +297,63 @@ def main():
             if nueva_op:
                 orden_pedido_val = nueva_op
 
+        # Variables para almacenar información de cliente, equipo y diseñador
+        auto_cliente = ""
+        auto_equipo = ""
+        auto_disenador = ""
+        
+        # Intentar obtener información de "actas de entregas diligenciadas" primero
+        try:
+            diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
+            diligenciadas_rows = diligenciadas_sheet.get_all_values()
+            if diligenciadas_rows:
+                headers_dili = [h.strip().lower() for h in diligenciadas_rows[0]]
+                cliente_idx = None
+                equipo_idx = None
+                disenador_idx = None
+                op_idx = None
+                
+                # Encontrar índices de las columnas relevantes
+                for idx, h in enumerate(headers_dili):
+                    if "cliente dili" in h:
+                        cliente_idx = idx
+                    elif "equipo dili" in h:
+                        equipo_idx = idx
+                    elif "diseñador dili" in h:
+                        disenador_idx = idx
+                    elif "op dili" in h:
+                        op_idx = idx
+                
+                # Buscar si la OP actual está en las diligenciadas
+                if op_idx is not None and orden_pedido_val != "No hay órdenes registradas":
+                    for row in diligenciadas_rows[1:]:
+                        if len(row) > op_idx and row[op_idx].strip() == orden_pedido_val:
+                            # Si encontramos la OP, obtenemos los datos
+                            if cliente_idx is not None and len(row) > cliente_idx:
+                                auto_cliente = row[cliente_idx]
+                            if equipo_idx is not None and len(row) > equipo_idx:
+                                auto_equipo = row[equipo_idx]
+                            if disenador_idx is not None and len(row) > disenador_idx:
+                                auto_disenador = row[disenador_idx]
+                            break
+        except Exception as e:
+            st.warning(f"No se pudo obtener información de actas diligenciadas: {e}")
+            
+        # Si no se encontraron datos en diligenciadas, intentar obtenerlos de ordenes_existentes
+        if (not auto_cliente or not auto_equipo) and orden_pedido_val in ordenes_existentes:
+            row = ordenes_existentes[orden_pedido_val]
+            headers = acta_rows[0]
+            
+            # Buscar índices de cliente y equipo en acta de entrega
+            cliente_idx = next((idx for idx, h in enumerate(headers) if h.strip().lower() == "cliente"), None)
+            equipo_idx = next((idx for idx, h in enumerate(headers) if h.strip().lower() == "equipo"), None)
+            
+            # Obtener datos si existen y no se obtuvieron antes
+            if not auto_cliente and cliente_idx is not None and len(row) > cliente_idx:
+                auto_cliente = row[cliente_idx]
+            if not auto_equipo and equipo_idx is not None and len(row) > equipo_idx:
+                auto_equipo = row[equipo_idx]
+                
         # Obtener solo los artículos presentes usando encabezados estándar
         articulos_presentes = []
         if orden_pedido_val and orden_pedido_val in ordenes_existentes:
@@ -341,12 +399,35 @@ def main():
 
         with st.form("dispatch_form"):
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
-            nombre_proyecto = st.text_input("Nombre de proyecto")
-            encargado_ensamblador = st.text_input("Encargado ensamblador")
+            # Mostrar datos arrastrados de actas diligenciadas o del acta de entrega
+            nombre_proyecto = st.text_input("Nombre de proyecto", value=auto_equipo)
+            
+            # Encargado logística como selectbox con opciones específicas
+            encargado_logistica = st.selectbox(
+                "Encargado logística",
+                ["", "Angela", "Jhon", "Juan Rendon"]
+            )
+            
+            # Encargado almacén como selectbox con solo Andrea Ochoa
             encargado_almacen = st.selectbox(
                 "Encargado almacén",
-                ["", "Andrea Ochoa", "Juan Pablo"]
+                ["", "Andrea Ochoa"]
             )
+            
+            # Campo para firma de logística utilizando canvas
+            st.markdown("<b>Firma encargado logística:</b>", unsafe_allow_html=True)
+            firma_logistica = st_canvas(
+                fill_color="rgba(255, 165, 0, 0.3)",
+                stroke_width=2,
+                stroke_color="#1db6b6",
+                background_color="#f7fafb",
+                height=150,
+                width=400,
+                drawing_mode="freedraw",
+                key="firma_canvas"
+            )
+            
+            # Usar diseñador de las actas si está disponible
             encargado_ingenieria = st.selectbox(
                 "Encargado ingeniería y diseño",
                 [
@@ -358,7 +439,26 @@ def main():
                     "Victor Manuel Baena",
                     "Diomer Arbelaez",
                     "Jose Perez"
-                ]
+                ],
+                index=([
+                    "",
+                    "Alejandro Diaz",
+                    "Juan David Martinez",
+                    "Juan Andres Zapata",
+                    "Daniel Valbuena",
+                    "Victor Manuel Baena",
+                    "Diomer Arbelaez",
+                    "Jose Perez"
+                ].index(auto_disenador) if auto_disenador in [
+                    "",
+                    "Alejandro Diaz",
+                    "Juan David Martinez",
+                    "Juan Andres Zapata",
+                    "Daniel Valbuena",
+                    "Victor Manuel Baena",
+                    "Diomer Arbelaez",
+                    "Jose Perez"
+                ] else 0)
             )
 
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
@@ -380,11 +480,11 @@ def main():
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             paquetes = []
             for i in range(st.session_state['num_paquetes']):
-                st.markdown(f"<b>Paquete {i+1}</b>", unsafe_allow_html=True)
-                desc = st.text_area(f"Descripción paquete {i+1}", key=f"desc_paquete_{i+1}")
-                fotos = st.file_uploader(f"Fotos paquete {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
+                st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
+                desc = st.text_area(f"Descripción guacal {i+1}", key=f"desc_paquete_{i+1}")
+                fotos = st.file_uploader(f"Fotos guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 paquetes.append({"desc": desc, "fotos": fotos})
-            if st.form_submit_button("Agregar otro paquete"):
+            if st.form_submit_button("Agregar otro guacal"):
                 st.session_state['num_paquetes'] += 1
                 st.experimental_rerun()
 
@@ -395,37 +495,81 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
+                # Si encontramos la OP, añadimos los datos según el orden de encabezados definido:
+                # Op, Fecha, Cliente, Equipo, Encargado almacén, Encargado ingeniería y diseño, Encargado logística,
+                # Firma encargado logística, Observaciones adicionales, Artículos enviados, Artículos no enviados, etc.
                 enviados = [art for art, v in articulos_seleccion.items() if v]
                 no_enviados = [art for art, v in articulos_seleccion.items() if not v]
+                
+                # Estructura del array según los encabezados de la hoja:
                 row = [
-                    str(fecha),
-                    nombre_proyecto,
-                    orden_pedido_val,
-                    encargado_ensamblador,
-                    encargado_almacen,
-                    encargado_ingenieria,
-                    ", ".join(enviados),
-                    ", ".join(no_enviados)
+                    orden_pedido_val,                # Op
+                    str(fecha),                      # Fecha
+                    auto_cliente,                    # Cliente
+                    auto_equipo,                     # Equipo
+                    encargado_almacen,               # Encargado almacén
+                    encargado_ingenieria,            # Encargado ingeniería y diseño
+                    encargado_logistica,             # Encargado logística
+                    "",                              # Firma encargado logística (vacío por ahora)
+                    observaciones,                   # Observaciones adicionales
+                    ", ".join(enviados),             # Artículos enviados
+                    ", ".join(no_enviados),          # Artículos no enviados
                 ]
+                # Procesar firma si está disponible
+                firma_imagen = None
+                if firma_logistica.image_data is not None:
+                    import base64
+                    from PIL import Image
+                    import io
+                    
+                    # Convertir la imagen a bytes para subirla
+                    firma_image = Image.fromarray(firma_logistica.image_data.astype('uint8'))
+                    buffer = io.BytesIO()
+                    firma_image.save(buffer, format="PNG")
+                    buffer.seek(0)
+                    
+                    # Subir la firma a Google Drive
+                    try:
+                        image_filename = f"Firma_{orden_pedido_val}.png"
+                        public_url = upload_image_to_drive_oauth(buffer, image_filename, folder_id)
+                        row[7] = public_url  # Actualizar la posición de la firma en el array
+                        st.success("Firma subida correctamente")
+                    except Exception as upload_error:
+                        st.error(f"Error al subir la firma: {str(upload_error)}")
+                
+                # Completar el arreglo con guacales (para mantener la estructura de encabezados)
                 for idx, paquete in enumerate(paquetes, start=1):
-                    row.append(paquete["desc"])
+                    # Agregar descripción del guacal
+                    row.append(paquete["desc"])  # Descripción Guacal n
+                    
+                    # Procesar y agregar fotos del guacal
                     enlaces = []
                     if paquete["fotos"]:
                         for n, foto in enumerate(paquete["fotos"], start=1):
                             try:
-                                image_filename = f"Paquete_{orden_pedido_val}_{idx}_{n}.jpg"
+                                image_filename = f"Guacal_{orden_pedido_val}_{idx}_{n}.jpg"
                                 file_stream = io.BytesIO(foto.read())
                                 public_url = upload_image_to_drive_oauth(file_stream, image_filename, folder_id)
                                 enlaces.append(public_url)
-                                st.success(f"Foto {n} de paquete {idx} subida correctamente")
+                                st.success(f"Foto {n} de guacal {idx} subida correctamente")
                             except Exception as upload_error:
-                                st.error(f"Error al subir la foto {n} de paquete {idx}: {str(upload_error)}")
+                                st.error(f"Error al subir la foto {n} de guacal {idx}: {str(upload_error)}")
+                        
+                        # Agregar enlaces de fotos
                         if enlaces:
-                            row.append(", ".join(enlaces))
+                            row.append(", ".join(enlaces))  # Fotos Guacal n
                         else:
                             row.append("Error al subir foto")
                     else:
                         row.append("Sin foto")
+                
+                # Completar con guacales vacíos hasta llegar a 7 (si es necesario)
+                remaining_guacales = 7 - len(paquetes)
+                for _ in range(remaining_guacales):
+                    row.append("")  # Descripción Guacal vacío
+                    row.append("")  # Fotos Guacal vacío
+                
+                # Escribir fila completa en la hoja
                 write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
                 st.success("Despacho guardado correctamente.")
                 st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
