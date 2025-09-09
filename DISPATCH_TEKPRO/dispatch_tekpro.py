@@ -218,6 +218,27 @@ def main():
                 "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
                 "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "recibe", "fecha de entrega"
             ]
+            
+            # Obtener OPs ya diligenciadas para filtrarlas
+            ops_diligenciadas = set()
+            try:
+                diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
+                diligenciadas_rows = diligenciadas_sheet.get_all_values()
+                if diligenciadas_rows:
+                    diligenciadas_headers = [h.strip().lower() for h in diligenciadas_rows[0]]
+                    op_dili_idx = None
+                    for idx, h in enumerate(diligenciadas_headers):
+                        if "op dili" in h:
+                            op_dili_idx = idx
+                            break
+                    
+                    if op_dili_idx is not None:
+                        for row in diligenciadas_rows[1:]:
+                            if len(row) > op_dili_idx and row[op_dili_idx].strip():
+                                ops_diligenciadas.add(row[op_dili_idx].strip())
+            except Exception as e:
+                st.warning(f"No se pudieron cargar las actas de entrega diligenciadas: {e}")
+            
             # Buscar índice de OP (exacto)
             op_idx = None
             for idx, h in enumerate(headers):
@@ -233,19 +254,25 @@ def main():
             for row in acta_rows[1:]:
                 if op_idx is not None and len(row) > op_idx:
                     orden = row[op_idx]
-                    # Verificar si la OP está completa
-                    completa = False
-                    for campo in campos_relevantes:
-                        if campo in headers:
-                            idx_campo = headers.index(campo)
-                            if idx_campo < len(row):
-                                valor = row[idx_campo]
-                                if valor and str(valor).strip() not in ["", "0", "no", "No"]:
-                                    completa = True
-                                    break
-                    if completa:
-                        ordenes_existentes[orden] = row
-                        ordenes_list.append(orden)
+                    # Condicional explícito para filtrar las OPs
+                    # If: Si está en "actas de entregas diligenciadas", que no aparezca 
+                    if orden in ops_diligenciadas:
+                        # No añadir a opciones (se omite)
+                        pass
+                    # Else: Si está en "acta de entrega" y cumple los requisitos, que aparezca
+                    else:
+                        completa = False
+                        for campo in campos_relevantes:
+                            if campo in headers:
+                                idx_campo = headers.index(campo)
+                                if idx_campo < len(row):
+                                    valor = row[idx_campo]
+                                    if valor and str(valor).strip() not in ["", "0", "no", "No"]:
+                                        completa = True
+                                        break
+                        if completa:
+                            ordenes_existentes[orden] = row
+                            ordenes_list.append(orden)
         except Exception:
             ordenes_existentes = {}
             ordenes_list = []
@@ -433,6 +460,28 @@ def main():
                 
                 sheet = sheet_client.open(file_name).worksheet(worksheet_name)
                 all_rows = sheet.get_all_values()
+                
+                # Obtener OPs ya diligenciadas para filtrarlas
+                ops_diligenciadas = set()
+                try:
+                    diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
+                    diligenciadas_rows = diligenciadas_sheet.get_all_values()
+                    if diligenciadas_rows:
+                        diligenciadas_headers = [h.strip().lower() for h in diligenciadas_rows[0]]
+                        op_dili_idx = None
+                        for idx, h in enumerate(diligenciadas_headers):
+                            if "op dili" in h:
+                                op_dili_idx = idx
+                                break
+                        
+                        if op_dili_idx is not None:
+                            for row in diligenciadas_rows[1:]:
+                                if len(row) > op_dili_idx and row[op_dili_idx].strip():
+                                    ops_diligenciadas.add(row[op_dili_idx].strip())
+                except Exception as e:
+                    st.warning(f"No se pudieron cargar las actas de entrega diligenciadas: {e}")
+                
+                # Condicional más explícito siguiendo el patrón solicitado
                 if all_rows:
                     headers = [h.strip().lower() for h in all_rows[0]]
                     op_idx = headers.index("op") if "op" in headers else None
@@ -440,8 +489,14 @@ def main():
                         if op_idx is not None and len(row) > op_idx:
                             op_val = row[op_idx].strip()
                             if op_val:
-                                op_options.append(op_val)
-                                op_to_row[op_val] = row
+                                # If: Si está en "actas de entregas diligenciadas", que no aparezca en la barra
+                                if op_val in ops_diligenciadas:
+                                    # No añadir a opciones (se omite)
+                                    pass
+                                # Else: Si está en "acta de entrega", que aparezca en la barra
+                                else:
+                                    op_options.append(op_val)
+                                    op_to_row[op_val] = row
             except Exception as e:
                 st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
                 pass
