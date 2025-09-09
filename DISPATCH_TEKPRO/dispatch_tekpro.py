@@ -347,28 +347,37 @@ def main():
                 disenador_idx = None
                 op_idx = None
                 
-                # Encontrar índices de las columnas relevantes
+                # Encontrar índices de las columnas relevantes y mostrar para depuración
+                st.write("Headers en diligenciadas:", headers_dili)
                 for idx, h in enumerate(headers_dili):
                     if "cliente dili" in h:
                         cliente_idx = idx
+                        st.write(f"Índice cliente encontrado: {idx} - {h}")
                     elif "equipo dili" in h:
                         equipo_idx = idx
+                        st.write(f"Índice equipo encontrado: {idx} - {h}")
                     elif "diseñador dili" in h:
                         disenador_idx = idx
+                        st.write(f"Índice diseñador encontrado: {idx} - {h}")
                     elif "op dili" in h:
                         op_idx = idx
+                        st.write(f"Índice OP encontrado: {idx} - {h}")
                 
                 # Buscar si la OP actual está en las diligenciadas
                 if op_idx is not None and orden_pedido_val != "No hay órdenes registradas":
                     for row in diligenciadas_rows[1:]:
                         if len(row) > op_idx and row[op_idx].strip() == orden_pedido_val:
-                            # Si encontramos la OP, obtenemos los datos
+                            # Si encontramos la OP, obtenemos los datos y mostramos toda la fila para depuración
+                            st.write(f"OP encontrada: {orden_pedido_val}, Fila:", row)
                             if cliente_idx is not None and len(row) > cliente_idx:
                                 auto_cliente = row[cliente_idx]
+                                st.info(f"Cliente extraído: '{auto_cliente}'")
                             if equipo_idx is not None and len(row) > equipo_idx:
                                 auto_equipo = row[equipo_idx]
+                                st.info(f"Equipo extraído: '{auto_equipo}'")
                             if disenador_idx is not None and len(row) > disenador_idx:
                                 auto_disenador = row[disenador_idx]
+                                st.info(f"Diseñador extraído: '{auto_disenador}'")
                             break
         except Exception as e:
             st.warning(f"No se pudo obtener información de actas diligenciadas: {e}")
@@ -432,11 +441,12 @@ def main():
 
         # Mostrar información del cliente y equipo antes del formulario
         if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente:
+            # Añadir depuración para ver el valor del equipo
             st.markdown(f"""
             <div style='background:#f7fafb; padding:1em; border-left:4px solid #1db6b6; border-radius:4px; margin-bottom:20px;'>
                 <p style='margin:0; font-weight:bold; color:#1db6b6;'>Información del proyecto</p>
                 <p style='margin:5px 0;'><b>Cliente:</b> {auto_cliente}</p>
-                <p style='margin:5px 0;'><b>Equipo:</b> {auto_equipo if auto_equipo and auto_equipo != "Si" and auto_equipo != "Sí" else ""}</p>
+                <p style='margin:5px 0;'><b>Equipo:</b> {auto_equipo}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1118,7 +1128,7 @@ def main():
             # La notificación por correo se incluirá en el formulario como un checkbox
             enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
             if enviar_notificacion:
-                st.markdown("<small>Se enviará un correo automático a baenavictormanuel@gmail.com notificando del acta completada.</small>", unsafe_allow_html=True)
+                st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
 
             submitted = st.form_submit_button("Guardar acta de entrega")
 
@@ -1243,7 +1253,7 @@ def main():
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
                     try:
-                        email_destinatario = "baenavictormanuel@gmail.com"
+                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
                         asunto = f"Acta de entrega completada - OP: {op}"
                         mensaje = f"""
                         <html>
