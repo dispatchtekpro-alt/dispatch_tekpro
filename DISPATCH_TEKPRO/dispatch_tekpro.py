@@ -1,5 +1,4 @@
 import streamlit as st
-
 # Incluir CSS corporativo Tekpro
 st.markdown('''
 <style>
@@ -498,10 +497,10 @@ def main():
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
             
             if not articulos_presentes:
-                st.warning("No se encontraron artículos con fotos diligenciadas para esta OP. No hay elementos para empacar.")
+                st.warning("No se encontraron artículos. No hay elementos para empacar.")
                 
             else:
-                st.info(f"Se encontraron {len(articulos_presentes)} artículos con fotos diligenciadas.")
+                st.info(f"Se encontraron {len(articulos_presentes)} artículos .")
                 articulos_seleccion = {}
                 for art in articulos_presentes:
                     articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
