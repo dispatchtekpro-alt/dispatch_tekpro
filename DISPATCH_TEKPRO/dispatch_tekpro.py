@@ -326,48 +326,72 @@ def main():
         except Exception as e:
             st.warning(f"No se pudo obtener información de actas diligenciadas: {e}")
             
-            # No es necesario buscar en actas de entrega porque solo usamos diligenciadas        # Obtener solo los artículos presentes usando encabezados estándar
+            # No es necesario buscar en actas de entrega porque solo usamos diligenciadas        # Obtener solo los artículos que tienen fotos diligenciadas
         articulos_presentes = []
         if orden_pedido_val and orden_pedido_val in ordenes_existentes:
             row = ordenes_existentes[orden_pedido_val]
             headers = diligenciadas_headers
-            # Mapeo de nombre de artículo a columna de cantidad
-            mapeo_articulos = {
-                "Motores": "cantidad motores",
-                "Reductores": "cantidad reductores",
-                "Bombas": "cantidad bombas",
-                "Turbina": "voltaje turbina",
-                "Quemador": "voltaje quemador",
-                "Bomba de vacío": "voltaje bomba de vacio",
-                "Compresor": "voltaje compresor",
-                "Manómetros": "cantidad manometros",
-                "Vacuómetros": "cantidad vacuometros",
-                "Válvulas": "cantidad valvulas",
-                "Mangueras": "cantidad mangueras",
-                "Boquillas": "cantidad boquillas",
-                "Reguladores aire/gas": "cantidad reguladores aire/gas",
-                "Piñón 1": "tension piñon 1",
-                "Piñón 2": "tension piñon 2",
-                "Polea 1": "tension polea 1",
-                "Polea 2": "tension polea 2",
-                "Gabinete eléctrico": "cantidad gabinete electrico",
-                "Arrancadores": "cantidad arrancadores",
-                "Control de nivel": "cantidad control de nivel",
-                "Variadores de velocidad": "cantidad variadores de velociad",
-                "Sensores de temperatura": "cantidad sensores de temperatura",
-                "Toma corriente": "cantidad toma corriente",
-                "Otros elementos": "otros elementos"
+            
+            # Mapeo de nombre de artículo a columna de foto correspondiente
+            mapeo_articulos_fotos = {
+                "Motores": "fotos motores dili",
+                "Reductores": "fotos reductores dili",
+                "Bombas": "fotos bombas dili",
+                "Turbina": "foto turbina dili",
+                "Quemador": "foto quemador dili",
+                "Bomba de vacío": "foto bomba de vacio dili",
+                "Compresor": "foto compresor dili",
+                "Manómetros": "foto manometros dili",
+                "Vacuómetros": "foto vacuometros dili",
+                "Válvulas": "foto valvulas dili",
+                "Mangueras": "foto mangueras dili",
+                "Boquillas": "foto boquillas dili",
+                "Reguladores aire/gas": "foto reguladores dili",
+                "Tuberia": "foto tuberia dili",
+                "Cables": "foto cables dili",
+                "Tornillería": "foto tornilleria dili",
+                "Curvas": "foto curvas dili",
+                "Piñón 1": "foto piñon 1 dili",
+                "Piñón 2": "foto piñon 2 dili",
+                "Polea 1": "foto polea 1 dili",
+                "Polea 2": "foto polea 2 dili",
+                "Gabinete eléctrico": "foto gabinete dili",
+                "Arrancadores": "foto arrancadores dili",
+                "Control de nivel": "foto control de nivel dili",
+                "Variadores de velocidad": "foto variadores de velocidad dili",
+                "Sensores de temperatura": "foto sensores de temperatura dili",
+                "Toma corriente": "foto toma corrientes dili",
+                "Otros elementos": "fotos otros elementos dili"
             }
-            for art, col in mapeo_articulos.items():
-                if col in headers:
-                    idx = headers.index(col)
-                    valor = row[idx] if idx < len(row) else ""
-                    if valor and valor.strip().lower() not in ["", "0", "no"]:
-                        articulos_presentes.append(art)
+            
+            # Verificar si el artículo tiene foto diligenciada
+            for art, col_foto in mapeo_articulos_fotos.items():
+                try:
+                    if col_foto in headers:
+                        idx = headers.index(col_foto)
+                        valor = row[idx] if idx < len(row) else ""
+                        if valor and valor.strip().lower() not in ["", "sin foto", "error al subir foto"]:
+                            articulos_presentes.append(art)
+                except Exception as e:
+                    st.warning(f"Error al procesar artículo {art}: {e}")
+            
+            # Mostrar mensaje si no hay artículos con fotos
+            if not articulos_presentes:
+                st.warning("No se encontraron artículos con fotos diligenciadas en esta orden de pedido.")
 
         # Estado dinámico para número de paquetes
         if 'num_paquetes' not in st.session_state:
             st.session_state['num_paquetes'] = 1
+
+        # Mostrar información del cliente y equipo antes del formulario
+        if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente and auto_equipo:
+            st.markdown(f"""
+            <div style='background:#f7fafb; padding:1em; border-left:4px solid #1db6b6; border-radius:4px; margin-bottom:20px;'>
+                <p style='margin:0; font-weight:bold; color:#1db6b6;'>Información del proyecto</p>
+                <p style='margin:5px 0;'><b>Cliente:</b> {auto_cliente}</p>
+                <p style='margin:5px 0;'><b>Equipo:</b> {auto_equipo}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
         with st.form("dispatch_form"):
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
@@ -434,19 +458,26 @@ def main():
             )
 
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
-            articulos_seleccion = {}
-            for art in articulos_presentes:
-                articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
-                # Si es 'Otros elementos', mostrar la descripción registrada en el acta justo debajo
-                if art.lower() == "otros elementos":
-                    desc_otros = ""
-                    # Buscar columna de descripción de otros elementos
-                    for idx, h in enumerate(headers):
-                        if "otros elementos" in h.lower():
-                            desc_otros = row[idx] if idx < len(row) else ""
-                            break
-                    if desc_otros and desc_otros.strip():
-                        st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
+            
+            if not articulos_presentes:
+                st.warning("No se encontraron artículos con fotos diligenciadas para esta OP. No hay elementos para empacar.")
+                st.markdown("<hr>", unsafe_allow_html=True)
+            else:
+                st.info(f"Se encontraron {len(articulos_presentes)} artículos con fotos diligenciadas.")
+                articulos_seleccion = {}
+                for art in articulos_presentes:
+                    articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
+                    
+                    # Si es 'Otros elementos', mostrar la descripción registrada en el acta justo debajo
+                    if art.lower() == "otros elementos":
+                        desc_otros = ""
+                        # Buscar columna de descripción de otros elementos
+                        for idx, h in enumerate(diligenciadas_headers):
+                            if "descripcion otros elementos" in h.lower():
+                                desc_otros = row[idx] if idx < len(row) else ""
+                                break
+                        if desc_otros and desc_otros.strip():
+                            st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
             st.markdown("<hr>")
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
