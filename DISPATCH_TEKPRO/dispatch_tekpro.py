@@ -895,8 +895,14 @@ def main():
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
             observaciones_generales = st.text_area("observciones generales")
 
-            lider_inspeccion = st.text_input("lider de inspeccion")
-            encargado_soldador = st.text_input("Encargado soldador")
+            lider_inspeccion = st.selectbox(
+                "lider de inspeccion",
+                ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"]
+            )
+            encargado_soldador = st.selectbox(
+                "encargado de soldadura",
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Katerine Padilla"]
+            )
             disenador = st.selectbox(
                 "diseñador",
                 ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
