@@ -1098,6 +1098,11 @@ def main():
                 ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
             )
             fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+            
+            # La notificación por correo se incluirá en el formulario como un checkbox
+            enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
+            if enviar_notificacion:
+                st.markdown("<small>Se enviará un correo automático a baenavictormanuel@gmail.com notificando del acta completada.</small>", unsafe_allow_html=True)
 
             submitted = st.form_submit_button("Guardar acta de entrega")
 
@@ -1218,49 +1223,40 @@ def main():
                 
                 sheet.append_row(row)
                 st.success("Acta de entrega guardada correctamente en 'actas de entregas diligenciadas'.")
-
-                # Sección para enviar correo de notificación
-                st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
-                st.subheader("Enviar notificación por correo")
                 
-                with st.expander("Notificar completado de acta de entrega", expanded=True):
-                    # Destinatario fijo
-                    email_destinatario = "baenavictormanuel@gmail.com"
-                    
-                    # Asunto y mensaje predeterminados
-                    asunto = f"Acta de entrega completada - OP: {op}"
-                    mensaje = f"""
-                    <html>
-                    <body style="font-family: Arial, sans-serif; color: #333;">
-                        <div style="background-color: #f7fafb; padding: 20px; border-left: 5px solid #1db6b6;">
-                            <h2 style="color: #1db6b6;">Notificación de Acta de Entrega</h2>
-                            <p>Se ha completado el acta de entrega con la siguiente información:</p>
-                            <ul>
-                                <li><strong>OP:</strong> {op}</li>
-                                <li><strong>Cliente:</strong> {cliente}</li>
-                                <li><strong>Equipo:</strong> {equipo}</li>
-                                <li><strong>Item:</strong> {item}</li>
-                                <li><strong>Fecha:</strong> {fecha}</li>
-                            </ul>
-                            <p>El acta fue realizada por: <strong>{lider_inspeccion}</strong></p>
-                            <p>Observaciones generales: {observaciones_generales}</p>
-                            <p>Esta es una notificación automática del sistema Dispatch Tekpro.</p>
-                        </div>
-                    </body>
-                    </html>
-                    """
-                    
-                    # Mostrar vista previa del mensaje
-                    with st.expander("Vista previa del mensaje", expanded=False):
-                        st.markdown(mensaje, unsafe_allow_html=True)
-                    
-                    # Botón para enviar correo
-                    if st.button("Enviar notificación"):
+                # Envío automático de correo electrónico si el checkbox está seleccionado
+                if enviar_notificacion:
+                    try:
+                        email_destinatario = "baenavictormanuel@gmail.com"
+                        asunto = f"Acta de entrega completada - OP: {op}"
+                        mensaje = f"""
+                        <html>
+                        <body>
+                            <div style="border-left: 5px solid #1db6b6; padding-left: 15px;">
+                                <h2 style="color: #1db6b6;">Notificación de Acta de Entrega</h2>
+                                <p>Se ha completado el acta de entrega con la siguiente información:</p>
+                                <ul>
+                                    <li><strong>OP:</strong> {op}</li>
+                                    <li><strong>Cliente:</strong> {cliente}</li>
+                                    <li><strong>Equipo:</strong> {equipo}</li>
+                                    <li><strong>Item:</strong> {item}</li>
+                                    <li><strong>Fecha:</strong> {fecha}</li>
+                                </ul>
+                                <p>El acta fue realizada por: <strong>{lider_inspeccion}</strong></p>
+                                <p>Observaciones generales: {observaciones_generales}</p>
+                                <p>Esta es una notificación automática del sistema Dispatch Tekpro.</p>
+                            </div>
+                        </body>
+                        </html>
+                        """
+                        
                         exito, mensaje_resultado = enviar_correo(email_destinatario, asunto, mensaje)
                         if exito:
-                            st.success(f"Correo enviado correctamente a {email_destinatario}")
+                            st.success(f"Se ha enviado una notificación por correo a {email_destinatario}")
                         else:
-                            st.error(mensaje_resultado)
+                            st.warning(f"No se pudo enviar la notificación por correo: {mensaje_resultado}")
+                    except Exception as e:
+                        st.warning(f"Error al enviar correo: {str(e)}")
 
 if __name__ == "__main__":
     main()
