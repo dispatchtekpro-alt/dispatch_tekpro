@@ -248,32 +248,19 @@ def main():
                     break
             ordenes_existentes = {}
             ordenes_list = []
-            # Definir los campos relevantes para considerar una OP como completa (igual que en ACTA DE ENTREGA)
-            campos_relevantes = [
-                "cantidad motores", "cantidad bombas", "cantidad reductores", "cantidad manometros", "cantidad valvulas", "cantidad mangueras", "cantidad boquillas", "cantidad gabinete electrico", "cantidad arrancadores", "cantidad control de nivel", "cantidad variadores de velociad", "cantidad sensores de temperatura", "cantidad toma corriente"
-            ]
-            for row in acta_rows[1:]:
-                if op_idx is not None and len(row) > op_idx:
-                    orden = row[op_idx]
-                    # Condicional explícito para filtrar las OPs
-                    # If: Si está en "actas de entregas diligenciadas", que no aparezca 
-                    if orden in ops_diligenciadas:
-                        # No añadir a opciones (se omite)
-                        pass
-                    # Else: Si está en "acta de entrega" y cumple los requisitos, que aparezca
-                    else:
-                        completa = False
-                        for campo in campos_relevantes:
-                            if campo in headers:
-                                idx_campo = headers.index(campo)
-                                if idx_campo < len(row):
-                                    valor = row[idx_campo]
-                                    if valor and str(valor).strip() not in ["", "0", "no", "No"]:
-                                        completa = True
-                                        break
-                        if completa:
-                            ordenes_existentes[orden] = row
-                            ordenes_list.append(orden)
+            # Solo usar los datos de "actas de entregas diligenciadas"
+            try:
+                # Recopilar datos solo de OPs diligenciadas
+                for row in diligenciadas_rows[1:]:
+                    if op_dili_idx is not None and len(row) > op_dili_idx and row[op_dili_idx].strip():
+                        orden_dili = row[op_dili_idx].strip()
+                        ordenes_existentes[orden_dili] = row  # Agregar a las existentes
+                        ordenes_list.append(orden_dili)       # Agregar a la lista de selección
+                
+                if not ordenes_list:
+                    st.warning("No hay órdenes de pedido en 'actas de entregas diligenciadas'.")
+            except Exception as e:
+                st.warning(f"Error al procesar actas diligenciadas para mostrar OPs: {e}")
         except Exception:
             ordenes_existentes = {}
             ordenes_list = []
@@ -339,26 +326,11 @@ def main():
         except Exception as e:
             st.warning(f"No se pudo obtener información de actas diligenciadas: {e}")
             
-        # Si no se encontraron datos en diligenciadas, intentar obtenerlos de ordenes_existentes
-        if (not auto_cliente or not auto_equipo) and orden_pedido_val in ordenes_existentes:
-            row = ordenes_existentes[orden_pedido_val]
-            headers = acta_rows[0]
-            
-            # Buscar índices de cliente y equipo en acta de entrega
-            cliente_idx = next((idx for idx, h in enumerate(headers) if h.strip().lower() == "cliente"), None)
-            equipo_idx = next((idx for idx, h in enumerate(headers) if h.strip().lower() == "equipo"), None)
-            
-            # Obtener datos si existen y no se obtuvieron antes
-            if not auto_cliente and cliente_idx is not None and len(row) > cliente_idx:
-                auto_cliente = row[cliente_idx]
-            if not auto_equipo and equipo_idx is not None and len(row) > equipo_idx:
-                auto_equipo = row[equipo_idx]
-                
-        # Obtener solo los artículos presentes usando encabezados estándar
+            # No es necesario buscar en actas de entrega porque solo usamos diligenciadas        # Obtener solo los artículos presentes usando encabezados estándar
         articulos_presentes = []
         if orden_pedido_val and orden_pedido_val in ordenes_existentes:
             row = ordenes_existentes[orden_pedido_val]
-            headers = acta_rows[0]
+            headers = diligenciadas_headers
             # Mapeo de nombre de artículo a columna de cantidad
             mapeo_articulos = {
                 "Motores": "cantidad motores",
