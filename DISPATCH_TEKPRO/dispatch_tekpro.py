@@ -857,7 +857,8 @@ def main():
         worksheet_name = "Acta de entrega"
         
         # --- EQUIPO EN GENERAL ---
-        with st.expander("Equipo en general", expanded=True):
+        equipo_general_form = st.form("equipo_general_form", clear_on_submit=False)
+        with equipo_general_form:
             st.markdown("""
                 <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
                 <b style='font-size:1.1em;color:#1db6b6'>Información General del Equipo</b>
@@ -867,6 +868,13 @@ def main():
             foto_general = st.file_uploader("Foto general del equipo", type=["jpg","jpeg","png"], accept_multiple_files=False)
             
             st.markdown("</div>", unsafe_allow_html=True)
+            equipo_general_submitted = st.form_submit_button("Guardar información general")
+        
+        # Guardar información en session_state para mantenerla disponible
+        if equipo_general_submitted:
+            st.session_state["descripcion_general"] = descripcion_general
+            st.session_state["foto_general"] = foto_general
+            st.success("Información general del equipo guardada correctamente")
             
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -1201,11 +1209,9 @@ def main():
                 toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
                 cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
                 foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
-            col_otros1, col_otros2 = st.columns([2,2])
-            with col_otros1:
-                otros_elementos = st.text_area("Otros Elementos")
-            with col_otros2:
-                fotos_otros_elementos = st.file_uploader("Fotos Otros Elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
+            # Incluir el campo de otros elementos directamente en el formulario (sin columnas)
+            otros_elementos = st.text_area("Otros Elementos")
+            fotos_otros_elementos = st.file_uploader("Fotos Otros Elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos_form")
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
             revision_soldadura = st.selectbox("Revisión de soldadura", ["", "Sí", "No"])
@@ -1448,6 +1454,10 @@ def main():
                     error_validacion = True
                 
                 # Validar campos de equipo en general (descripción y foto son obligatorios)
+                # Obtener valores de session_state si se guardaron previamente
+                descripcion_general = descripcion_general or st.session_state.get("descripcion_general", "")
+                foto_general = foto_general or st.session_state.get("foto_general", None)
+                
                 if not descripcion_general:
                     mensajes_error.append("Ingrese una descripción general del equipo")
                     error_validacion = True
