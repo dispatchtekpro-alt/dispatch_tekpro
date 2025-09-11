@@ -228,6 +228,19 @@ def main():
     # Importar datetime al inicio de la función main
     import datetime
 
+    # Función para limpiar todos los campos del formulario cuando cambia la OP
+    def limpiar_campos_formulario():
+        # Limpiar checkboxes de componentes
+        for key in list(st.session_state.keys()):
+            if key.startswith('cb_mostrar_') or key.startswith('mostrar_'):
+                st.session_state[key] = False
+            # Limpiar campos de file_uploader
+            elif key.startswith('fotos_'):
+                st.session_state[key] = None
+            # Limpiar campos de texto, selectbox, etc.
+            elif 'select_' in key:
+                st.session_state[key] = 0  # El índice 0 generalmente corresponde a la opción vacía
+
     # Menú de inicio
     col1, col2 = st.columns([4,1])
     with col1:
@@ -341,10 +354,25 @@ def main():
             authorize_drive_oauth()
 
         st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
+        
+        # Función para detectar cambio de OP y limpiar campos en Lista de Empaque
+        def on_op_empaque_change():
+            if 'prev_op_empaque' in st.session_state and st.session_state['prev_op_empaque'] != st.session_state['orden_pedido_selectbox']:
+                # Limpiar campos específicos de lista de empaque
+                if 'firma_canvas' in st.session_state:
+                    st.session_state['firma_canvas'] = None
+                for key in list(st.session_state.keys()):
+                    if key.startswith('empacar_') or key.startswith('desc_paquete_') or key.startswith('fotos_paquete_'):
+                        st.session_state[key] = None
+                # Reiniciar número de paquetes
+                st.session_state['num_paquetes'] = 1
+            st.session_state['prev_op_empaque'] = st.session_state['orden_pedido_selectbox']
+            
         orden_pedido_val = st.selectbox(
             "Selecciona una orden de pedido existente:",
             ordenes_list if ordenes_list else ["No hay órdenes registradas"],
-            key="orden_pedido_selectbox"
+            key="orden_pedido_selectbox",
+            on_change=on_op_empaque_change
         )
        
 
@@ -778,7 +806,18 @@ def main():
                 st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
                 pass
 
-            op_selected = st.selectbox("Orden de Pedido (OP)", options=["SELECCIONA"] + list(set(op_options)))
+            # Función para detectar cambio de OP y limpiar campos
+            def on_op_change():
+                if 'prev_op_selected' in st.session_state and st.session_state['prev_op_selected'] != st.session_state['op_selectbox']:
+                    limpiar_campos_formulario()
+                st.session_state['prev_op_selected'] = st.session_state['op_selectbox']
+
+            op_selected = st.selectbox(
+                "Orden de Pedido (OP)", 
+                options=["SELECCIONA"] + list(set(op_options)),
+                key="op_selectbox",
+                on_change=on_op_change
+            )
             
             if op_selected != "SELECCIONA":
                 row = op_to_row.get(op_selected, [])
@@ -816,9 +855,19 @@ def main():
         folder_id = st.secrets.drive_config.FOLDER_ID
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
-       
-
-
+        
+        # --- EQUIPO EN GENERAL ---
+        with st.expander("Equipo en general", expanded=True):
+            st.markdown("""
+                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                <b style='font-size:1.1em;color:#1db6b6'>Información General del Equipo</b>
+            """, unsafe_allow_html=True)
+            
+            descripcion_general = st.text_area("Descripción general del equipo")
+            foto_general = st.file_uploader("Foto general del equipo", type=["jpg","jpeg","png"], accept_multiple_files=False)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos electromecánicos")
@@ -1393,9 +1442,18 @@ def main():
                     mensajes_error.append("Seleccione un diseñador")
                     error_validacion = True
                 
-                # Campos obligatorios generales
+                # Validar campos obligatorios generales
                 if not cliente or not op or not item or not equipo or not cantidad:
                     mensajes_error.append("Complete todos los campos de información general (Cliente, OP, Item, Equipo y Cantidad)")
+                    error_validacion = True
+                
+                # Validar campos de equipo en general (descripción y foto son obligatorios)
+                if not descripcion_general:
+                    mensajes_error.append("Ingrese una descripción general del equipo")
+                    error_validacion = True
+                
+                if not foto_general:
+                    mensajes_error.append("Debe incluir una foto general del equipo")
                     error_validacion = True
 
                 # Si hay errores de validación, mostrar y detener
@@ -1434,6 +1492,7 @@ def main():
 
                 row = [
                     str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
+                    str(descripcion_general), serializa_fotos(foto_general, f"FotoGeneral_{op}", folder_id),
                     str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
                     str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
                     str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
@@ -1469,6 +1528,7 @@ def main():
                 ]
                 headers = [
                     "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili", 
+                    "descripcion general dili", "foto general dili",
                     "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
                     "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili", 
                     "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
