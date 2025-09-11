@@ -1,5 +1,13 @@
 import streamlit as st
 
+# Configurar el título de la página que aparece en la pestaña del navegador
+st.set_page_config(
+    page_title="Dispatch TEKPRO",
+    page_icon="📦",
+    layout="wide",
+    initial_sidebar_state="auto"
+)
+
 # Incluir CSS corporativo Tekpro
 st.markdown('''
 <style>
@@ -295,17 +303,34 @@ def main():
                     break
             ordenes_existentes = {}
             ordenes_list = []
-            # Solo usar los datos de "actas de entregas diligenciadas"
+            # Obtener las OPs que ya están en la hoja de Lista de empaque
+            ops_lista_empaque = set()
             try:
-                # Recopilar datos solo de OPs diligenciadas
+                empaque_sheet = sheet_client.open(file_name).worksheet("Lista de empaque")
+                empaque_rows = empaque_sheet.get_all_values()
+                if empaque_rows:
+                    # Asumiendo que la primera columna es la OP en la hoja Lista de empaque
+                    for row in empaque_rows[1:]:  # Saltar la fila de encabezados
+                        if row and row[0].strip():
+                            ops_lista_empaque.add(row[0].strip())
+            except Exception as e:
+                st.warning(f"No se pudieron cargar las OPs de Lista de empaque: {e}")
+            
+            # Recopilar datos solo de OPs diligenciadas que NO estén en Lista de empaque
+            try:
                 for row in diligenciadas_rows[1:]:
                     if op_dili_idx is not None and len(row) > op_dili_idx and row[op_dili_idx].strip():
                         orden_dili = row[op_dili_idx].strip()
-                        ordenes_existentes[orden_dili] = row  # Agregar a las existentes
-                        ordenes_list.append(orden_dili)       # Agregar a la lista de selección
+                        # Solo agregar si la OP no está ya en Lista de empaque
+                        if orden_dili not in ops_lista_empaque:
+                            ordenes_existentes[orden_dili] = row  # Agregar a las existentes
+                            ordenes_list.append(orden_dili)       # Agregar a la lista de selección
                 
                 if not ordenes_list:
-                    st.warning("No hay órdenes de pedido en 'actas de entregas diligenciadas'.")
+                    if ops_lista_empaque:
+                        st.warning("Todas las órdenes ya están registradas en 'Lista de empaque'.")
+                    else:
+                        st.warning("No hay órdenes de pedido en 'actas de entregas diligenciadas'.")
             except Exception as e:
                 st.warning(f"Error al procesar actas diligenciadas para mostrar OPs: {e}")
         except Exception:
