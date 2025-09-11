@@ -876,6 +876,17 @@ def main():
             st.session_state["foto_general"] = foto_general
             st.success("Información general del equipo guardada correctamente")
             
+        # Fotos para otros elementos (fuera de formulario para evitar error de Streamlit)
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Otros elementos")
+        fotos_otros_elementos = st.file_uploader("Fotos para Otros Elementos", 
+                                             type=["jpg","jpeg","png"], 
+                                             accept_multiple_files=True, 
+                                             key="fotos_otros_elementos_independiente")
+        if fotos_otros_elementos:
+            st.session_state["fotos_otros_elementos"] = fotos_otros_elementos
+            st.success(f"{len(fotos_otros_elementos)} foto(s) cargada(s) correctamente para Otros Elementos")
+            
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Lista de chequeo general elementos electromecánicos")
@@ -1209,9 +1220,8 @@ def main():
                 toma_corriente = seccion_articulo("Toma corriente", st.session_state.get('mostrar_toma_corriente', False), toma_corriente_campos)
                 cantidad_toma_corriente = toma_corriente['cantidad_toma_corriente']
                 foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
-            # Incluir el campo de otros elementos directamente en el formulario (sin columnas)
-            otros_elementos = st.text_area("Otros Elementos")
-            fotos_otros_elementos = st.file_uploader("Fotos Otros Elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos_form")
+            # Solo incluir el campo de texto dentro del formulario
+            otros_elementos = st.text_area("Otros Elementos", key="otros_elementos_form")
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
             revision_soldadura = st.selectbox("Revisión de soldadura", ["", "Sí", "No"])
@@ -1526,7 +1536,7 @@ def main():
                     str(cantidad_variadores), serializa_fotos(foto_variadores, f"Variadores_{op}", folder_id),
                     str(cantidad_sensores), serializa_fotos(foto_sensores, f"Sensores_{op}", folder_id),
                     str(cantidad_toma_corriente), serializa_fotos(foto_toma_corrientes, f"TomaCorriente_{op}", folder_id),
-                    str(otros_elementos), serializa_fotos(fotos_otros_elementos, f"OtrosElementos_{op}", folder_id),
+                    str(otros_elementos), "", # No más fotos de otros elementos dentro del formulario
                     str(descripcion_tuberia), serializa_fotos(foto_tuberia, f"Tuberia_{op}", folder_id),
                     str(descripcion_cables), serializa_fotos(foto_cables, f"Cables_{op}", folder_id),
                     str(descripcion_curvas), serializa_fotos(foto_curvas, f"Curvas_{op}", folder_id),
