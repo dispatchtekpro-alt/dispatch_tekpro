@@ -581,12 +581,59 @@ def main():
             if not articulos_presentes:
                 st.error("No hay artículos para empacar en esta OP.")
             else:
-                # Si encontramos la OP, añadimos los datos según el orden de encabezados definido:
-                # Op, Fecha, Cliente, Equipo, Encargado almacén, Encargado ingeniería y diseño, Encargado logística,
-                # Firma encargado logística, Observaciones adicionales, Artículos enviados, Artículos no enviados, etc.
+                # Validar que todos los campos requeridos estén completos
+                error_validacion = False
+                mensajes_error = []
+                
+                # Validar campos obligatorios (excepto observaciones)
+                if not orden_pedido_val or orden_pedido_val == "No hay órdenes registradas":
+                    mensajes_error.append("Debe seleccionar una orden de pedido válida")
+                    error_validacion = True
+                
+                if not encargado_almacen:
+                    mensajes_error.append("Debe seleccionar un encargado de almacén")
+                    error_validacion = True
+                
+                if not encargado_logistica:
+                    mensajes_error.append("Debe seleccionar un encargado de logística")
+                    error_validacion = True
+                
+                if not encargado_ingenieria:
+                    mensajes_error.append("Debe seleccionar un encargado de ingeniería y diseño")
+                    error_validacion = True
+                
+                # Verificar si hay firma de logística
+                if firma_logistica.image_data is None:
+                    mensajes_error.append("Debe incluir la firma del encargado de logística")
+                    error_validacion = True
+                
+                # Verificar que al menos un guacal tenga descripción y fotos
+                guacales_completos = False
+                for paquete in paquetes:
+                    if paquete["desc"] and paquete["fotos"]:
+                        guacales_completos = True
+                        break
+                
+                if not guacales_completos:
+                    mensajes_error.append("Al menos un guacal debe tener descripción y fotos")
+                    error_validacion = True
+                
+                # Verificar que se haya seleccionado al menos un artículo para enviar
                 enviados = [art for art, v in articulos_seleccion.items() if v]
                 no_enviados = [art for art, v in articulos_seleccion.items() if not v]
                 
+                if not enviados:
+                    mensajes_error.append("Debe seleccionar al menos un artículo para enviar")
+                    error_validacion = True
+                
+                # Si hay errores de validación, mostrar y detener
+                if error_validacion:
+                    st.error("Por favor complete todos los campos obligatorios:")
+                    for mensaje in mensajes_error:
+                        st.warning(mensaje)
+                    return
+                
+                # Si la validación es exitosa, procedemos con el guardado
                 # Estructura del array según los encabezados de la hoja:
                 row = [
                     orden_pedido_val,                # Op
@@ -759,7 +806,7 @@ def main():
             cliente = st.text_input("Cliente", value=auto_cliente)
             op = st.text_input("OP (si es nueva)", value=op_selected, key="op_input")
             equipo = st.text_input("Equipo", value=auto_equipo)
-            item = st.text_input("Item", value=auto_item)
+            item = st.text_input("Ítem", value=auto_item)
             cantidad = st.text_input("Cantidad", value=auto_cantidad)
             fecha = st.date_input("Fecha", value=auto_fecha, key="fecha_acta")
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1107,38 +1154,38 @@ def main():
                 foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
             col_otros1, col_otros2 = st.columns([2,2])
             with col_otros1:
-                otros_elementos = st.text_area("otros elementos")
+                otros_elementos = st.text_area("Otros Elementos")
             with col_otros2:
-                fotos_otros_elementos = st.file_uploader("Fotos otros elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
+                fotos_otros_elementos = st.file_uploader("Fotos Otros Elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
-            revision_soldadura = st.selectbox("revision de soldadura", ["", "Sí", "No"])
-            revision_sentidos = st.selectbox("revision de sentidos de giro", ["", "Sí", "No"])
-            manual_funcionamiento = st.selectbox("manual de funcionamiento", ["", "Sí", "No"])
-            revision_filos = st.selectbox("revision de filos y acabados", ["", "Sí", "No"])
-            revision_tratamientos = st.selectbox("revision de tratamientos", ["", "Sí", "No"])
-            revision_tornilleria = st.selectbox("revision de tornilleria", ["", "Sí", "No"])
-            revision_ruidos = st.selectbox("revision de ruidos", ["", "Sí", "No"])
-            ensayo_equipo = st.selectbox("ensayo equipo", ["", "Sí", "No"])
-            
+            revision_soldadura = st.selectbox("Revisión de soldadura", ["", "Sí", "No"])
+            revision_sentidos = st.selectbox("Revisión de sentidos de giro", ["", "Sí", "No"])
+            manual_funcionamiento = st.selectbox("Manual de funcionamiento", ["", "Sí", "No"])
+            revision_filos = st.selectbox("Revisión de filos y acabados", ["", "Sí", "No"])
+            revision_tratamientos = st.selectbox("Revisión de tratamientos", ["", "Sí", "No"])
+            revision_tornilleria = st.selectbox("Revisión de tornillería", ["", "Sí", "No"])
+            revision_ruidos = st.selectbox("Revisión de ruidos", ["", "Sí", "No"])
+            ensayo_equipo = st.selectbox("Ensayo de equipo", ["", "Sí", "No"])
+
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
-            observaciones_generales = st.text_area("observciones generales")
+            observaciones_generales = st.text_area("Observaciones generales")
 
             lider_inspeccion = st.selectbox(
-                "lider de inspeccion",
+                "Líder de inspección",
                 ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"]
             )
             encargado_soldador = st.selectbox(
-                "encargado de soldadura",
+                "Encargado de soldadura",
                 ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Katerine Padilla"]
             )
             disenador = st.selectbox(
-                "diseñador",
+                "Diseñador",
                 ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
             )
-            fecha_entrega = st.date_input("fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
-            
+            fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
+
             # La notificación por correo se incluirá en el formulario como un checkbox
             enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
             if enviar_notificacion:
@@ -1149,6 +1196,216 @@ def main():
             # Validación: solo encabezado y responsables son obligatorios
 
             if submitted:
+                # Validar que todos los campos de elementos seleccionados estén completos
+                error_validacion = False
+                mensajes_error = []
+
+                # Función para validar componentes
+                def validar_componente(mostrar_key, nombre_componente, campos_requeridos):
+                    if st.session_state.get(mostrar_key, False):
+                        for campo, valor in campos_requeridos.items():
+                            if not valor:
+                                return f"Falta completar '{campo}' para {nombre_componente}"
+                    return None
+
+                # Validar elementos electromecánicos
+                if st.session_state.get('mostrar_motores', False):
+                    if not cantidad_motores or not voltaje_motores or not fotos_motores:
+                        mensajes_error.append("Complete todos los campos de Motores (cantidad, voltaje y fotos)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_reductor', False):
+                    if not cantidad_reductores or not voltaje_reductores or not fotos_reductores:
+                        mensajes_error.append("Complete todos los campos de Reductores (cantidad, voltaje y fotos)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_bomba', False):
+                    if not cantidad_bombas or not voltaje_bombas or not fotos_bombas:
+                        mensajes_error.append("Complete todos los campos de Bombas (cantidad, voltaje y fotos)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_turbina', False):
+                    if not voltaje_turbina or not foto_turbina:
+                        mensajes_error.append("Complete todos los campos de Turbina (voltaje y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_quemador', False):
+                    if not voltaje_quemador or not tipo_combustible_quemador or not metodo_uso_quemador or not foto_quemador:
+                        mensajes_error.append("Complete todos los campos de Quemador (voltaje, tipo de combustible, método de uso y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_bomba_vacio', False):
+                    if not voltaje_bomba_vacio or not foto_bomba_vacio:
+                        mensajes_error.append("Complete todos los campos de Bomba de vacío (voltaje y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_compresor', False):
+                    if not voltaje_compresor or not foto_compresor:
+                        mensajes_error.append("Complete todos los campos de Compresor (voltaje y foto)")
+                        error_validacion = True
+                
+                # Validar accesorios
+                if st.session_state.get('mostrar_manometros', False):
+                    if not cantidad_manometros or not foto_manometros:
+                        mensajes_error.append("Complete todos los campos de Manómetros (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_vacuometros', False):
+                    if not cantidad_vacuometros or not foto_vacuometros:
+                        mensajes_error.append("Complete todos los campos de Vacuómetros (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_valvulas', False):
+                    if not cantidad_valvulas or not foto_valvulas:
+                        mensajes_error.append("Complete todos los campos de Válvulas (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_mangueras', False):
+                    if not cantidad_mangueras or not foto_mangueras:
+                        mensajes_error.append("Complete todos los campos de Mangueras (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_boquillas', False):
+                    if not cantidad_boquillas or not foto_boquillas:
+                        mensajes_error.append("Complete todos los campos de Boquillas (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_reguladores', False):
+                    if not cantidad_reguladores or not foto_reguladores:
+                        mensajes_error.append("Complete todos los campos de Reguladores aire/gas (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_tuberia', False):
+                    if not descripcion_tuberia or not foto_tuberia:
+                        mensajes_error.append("Complete todos los campos de Tubería (descripción y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_cables', False):
+                    if not descripcion_cables or not foto_cables:
+                        mensajes_error.append("Complete todos los campos de Cables (descripción y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_curvas', False):
+                    if not descripcion_curvas or not foto_curvas:
+                        mensajes_error.append("Complete todos los campos de Curvas (descripción y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_tornilleria_acc', False):
+                    if not descripcion_tornilleria or not foto_tornilleria:
+                        mensajes_error.append("Complete todos los campos de Tornillería (descripción y foto)")
+                        error_validacion = True
+                
+                # Validar elementos mecánicos
+                if st.session_state.get('mostrar_pinon1', False):
+                    if not tension_pinon1 or not foto_pinon1:
+                        mensajes_error.append("Complete todos los campos de Piñón 1 (tensión y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_pinon2', False):
+                    if not tension_pinon2 or not foto_pinon2:
+                        mensajes_error.append("Complete todos los campos de Piñón 2 (tensión y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_polea1', False):
+                    if not tension_polea1 or not foto_polea1:
+                        mensajes_error.append("Complete todos los campos de Polea 1 (tensión y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_polea2', False):
+                    if not tension_polea2 or not foto_polea2:
+                        mensajes_error.append("Complete todos los campos de Polea 2 (tensión y foto)")
+                        error_validacion = True
+                
+                # Validar elementos eléctricos
+                if st.session_state.get('mostrar_gabinete', False):
+                    if not cantidad_gabinete or not foto_gabinete:
+                        mensajes_error.append("Complete todos los campos de Gabinete eléctrico (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_arrancador', False):
+                    if not cantidad_arrancadores or not foto_arrancadores:
+                        mensajes_error.append("Complete todos los campos de Arrancadores (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_control_nivel', False):
+                    if not cantidad_control_nivel or not foto_control_nivel:
+                        mensajes_error.append("Complete todos los campos de Control de nivel (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_variador', False):
+                    if not cantidad_variadores or not foto_variadores:
+                        mensajes_error.append("Complete todos los campos de Variadores de velocidad (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_sensor_temp', False):
+                    if not cantidad_sensores or not foto_sensores:
+                        mensajes_error.append("Complete todos los campos de Sensores de temperatura (cantidad y foto)")
+                        error_validacion = True
+                
+                if st.session_state.get('mostrar_toma_corriente', False):
+                    if not cantidad_toma_corriente or not foto_toma_corrientes:
+                        mensajes_error.append("Complete todos los campos de Toma corriente (cantidad y foto)")
+                        error_validacion = True
+                
+                # Validar preguntas de revisión
+                if not revision_soldadura:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de soldadura")
+                    error_validacion = True
+                
+                if not revision_sentidos:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de sentidos de giro")
+                    error_validacion = True
+                
+                if not manual_funcionamiento:
+                    mensajes_error.append("Seleccione Sí o No para el manual de funcionamiento")
+                    error_validacion = True
+                
+                if not revision_filos:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de filos y acabados")
+                    error_validacion = True
+                
+                if not revision_tratamientos:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de tratamientos")
+                    error_validacion = True
+                
+                if not revision_tornilleria:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de tornillería")
+                    error_validacion = True
+                
+                if not revision_ruidos:
+                    mensajes_error.append("Seleccione Sí o No para la revisión de ruidos")
+                    error_validacion = True
+                
+                if not ensayo_equipo:
+                    mensajes_error.append("Seleccione Sí o No para el ensayo de equipo")
+                    error_validacion = True
+                
+                # Validar información final
+                if not lider_inspeccion:
+                    mensajes_error.append("Seleccione un líder de inspección")
+                    error_validacion = True
+                
+                if not encargado_soldador:
+                    mensajes_error.append("Seleccione un encargado de soldadura")
+                    error_validacion = True
+                
+                if not disenador:
+                    mensajes_error.append("Seleccione un diseñador")
+                    error_validacion = True
+                
+                # Campos obligatorios generales
+                if not cliente or not op or not item or not equipo or not cantidad:
+                    mensajes_error.append("Complete todos los campos de información general (Cliente, OP, Item, Equipo y Cantidad)")
+                    error_validacion = True
+
+                # Si hay errores de validación, mostrar y detener
+                if error_validacion:
+                    st.error("Por favor complete todos los campos obligatorios:")
+                    for mensaje in mensajes_error:
+                        st.warning(mensaje)
+                    return
+
+                # Si la validación es exitosa, proceder con el guardado
                 # Serializar todos los campos a string y manejar file_uploader
                 def serializa_fotos(valor, nombre_base, folder_id):
                     enlaces = []
