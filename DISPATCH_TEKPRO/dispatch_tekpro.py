@@ -778,7 +778,60 @@ def main():
                 st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
                 pass
 
-            op_selected = st.selectbox("Orden de Pedido (OP)", options=["SELECCIONA"] + list(set(op_options)))
+            # Inicializar una sesión para detectar cambios en la OP seleccionada
+            if 'previous_op' not in st.session_state:
+                st.session_state['previous_op'] = ""
+                
+            # Callback para resetear los campos cuando cambia la OP
+            def on_op_change():
+                if st.session_state['previous_op'] != st.session_state['op_selector']:
+                    # Limpiar todos los checkbox de selección
+                    for key in list(st.session_state.keys()):
+                        # Limpiar checkboxes de mostrar elementos
+                        if key.startswith('cb_mostrar_'):
+                            st.session_state[key.replace('cb_', '')] = False
+                        
+                        # Limpiar todos los file uploaders y campos de formulario
+                        if key.startswith('fotos_') or key.startswith('foto_'):
+                            if key in st.session_state:
+                                del st.session_state[key]
+                                
+                        # Limpiar campos de texto del formulario
+                        if key.startswith('descripcion_') or key.startswith('tension_'):
+                            if key in st.session_state:
+                                del st.session_state[key]
+                                
+                        # Limpiar selectboxes
+                        if key.startswith('select_'):
+                            if key in st.session_state:
+                                del st.session_state[key]
+                    
+                    # Limpiar campos específicos del formulario
+                    campos_a_limpiar = ['revision_soldadura', 'revision_sentidos', 
+                                      'manual_funcionamiento', 'revision_filos', 
+                                      'revision_tratamientos', 'revision_tornilleria',
+                                      'revision_ruidos', 'ensayo_equipo', 
+                                      'observaciones_generales', 'lider_inspeccion',
+                                      'encargado_soldador', 'disenador']
+                    
+                    for campo in campos_a_limpiar:
+                        if campo in st.session_state:
+                            del st.session_state[campo]
+                    
+                    # Actualizar el estado previo
+                    st.session_state['previous_op'] = st.session_state['op_selector']
+                    
+                    # Recargar la página para limpiar otros campos
+                    st.rerun()
+
+            op_selected = st.selectbox("Orden de Pedido (OP)", 
+                options=["SELECCIONA"] + list(set(op_options)),
+                key="op_selector",
+                on_change=on_op_change)
+            
+            # Actualizar el estado previo si no cambia
+            if st.session_state['previous_op'] != op_selected:
+                st.session_state['previous_op'] = op_selected
             
             if op_selected != "SELECCIONA":
                 row = op_to_row.get(op_selected, [])
@@ -817,7 +870,35 @@ def main():
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
        
-
+        # --- INFORMACIÓN GENERAL DEL EQUIPO ---
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Información General del Equipo")
+        
+        # Crear un formulario independiente para la información general del equipo
+        with st.form("equipo_general_form"):
+            st.markdown("""
+                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                <b style='font-size:1.1em;color:#1db6b6'>Descripción y Foto General</b>
+            """, unsafe_allow_html=True)
+            
+            # Utilizamos la clave única para cada OP
+            form_key_suffix = f"_{op}" if op else "_new"
+            descripcion_general = st.text_area(
+                "Descripción general del equipo", 
+                key=f"descripcion_general{form_key_suffix}"
+            )
+            foto_general = st.file_uploader(
+                "Foto general del equipo", 
+                type=["jpg","jpeg","png"], 
+                accept_multiple_files=False,
+                key=f"foto_general{form_key_suffix}"
+            )
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            equipo_general_submitted = st.form_submit_button("Guardar información general")
+            
+        if equipo_general_submitted:
+            st.success("Información general del equipo guardada correctamente")
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -901,20 +982,48 @@ def main():
                             <b style='font-size:1.1em;color:#1db6b6'>{nombre}</b>
                         """, unsafe_allow_html=True)
                         resultados = {}
+                        # Crear un sufijo único para las claves basado en la OP actual
+                        key_suffix = f"_{op}" if op else "_new"
+                        
                         for campo in campos:
                             if campo['tipo'] == 'number':
-                                resultados[campo['nombre']] = st.number_input(campo['label'], min_value=0, step=1, format="%d")
+                                resultados[campo['nombre']] = st.number_input(
+                                    campo['label'], 
+                                    min_value=0, 
+                                    step=1, 
+                                    format="%d",
+                                    key=f"{campo['nombre']}{key_suffix}"
+                                )
                             elif campo['tipo'] == 'text':
-                                resultados[campo['nombre']] = st.text_input(campo['label'])
+                                resultados[campo['nombre']] = st.text_input(
+                                    campo['label'],
+                                    key=f"{campo['nombre']}{key_suffix}"
+                                )
                             elif campo['tipo'] == 'text_area':
-                                resultados[campo['nombre']] = st.text_area(campo['label'])
+                                resultados[campo['nombre']] = st.text_area(
+                                    campo['label'],
+                                    key=f"{campo['nombre']}{key_suffix}"
+                                )
                             elif campo['tipo'] == 'file':
-                                resultados[campo['nombre']] = st.file_uploader(campo['label'], type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"fotos_{nombre}")
+                                resultados[campo['nombre']] = st.file_uploader(
+                                    campo['label'], 
+                                    type=["jpg","jpeg","png"], 
+                                    accept_multiple_files=True, 
+                                    key=f"fotos_{nombre}{key_suffix}"
+                                )
                             elif campo['tipo'] == 'select':
                                 if 'opciones' in campo:
-                                    resultados[campo['nombre']] = st.selectbox(campo['label'], campo['opciones'], key=f"select_{campo['nombre']}")
+                                    resultados[campo['nombre']] = st.selectbox(
+                                        campo['label'], 
+                                        campo['opciones'], 
+                                        key=f"select_{campo['nombre']}{key_suffix}"
+                                    )
                                 else:
-                                    resultados[campo['nombre']] = st.selectbox(campo['label'], ["", "Opción 1", "Opción 2"], key=f"select_{campo['nombre']}")
+                                    resultados[campo['nombre']] = st.selectbox(
+                                        campo['label'], 
+                                        ["", "Opción 1", "Opción 2"], 
+                                        key=f"select_{campo['nombre']}{key_suffix}"
+                                    )
                         st.markdown("</div>", unsafe_allow_html=True)
                         return resultados
                 else:
@@ -1154,35 +1263,83 @@ def main():
                 foto_toma_corrientes = toma_corriente['foto_toma_corrientes']
             col_otros1, col_otros2 = st.columns([2,2])
             with col_otros1:
-                otros_elementos = st.text_area("Otros Elementos")
+                # Usar clave única basada en OP
+                key_suffix = f"_{op}" if op else "_new"
+                otros_elementos = st.text_area(
+                    "Otros Elementos", 
+                    key=f"otros_elementos{key_suffix}"
+                )
             with col_otros2:
-                fotos_otros_elementos = st.file_uploader("Fotos Otros Elementos", type=["jpg","jpeg","png"], accept_multiple_files=True, key="fotos_otros_elementos")
+                fotos_otros_elementos = st.file_uploader(
+                    "Fotos Otros Elementos", 
+                    type=["jpg","jpeg","png"], 
+                    accept_multiple_files=True, 
+                    key=f"fotos_otros_elementos{key_suffix}"
+                )
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Preguntas de revisión (Sí/No)</b>", unsafe_allow_html=True)
-            revision_soldadura = st.selectbox("Revisión de soldadura", ["", "Sí", "No"])
-            revision_sentidos = st.selectbox("Revisión de sentidos de giro", ["", "Sí", "No"])
-            manual_funcionamiento = st.selectbox("Manual de funcionamiento", ["", "Sí", "No"])
-            revision_filos = st.selectbox("Revisión de filos y acabados", ["", "Sí", "No"])
-            revision_tratamientos = st.selectbox("Revisión de tratamientos", ["", "Sí", "No"])
-            revision_tornilleria = st.selectbox("Revisión de tornillería", ["", "Sí", "No"])
-            revision_ruidos = st.selectbox("Revisión de ruidos", ["", "Sí", "No"])
-            ensayo_equipo = st.selectbox("Ensayo de equipo", ["", "Sí", "No"])
+            revision_soldadura = st.selectbox(
+                "Revisión de soldadura", 
+                ["", "Sí", "No"], 
+                key=f"revision_soldadura{key_suffix}"
+            )
+            revision_sentidos = st.selectbox(
+                "Revisión de sentidos de giro", 
+                ["", "Sí", "No"], 
+                key=f"revision_sentidos{key_suffix}"
+            )
+            manual_funcionamiento = st.selectbox(
+                "Manual de funcionamiento", 
+                ["", "Sí", "No"], 
+                key=f"manual_funcionamiento{key_suffix}"
+            )
+            revision_filos = st.selectbox(
+                "Revisión de filos y acabados", 
+                ["", "Sí", "No"], 
+                key=f"revision_filos{key_suffix}"
+            )
+            revision_tratamientos = st.selectbox(
+                "Revisión de tratamientos", 
+                ["", "Sí", "No"], 
+                key=f"revision_tratamientos{key_suffix}"
+            )
+            revision_tornilleria = st.selectbox(
+                "Revisión de tornillería", 
+                ["", "Sí", "No"], 
+                key=f"revision_tornilleria{key_suffix}"
+            )
+            revision_ruidos = st.selectbox(
+                "Revisión de ruidos", 
+                ["", "Sí", "No"], 
+                key=f"revision_ruidos{key_suffix}"
+            )
+            ensayo_equipo = st.selectbox(
+                "Ensayo de equipo", 
+                ["", "Sí", "No"], 
+                key=f"ensayo_equipo{key_suffix}"
+            )
 
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
-            observaciones_generales = st.text_area("Observaciones generales")
+            observaciones_generales = st.text_area(
+                "Observaciones generales",
+                key=f"observaciones_generales{key_suffix}"
+            )
 
             lider_inspeccion = st.selectbox(
                 "Líder de inspección",
-                ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"]
+                ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"],
+                key=f"lider_inspeccion{key_suffix}"
             )
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Katerine Padilla"]
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Katerine Padilla"],
+                key=f"encargado_soldador{key_suffix}"
             )
             disenador = st.selectbox(
                 "Diseñador",
-                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"],
+                key=f"disenador{key_suffix}"
             )
             fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
@@ -1397,6 +1554,11 @@ def main():
                 if not cliente or not op or not item or not equipo or not cantidad:
                     mensajes_error.append("Complete todos los campos de información general (Cliente, OP, Item, Equipo y Cantidad)")
                     error_validacion = True
+                
+                # Validar que se haya subido una foto general del equipo
+                if not descripcion_general or not foto_general:
+                    mensajes_error.append("Debe incluir una descripción y foto general del equipo")
+                    error_validacion = True
 
                 # Si hay errores de validación, mostrar y detener
                 if error_validacion:
@@ -1434,6 +1596,7 @@ def main():
 
                 row = [
                     str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
+                    str(descripcion_general), serializa_fotos(foto_general, f"FotoGeneral_{op}", folder_id),
                     str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
                     str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
                     str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
@@ -1469,6 +1632,7 @@ def main():
                 ]
                 headers = [
                     "cliente dili", "op dili", "item dili", "equipo dili", "cantidad dili", "fecha dili", 
+                    "descripcion general dili", "foto general dili",
                     "cantidad motores dili", "voltaje motores dili", "fotos motores dili",
                     "cantidad reductores dili", "voltaje reductores dili", "fotos reductores dili", 
                     "cantidad bombas dili", "voltaje bombas dili", "fotos bombas dili",
