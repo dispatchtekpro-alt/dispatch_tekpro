@@ -101,7 +101,7 @@ def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
     from google_auth_oauthlib.flow import Flow
     redirect_uri = "https://dispatchtekpro.streamlit.app/"
-    st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
+    #st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
     flow = Flow.from_client_config(
         {"web": dict(st.secrets.oauth2)},
         scopes=SCOPES,
@@ -1721,3 +1721,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
