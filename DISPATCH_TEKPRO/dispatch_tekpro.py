@@ -470,7 +470,7 @@ def main():
             # Encargado logística como selectbox con opciones específicas
             encargado_logistica = st.selectbox(
                 "Encargado logística",
-                ["", "Angela", "Jhon", "Juan Rendon"]
+                ["", "Angela Zapata", "Jhon Restrepo", "Juan Rendon"]
             )
                        
             # Campo para firma de logística utilizando canvas
@@ -1395,7 +1395,7 @@ def main():
             )
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Katerine Padilla"],
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"],
                 key=f"encargado_soldador{key_suffix}"
             )
             disenador = st.selectbox(
