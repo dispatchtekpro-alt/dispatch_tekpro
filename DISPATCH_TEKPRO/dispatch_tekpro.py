@@ -101,7 +101,7 @@ def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
     from google_auth_oauthlib.flow import Flow
     redirect_uri = "https://dispatchtekpro.streamlit.app/"
-    #st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
+    st.info(f"[LOG] Usando redirect_uri: {redirect_uri}")
     flow = Flow.from_client_config(
         {"web": dict(st.secrets.oauth2)},
         scopes=SCOPES,
@@ -575,6 +575,12 @@ def main():
                         st.error("No se pudo reiniciar la aplicación. Intenta recargar la página.")
 
             observaciones = st.text_area("Observaciones adicionales")
+            
+            # Añadir opción para enviar notificación por correo
+            enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
+            if enviar_notificacion:
+                st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
+                
             submitted = st.form_submit_button("Guardar despacho")
 
         if submitted:
@@ -706,6 +712,62 @@ def main():
                 write_link_to_sheet(sheet_client, file_name, worksheet_name, row)
                 st.success("Despacho guardado correctamente.")
                 st.info("Las fotos han sido subidas a Google Drive y el enlace está disponible en la hoja.")
+                
+                # Envío automático de correo electrónico si el checkbox está seleccionado
+                if enviar_notificacion:
+                    try:
+                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
+                        asunto = f"Lista de Empaque completada - OP: {orden_pedido_val}"
+                        
+                        # Obtener lista de guacales con descripción
+                        guacales_texto = ""
+                        guacales_con_contenido = 0
+                        for idx, paquete in enumerate(paquetes, start=1):
+                            if paquete["desc"]:
+                                guacales_con_contenido += 1
+                                guacales_texto += f"<li><strong>Guacal {idx}:</strong> {paquete['desc']}</li>"
+                        
+                        mensaje = f"""
+                        <html>
+                        <body>
+                            <div style="border-left: 5px solid #1db6b6; padding-left: 15px;">
+                                <h2 style="color: #1db6b6;">Notificación de Lista de Empaque</h2>
+                                <p>Se ha completado la lista de empaque con la siguiente información:</p>
+                                <ul>
+                                    <li><strong>OP:</strong> {orden_pedido_val}</li>
+                                    <li><strong>Cliente:</strong> {auto_cliente}</li>
+                                    <li><strong>Equipo:</strong> {auto_equipo}</li>
+                                    <li><strong>Fecha:</strong> {fecha}</li>
+                                </ul>
+                                <p><strong>Encargado Almacén:</strong> {encargado_almacen}</p>
+                                <p><strong>Encargado Logística:</strong> {encargado_logistica}</p>
+                                <p><strong>Encargado Ingeniería:</strong> {encargado_ingenieria}</p>
+                                
+                                <p><strong>Artículos enviados ({len(enviados)}):</strong></p>
+                                <ul>
+                                    {"".join(f"<li>{art}</li>" for art in enviados)}
+                                </ul>
+                                
+                                 <p><strong>Guacales preparados ({guacales_con_contenido} de {len(paquetes)}):</strong></p>
+                                <ul>
+                                    {guacales_texto}
+                                </ul>
+                                
+                                <p><strong>Observaciones:</strong> {observaciones}</p>
+                                
+                                <p>Esta es una notificación automática del sistema Dispatch Tekpro.</p>
+                            </div>
+                        </body>
+                        </html>
+                        """
+                        
+                        exito, mensaje_resultado = enviar_correo(email_destinatario, asunto, mensaje)
+                        if exito:
+                            st.success(f"Se ha enviado una notificación por correo a {email_destinatario}")
+                        else:
+                            st.warning(f"No se pudo enviar la notificación por correo: {mensaje_resultado}")
+                    except Exception as e:
+                        st.warning(f"Error al enviar correo: {str(e)}")
 
 
     elif opcion_menu == "ACTA DE ENTREGA":
@@ -1720,5 +1782,4 @@ def main():
                         st.warning(f"Error al enviar correo: {str(e)}")
 
 if __name__ == "__main__":
-    main()
-
+    main() 
