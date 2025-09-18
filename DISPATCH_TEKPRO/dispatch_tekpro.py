@@ -704,6 +704,12 @@ def main():
             
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             
+            # Campo para observaciones
+            observaciones = st.text_area("Observaciones adicionales")
+            
+            # Checkbox para enviar notificación
+            enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
+            
             # Guardar los campos del formulario previo en session_state
             # para poder accederlos después del segundo formulario
             st.session_state['dispatch_form_fecha'] = fecha
