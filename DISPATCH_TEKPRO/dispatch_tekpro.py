@@ -432,6 +432,64 @@ def main():
 
         creds = get_service_account_creds()
         sheet_client = gspread.authorize(creds)
+        
+        # Función para asegurar que los encabezados estén correctamente configurados
+        def setup_lista_empaque_headers():
+            try:
+                # Intentar abrir la hoja
+                empaque_sheet = sheet_client.open(file_name).worksheet(worksheet_name)
+                empaque_values = empaque_sheet.get_all_values()
+                
+                # Definir los encabezados exactos como deberían aparecer en la hoja
+                headers = [
+                    "OP", 
+                    "Fecha", 
+                    "Cliente", 
+                    "Equipo", 
+                    "Encargado almacén", 
+                    "Encargado ingeniería y diseño", 
+                    "Encargado logística", 
+                    "Firma encargado logística", 
+                    "Observaciones adicionales", 
+                    "Artículos enviados", 
+                    "Artículos no enviados"
+                ]
+                
+                # Agregar encabezados para cada guacal (1-7)
+                for i in range(1, 8):
+                    headers.extend([
+                        f"Descripción Guacal {i}",
+                        f"Dimensiones Guacal {i}",
+                        f"Peso Bruto Guacal {i} (kg)",
+                        f"Peso Neto Guacal {i} (kg)",
+                        f"Fotos Guacal {i}"
+                    ])
+                
+                # Si la hoja está vacía o los encabezados no coinciden, establecer los encabezados
+                if not empaque_values or empaque_values[0] != headers:
+                    empaque_sheet.clear()  # Limpiar la hoja
+                    empaque_sheet.update('A1', [headers])  # Actualizar encabezados
+                    
+                    # Formatear encabezados (negrita, centrado, fondo de color)
+                    header_format = {
+                        "textFormat": {"bold": True},
+                        "horizontalAlignment": "CENTER",
+                        "backgroundColor": {"red": 0.114, "green": 0.714, "blue": 0.714}  # Color #1DB6B6
+                    }
+                    
+                    # Crear el formato para las celdas de encabezado
+                    header_range = f'A1:{chr(64 + len(headers))}1'  # Rango desde A1 hasta la última columna
+                    empaque_sheet.format(header_range, {"textFormat": {"bold": True}, "horizontalAlignment": "CENTER"})
+                    
+                    st.success("Encabezados de Lista de Empaque configurados correctamente.")
+                
+                return headers
+            except Exception as e:
+                st.error(f"Error al configurar encabezados: {str(e)}")
+                return None
+        
+        # Asegurar que los encabezados estén configurados
+        lista_empaque_headers = setup_lista_empaque_headers()
 
         # Leer órdenes de pedido existentes desde ACTA DE ENTREGA, solo mostrar las que estén completas
         try:
@@ -942,6 +1000,30 @@ def main():
                 # Crear un campo de observaciones adicionales para el guacal
                 obs_guacal = st.text_area(f"Observaciones adicionales del guacal {i+1}", key=f"obs_guacal_{i+1}")
                 
+                # Campos para dimensiones y pesos del guacal
+                st.markdown(f"<b>Dimensiones y pesos del guacal {i+1}:</b>", unsafe_allow_html=True)
+                
+                # Crear 3 columnas para los campos de dimensiones
+                dim_col1, dim_col2, dim_col3 = st.columns(3)
+                
+                with dim_col1:
+                    largo = st.number_input(f"Largo (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"largo_guacal_{i+1}")
+                
+                with dim_col2:
+                    ancho = st.number_input(f"Ancho (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"ancho_guacal_{i+1}")
+                
+                with dim_col3:
+                    alto = st.number_input(f"Alto (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"alto_guacal_{i+1}")
+                
+                # Crear 2 columnas para los pesos
+                peso_col1, peso_col2 = st.columns(2)
+                
+                with peso_col1:
+                    peso_bruto = st.number_input(f"Peso bruto (kg):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"peso_bruto_guacal_{i+1}")
+                
+                with peso_col2:
+                    peso_neto = st.number_input(f"Peso neto (kg):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"peso_neto_guacal_{i+1}")
+                
                 # Campo para subir fotos del guacal
                 fotos = st.file_uploader(f"Fotos guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 
@@ -950,7 +1032,16 @@ def main():
                 paquetes.append({
                     "desc": desc_items,
                     "obs": obs_guacal,
-                    "fotos": fotos
+                    "fotos": fotos,
+                    "dimensiones": {
+                        "largo": largo,
+                        "ancho": ancho,
+                        "alto": alto
+                    },
+                    "pesos": {
+                        "bruto": peso_bruto,
+                        "neto": peso_neto
+                    }
                 })
             
             # Botón para agregar más guacales (fuera del formulario)
@@ -1119,8 +1210,26 @@ def main():
                         else:
                             items_descripcion = f"Observaciones: {paquete['obs']}"
                     
-                    # Agregar descripción del guacal (ahora contiene la lista detallada de items)
+                    # Añadir información de dimensiones y pesos
+                    dimensiones_info = f"{paquete['dimensiones']['largo']}×{paquete['dimensiones']['ancho']}×{paquete['dimensiones']['alto']} cm"
+                    peso_bruto = f"{paquete['pesos']['bruto']} kg"
+                    peso_neto = f"{paquete['pesos']['neto']} kg"
+                    
+                    # Preparar solo la descripción con ítems y observaciones
+                    if items_descripcion:
+                        if paquete["obs"] and paquete["obs"].strip():
+                            items_descripcion += f"\n\nObservaciones: {paquete['obs']}"
+                    else:
+                        if paquete["obs"] and paquete["obs"].strip():
+                            items_descripcion = f"Observaciones: {paquete['obs']}"
+                    
+                    # Agregar descripción del guacal (ahora contiene solo los ítems y observaciones)
                     row.append(items_descripcion)  # Descripción Guacal n
+                    
+                    # Agregar dimensiones y pesos como columnas separadas
+                    row.append(dimensiones_info)  # Dimensiones Guacal n
+                    row.append(peso_bruto)        # Peso Bruto Guacal n
+                    row.append(peso_neto)         # Peso Neto Guacal n
                     
                     # Procesar y agregar fotos del guacal
                     enlaces = []
@@ -1147,6 +1256,9 @@ def main():
                 remaining_guacales = 7 - len(paquetes)
                 for _ in range(remaining_guacales):
                     row.append("")  # Descripción Guacal vacío
+                    row.append("")  # Dimensiones Guacal vacío
+                    row.append("")  # Peso Bruto Guacal vacío
+                    row.append("")  # Peso Neto Guacal vacío
                     row.append("")  # Fotos Guacal vacío
                 
                 # Escribir fila completa en la hoja
@@ -1166,7 +1278,18 @@ def main():
                         for idx, paquete in enumerate(paquetes, start=1):
                             if paquete["desc"]:
                                 guacales_con_contenido += 1
-                                guacales_texto += f"<li><strong>Guacal {idx}:</strong> {paquete['desc']}</li>"
+                        # Formateamos el contenido para el email con HTML
+                                dimensiones = paquete['dimensiones']
+                                pesos = paquete['pesos']
+                                dimensiones_html = f"<div style='margin-top:10px;'><strong>Dimensiones:</strong> {dimensiones['largo']}×{dimensiones['ancho']}×{dimensiones['alto']} cm</div>"
+                                pesos_html = f"<div><strong>Peso bruto:</strong> {pesos['bruto']} kg, <strong>Peso neto:</strong> {pesos['neto']} kg</div>"
+                                
+                                guacales_texto += f"""<li>
+                                    <strong>Guacal {idx}:</strong> 
+                                    <div>{paquete['desc']}</div>
+                                    {dimensiones_html}
+                                    {pesos_html}
+                                </li>"""
                         
                         mensaje = f"""
                         <html>
