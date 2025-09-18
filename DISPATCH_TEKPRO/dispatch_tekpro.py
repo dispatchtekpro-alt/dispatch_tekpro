@@ -703,6 +703,22 @@ def main():
 
             
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
+            
+            # Guardar los campos del formulario previo en session_state
+            # para poder accederlos después del segundo formulario
+            st.session_state['dispatch_form_fecha'] = fecha
+            st.session_state['dispatch_form_encargado_almacen'] = encargado_almacen
+            st.session_state['dispatch_form_encargado_logistica'] = encargado_logistica
+            st.session_state['dispatch_form_firma_logistica'] = firma_logistica
+            st.session_state['dispatch_form_observaciones'] = observaciones
+            st.session_state['dispatch_form_enviar_notificacion'] = enviar_notificacion
+            
+            # Final del primer formulario
+            form_part1_submitted = st.form_submit_button("Continuar a guacales")
+
+        # Procesar solo si se ha enviado la primera parte del formulario
+        if 'dispatch_form_fecha' in st.session_state:
+            # Variables para almacenar guacales
             paquetes = []
             
             # Verificar si está ocurriendo un rerun por agregar guacal
@@ -804,32 +820,47 @@ def main():
                     "obs": obs_guacal,
                     "fotos": fotos
                 })
-                
-            agregar_guacal = st.form_submit_button("Agregar otro guacal")
-            if agregar_guacal:
+            
+            # Botón para agregar más guacales (fuera del formulario)
+            if st.button("Agregar otro guacal", key="btn_add_guacal"):
                 st.session_state['num_paquetes'] += 1
                 st.session_state['agregando_guacal'] = True
-                try:
-                    st.rerun()
-                except Exception as e:
-                    st.warning(f"Reiniciando interfaz para agregar un guacal... ({str(e)})")
-                    try:
-                        st.rerun()
-                    except:
-                        st.error("No se pudo reiniciar la aplicación. Intenta recargar la página.")
-
-            observaciones = st.text_area("Observaciones adicionales")
+                st.rerun()
             
-            # Añadir opción para enviar notificación por correo
-            enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
-            if enviar_notificacion:
-                st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
-                
-            submitted = st.form_submit_button("Guardar despacho")
+            # Segundo formulario para continuar con el proceso
+            with st.form("dispatch_form_part2"):
+                # Recuperar valores del primer formulario desde session_state
+                try:
+                    if 'dispatch_form_fecha' in st.session_state:
+                        fecha = st.session_state['dispatch_form_fecha']
+                        encargado_almacen = st.session_state['dispatch_form_encargado_almacen']
+                        encargado_logistica = st.session_state['dispatch_form_encargado_logistica']
+                        firma_logistica = st.session_state['dispatch_form_firma_logistica']
+                        observaciones = st.session_state['dispatch_form_observaciones']
+                        enviar_notificacion = st.session_state['dispatch_form_enviar_notificacion']
+                except Exception as e:
+                    st.error(f"Error al recuperar datos del formulario: {str(e)}")
 
-        if submitted:
-            if not articulos_presentes:
-                st.error("No hay artículos para empacar en esta OP.")
+                # Confirmar observaciones para este formulario
+                final_observaciones = st.text_area("Confirmar observaciones", value=observaciones if 'dispatch_form_observaciones' in st.session_state else "", key="final_observaciones")
+                
+                # Actualizar observaciones con el valor final
+                observaciones = final_observaciones
+                
+                # Añadir opción para enviar notificación por correo
+                final_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=enviar_notificacion if 'dispatch_form_enviar_notificacion' in st.session_state else True, key="final_notificacion")
+                
+                # Actualizar la opción de notificación
+                enviar_notificacion = final_notificacion
+                
+                if enviar_notificacion:
+                    st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
+                
+                submitted = st.form_submit_button("Guardar despacho")
+
+            if submitted:
+                if not articulos_presentes:
+                    st.error("No hay artículos para empacar en esta OP.")
             else:
                 # Validar que todos los campos requeridos estén completos
                 error_validacion = False
