@@ -219,11 +219,10 @@ def get_sag_database():
         return [
             {"codigo": "M001", "descripcion": "Motor eléctrico 5HP", "unidad": "UND"},
             {"codigo": "B001", "descripcion": "Bomba centrífuga 1HP", "unidad": "UND"},
-            {"codigo": "V001", "descripcion": "Válvula de bola 1\"", "unidad": "UND"}
+            {"codigo": "V001", "descripcion": "Válvula de bola 1\"", "unidad": "UND"},
+            {"codigo": "T003", "descripcion": "Tornillo inox 3/8\"", "unidad": "UND"},
+            {"codigo": "J001", "descripcion": "Junta de caucho 1\"", "unidad": "UND"}
         ]
-        "T003": {"descripcion": "Tornillo inox 3/8\"", "unidad": "UND"},
-        "J001": {"descripcion": "Junta de caucho 1\"", "unidad": "UND"}
-    }
 
 # Cargar credenciales de Service Account
 def get_service_account_creds():
