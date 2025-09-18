@@ -892,21 +892,52 @@ def main():
                 # Botón para añadir el ítem (fuera de las columnas)
                 if st.button("Añadir ítem", key=f"btn_add_{guacal_id}", type="primary"):
                     if item_info:
+                        # Crear un nuevo ítem con los datos seleccionados
                         new_item = {
                             'codigo': selected_codigo,
                             'descripcion': item_info['descripcion'],
                             'cantidad': cantidad,
                             'unidad': item_info['unidad']
                         }
+                        
+                        # Añadir el ítem a la lista de items del guacal en session_state
                         st.session_state['guacales_items'][guacal_id].append(new_item)
-                        st.success(f"Ítem añadido al guacal {i+1}")
-                        # Limpiar campo de búsqueda
+                        
+                        # Mostrar mensaje de éxito
+                        st.success(f"Ítem añadido al guacal {i+1}: {item_info['descripcion']} (Cantidad: {cantidad} {item_info['unidad']})")
+                        
+                        # Limpiar campo de búsqueda para permitir añadir otro ítem
                         st.session_state[f"search_term_{guacal_id}"] = ""
-                        # Forzar rerun para actualizar la tabla
+                        
+                        # Forzar rerun para actualizar la interfaz
                         st.session_state['agregando_guacal'] = True
                         st.rerun()
+                    else:
+                        st.warning("No se ha seleccionado un ítem válido. Por favor, busque y seleccione un ítem primero.")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Mostrar tabla de ítems ya agregados al guacal
+                if guacal_id in st.session_state['guacales_items'] and len(st.session_state['guacales_items'][guacal_id]) > 0:
+                    st.markdown(f"<b>Ítems agregados al guacal {i+1}:</b>", unsafe_allow_html=True)
+                    
+                    # Crear un DataFrame para mostrar los ítems en una tabla
+                    items_data = []
+                    for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
+                        items_data.append({
+                            "N°": idx + 1,
+                            "Código": item['codigo'],
+                            "Descripción": item['descripcion'],
+                            "Cantidad": item['cantidad'],
+                            "Unidad": item['unidad']
+                        })
+                    
+                    # Mostrar la tabla de ítems
+                    if items_data:
+                        items_df = pd.DataFrame(items_data)
+                        st.dataframe(items_df, use_container_width=True)
+                else:
+                    st.info(f"No hay ítems agregados al guacal {i+1}. Use el buscador para encontrar y añadir ítems.")
                 
                 # Crear un campo de observaciones adicionales para el guacal
                 obs_guacal = st.text_area(f"Observaciones adicionales del guacal {i+1}", key=f"obs_guacal_{i+1}")
@@ -962,10 +993,10 @@ def main():
             if submitted:
                 if not articulos_presentes:
                     st.error("No hay artículos para empacar en esta OP.")
-            else:
-                # Validar que todos los campos requeridos estén completos
-                error_validacion = False
-                mensajes_error = []
+                else:
+                    # Validar que todos los campos requeridos estén completos
+                    error_validacion = False
+                    mensajes_error = []
                 
                 # Validar campos obligatorios (excepto observaciones)
                 if not orden_pedido_val or orden_pedido_val == "No hay órdenes registradas":
@@ -993,13 +1024,18 @@ def main():
                 guacales_completos = False
                 for i, paquete in enumerate(paquetes):
                     guacal_id = f"guacal_{i+1}"
+                    # Verificar si hay items en la sesión para este guacal
                     has_items = guacal_id in st.session_state['guacales_items'] and len(st.session_state['guacales_items'][guacal_id]) > 0
-                    if has_items and paquete["fotos"]:
+                    # Verificar si hay fotos para este guacal
+                    has_fotos = paquete["fotos"] and len(paquete["fotos"]) > 0
+                    
+                    # Si este guacal tiene tanto items como fotos, marcarlo como completo
+                    if has_items and has_fotos:
                         guacales_completos = True
                         break
                 
                 if not guacales_completos:
-                    mensajes_error.append("Al menos un guacal debe tener items detallados y fotos")
+                    mensajes_error.append("Al menos un guacal debe tener items detallados y fotos. Asegúrese de agregar al menos un ítem con el botón 'Añadir ítem' y subir al menos una foto.")
                     error_validacion = True
                 
                 # Verificar que se haya seleccionado al menos un artículo para enviar
@@ -1015,6 +1051,15 @@ def main():
                     st.error("Por favor complete todos los campos obligatorios:")
                     for mensaje in mensajes_error:
                         st.warning(mensaje)
+                    
+                    # Sugerencias adicionales para ayudar al usuario
+                    st.info("Sugerencias para solucionar los problemas:")
+                    st.markdown("""
+                    - Para agregar un ítem al guacal, use el buscador, seleccione el ítem y haga clic en 'Añadir ítem'
+                    - Asegúrese de haber subido al menos una foto para cada guacal
+                    - Verifique que ha seleccionado al menos un artículo para enviar
+                    - Complete todos los campos obligatorios (encargados y firma)
+                    """)
                     return
                 
                 # Si la validación es exitosa, procedemos con el guardado
