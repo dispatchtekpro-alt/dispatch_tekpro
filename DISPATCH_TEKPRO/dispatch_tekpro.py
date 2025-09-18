@@ -49,6 +49,40 @@ h2, h3, .stApp h2, .stApp h3 {
     color: #1db6b6;
     border-left: 5px solid #1db6b6;
 }
+.item-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+.item-table th, .item-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.item-table th {
+    background-color: #e6f7f7;
+    color: #1db6b6;
+}
+.item-table tr:nth-child(even){
+    background-color: #f9f9f9;
+}
+.add-item-section {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid #e9ecef;
+}
+.add-item-section h4 {
+    margin-top: 0;
+    color: #1db6b6;
+    margin-bottom: 15px;
+}
+.remove-item-btn {
+    color: #ff4b4b;
+    cursor: pointer;
+    font-weight: bold;
+}
 .stAlert-info {
     background-color: #f7fafb;
     color: #1db6b6;
@@ -72,6 +106,8 @@ from streamlit_drawable_canvas import st_canvas
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import pandas as pd
+import json
 
 
 # Configuración
@@ -79,6 +115,115 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
+
+# Simulación de base de datos SAG - Podría ser reemplazado por una conexión real a la BDD
+def get_sag_database():
+    """
+    Obtiene los datos de la base de datos SAG desde la hoja 'BDD SAG' en Google Sheets.
+    Estructura de la hoja esperada:
+    - Primera columna: Código del artículo
+    - Segunda columna: Descripción del artículo
+    - Tercera columna: Unidad del artículo
+    """
+    try:
+        # Configurar acceso a la hoja de cálculo
+        creds = get_service_account_creds()
+        file_name = st.secrets.drive_config.FILE_NAME
+        sheet_client = gspread.authorize(creds)
+        
+        # Abrir la hoja específica "BDD SAG"
+        try:
+            sag_sheet = sheet_client.open(file_name).worksheet("BDD SAG")
+            sag_data = sag_sheet.get_all_values()
+            
+            # Verificar que hay datos y encabezados
+            if not sag_data or len(sag_data) < 2:  # Al menos debe haber encabezados y un dato
+                st.warning("La hoja BDD SAG está vacía o no tiene suficientes datos.")
+                return []
+            
+            # Obtener los encabezados
+            headers = sag_data[0]
+            
+            # Verificar que las columnas necesarias están presentes
+            required_columns = ["CODIGO", "DESCRIPCION", "UNIDAD"]
+            column_indices = {}
+            
+            for req_col in required_columns:
+                found = False
+                for i, header in enumerate(headers):
+                    if header.upper().strip() == req_col:
+                        column_indices[req_col] = i
+                        found = True
+                        break
+                
+                if not found:
+                    st.warning(f"No se encontró la columna {req_col} en la hoja BDD SAG.")
+                    return []
+            
+            # Construir la base de datos
+            sag_db = []
+            for row in sag_data[1:]:  # Omitir encabezados
+                if len(row) > max(column_indices.values()):  # Asegurar que la fila tiene suficientes columnas
+                    codigo = row[column_indices["CODIGO"]].strip()
+                    descripcion = row[column_indices["DESCRIPCION"]].strip()
+                    unidad = row[column_indices["UNIDAD"]].strip()
+                    
+                    if codigo and descripcion:  # Solo agregar si tiene al menos código y descripción
+                        sag_db.append({
+                            "codigo": codigo,
+                            "descripcion": descripcion,
+                            "unidad": unidad if unidad else "UND"  # Valor predeterminado si no hay unidad
+                        })
+            
+            return sag_db
+            
+        except gspread.exceptions.WorksheetNotFound:
+            st.warning("No se encontró la hoja 'BDD SAG' en el documento. Creando una hoja de ejemplo...")
+            # Crear la hoja si no existe
+            try:
+                sheet = sheet_client.open(file_name)
+                worksheet = sheet.add_worksheet(title="BDD SAG", rows=100, cols=20)
+                
+                # Añadir encabezados
+                headers = ["CODIGO", "DESCRIPCION", "UNIDAD"]
+                worksheet.update('A1:C1', [headers])
+                
+                # Añadir algunos datos de ejemplo
+                sample_data = [
+                    ["M001", "Motor eléctrico 5HP", "UND"],
+                    ["M002", "Motor eléctrico 10HP", "UND"],
+                    ["R001", "Reductor 1:10", "UND"],
+                    ["B001", "Bomba centrífuga 1HP", "UND"],
+                    ["V001", "Válvula de bola 1\"", "UND"]
+                ]
+                worksheet.update('A2:C6', sample_data)
+                
+                # Formatear encabezados (negrita, centrados)
+                worksheet.format('A1:C1', {
+                    "textFormat": {"bold": True},
+                    "horizontalAlignment": "CENTER"
+                })
+                
+                st.success("Se ha creado la hoja 'BDD SAG' con datos de ejemplo.")
+                
+                # Convertir los datos de muestra al formato requerido
+                return [{"codigo": code, "descripcion": desc, "unidad": unit} for code, desc, unit in sample_data]
+                
+            except Exception as e:
+                st.error(f"Error al crear la hoja BDD SAG: {str(e)}")
+                return []
+                
+    except Exception as e:
+        st.error(f"Error al obtener datos de BDD SAG: {str(e)}")
+        # En caso de error, devolver algunos datos de muestra
+        return [
+            {"codigo": "M001", "descripcion": "Motor eléctrico 5HP", "unidad": "UND"},
+            {"codigo": "B001", "descripcion": "Bomba centrífuga 1HP", "unidad": "UND"},
+            {"codigo": "V001", "descripcion": "Válvula de bola 1\"", "unidad": "UND"}
+        ]
+        "T003": {"descripcion": "Tornillo inox 3/8\"", "unidad": "UND"},
+        "J001": {"descripcion": "Junta de caucho 1\"", "unidad": "UND"}
+    }
 
 # Cargar credenciales de Service Account
 def get_service_account_creds():
@@ -227,6 +372,17 @@ def enviar_correo(destinatario, asunto, mensaje):
 def main():
     # Importar datetime al inicio de la función main
     import datetime
+
+    # Inicializar la base de datos SAG
+    sag_db = get_sag_database()
+    
+    # Guardar la base de datos en session_state para reutilizarla
+    if 'sag_db' not in st.session_state:
+        st.session_state.sag_db = sag_db
+    
+    # Asegurar que sag_database está disponible para la selección de productos
+    if 'sag_database' not in st.session_state:
+        st.session_state['sag_database'] = sag_db
 
     # Menú de inicio
     col1, col2 = st.columns([4,1])
@@ -446,6 +602,10 @@ def main():
         # Estado dinámico para número de paquetes
         if 'num_paquetes' not in st.session_state:
             st.session_state['num_paquetes'] = 1
+            
+        # Inicializar el estado para los items de guacales si no existe
+        if 'guacales_items' not in st.session_state:
+            st.session_state['guacales_items'] = {}
 
         # Mostrar información del cliente y equipo antes del formulario
         if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente:
@@ -555,11 +715,96 @@ def main():
                     st.warning(f"Error al reiniciar: {e}")
                     pass
                 
+            # Código para los guacales con subcampos
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
-                desc = st.text_area(f"Descripción guacal {i+1}", key=f"desc_paquete_{i+1}")
+                
+                # Definir el ID único para este guacal
+                guacal_id = f"guacal_{i+1}"
+                
+                # Inicializar la lista de items para este guacal si no existe
+                if guacal_id not in st.session_state['guacales_items']:
+                    st.session_state['guacales_items'][guacal_id] = []
+                
+                # Crear contenedor para la tabla de items de este guacal
+                st.markdown("<b>Items del guacal:</b>", unsafe_allow_html=True)
+                
+                # Mostrar la tabla de items ya agregados a este guacal
+                if st.session_state['guacales_items'][guacal_id]:
+                    items_df = pd.DataFrame(st.session_state['guacales_items'][guacal_id])
+                    # Usar HTML para mostrar una tabla más estilizada
+                    table_html = "<table class='item-table'><tr><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Unidad</th></tr>"
+                    for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
+                        table_html += f"<tr><td>{item['codigo']}</td><td>{item['descripcion']}</td><td>{item['cantidad']}</td><td>{item['unidad']}</td></tr>"
+                    table_html += "</table>"
+                    st.markdown(table_html, unsafe_allow_html=True)
+                
+                # Formulario para añadir un nuevo ítem al guacal
+                st.markdown("<div class='add-item-section'><h4>Añadir nuevo ítem</h4>", unsafe_allow_html=True)
+                
+                # Crear columnas para organizar la entrada de datos
+                col1, col2, col3, col4, col5 = st.columns([2, 3, 1, 1, 1])
+                
+                # Lista de códigos disponibles del database SAG
+                codigos_disponibles = [item['codigo'] for item in st.session_state['sag_database']]
+                
+                if not codigos_disponibles:
+                    st.warning("No hay códigos disponibles en la base de datos SAG. Por favor, añade datos a la hoja 'BDD SAG'.")
+                
+                # Selección de código
+                with col1:
+                    selected_codigo = st.selectbox(
+                        "Código:",
+                        options=codigos_disponibles if codigos_disponibles else [""],
+                        key=f"codigo_{guacal_id}"
+                    )
+                
+                # Buscar la información correspondiente al código seleccionado
+                item_info = next((item for item in st.session_state['sag_database'] if item['codigo'] == selected_codigo), None)
+                
+                # Mostrar la descripción y unidad automáticamente
+                with col2:
+                    descripcion = st.text_input("Descripción:", value=item_info['descripcion'] if item_info else "", disabled=True, key=f"desc_{guacal_id}")
+                
+                # Entrada de cantidad (único campo editable)
+                with col3:
+                    cantidad = st.number_input("Cantidad:", min_value=1, value=1, key=f"cantidad_{guacal_id}")
+                
+                # Mostrar la unidad automáticamente
+                with col4:
+                    unidad = st.text_input("Unidad:", value=item_info['unidad'] if item_info else "", disabled=True, key=f"unidad_{guacal_id}")
+                
+                # Botón para añadir el ítem
+                with col5:
+                    if st.button("Añadir", key=f"btn_add_{guacal_id}"):
+                        if item_info:
+                            new_item = {
+                                'codigo': selected_codigo,
+                                'descripcion': item_info['descripcion'],
+                                'cantidad': cantidad,
+                                'unidad': item_info['unidad']
+                            }
+                            st.session_state['guacales_items'][guacal_id].append(new_item)
+                            st.success(f"Ítem añadido al guacal {i+1}")
+                            # Forzar rerun para actualizar la tabla
+                            st.session_state['agregando_guacal'] = True
+                            st.rerun()
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+                
+                # Crear un campo de observaciones adicionales para el guacal
+                obs_guacal = st.text_area(f"Observaciones adicionales del guacal {i+1}", key=f"obs_guacal_{i+1}")
+                
+                # Campo para subir fotos del guacal
                 fotos = st.file_uploader(f"Fotos guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
-                paquetes.append({"desc": desc, "fotos": fotos})
+                
+                # Guardar información completa del guacal
+                desc_items = json.dumps(st.session_state['guacales_items'][guacal_id]) if st.session_state['guacales_items'][guacal_id] else ""
+                paquetes.append({
+                    "desc": desc_items,
+                    "obs": obs_guacal,
+                    "fotos": fotos
+                })
                 
             agregar_guacal = st.form_submit_button("Agregar otro guacal")
             if agregar_guacal:
@@ -613,15 +858,17 @@ def main():
                     mensajes_error.append("Debe incluir la firma del encargado de logística")
                     error_validacion = True
                 
-                # Verificar que al menos un guacal tenga descripción y fotos
+                # Verificar que al menos un guacal tenga items y fotos
                 guacales_completos = False
-                for paquete in paquetes:
-                    if paquete["desc"] and paquete["fotos"]:
+                for i, paquete in enumerate(paquetes):
+                    guacal_id = f"guacal_{i+1}"
+                    has_items = guacal_id in st.session_state['guacales_items'] and len(st.session_state['guacales_items'][guacal_id]) > 0
+                    if has_items and paquete["fotos"]:
                         guacales_completos = True
                         break
                 
                 if not guacales_completos:
-                    mensajes_error.append("Al menos un guacal debe tener descripción y fotos")
+                    mensajes_error.append("Al menos un guacal debe tener items detallados y fotos")
                     error_validacion = True
                 
                 # Verificar que se haya seleccionado al menos un artículo para enviar
@@ -678,8 +925,26 @@ def main():
                 
                 # Completar el arreglo con guacales (para mantener la estructura de encabezados)
                 for idx, paquete in enumerate(paquetes, start=1):
-                    # Agregar descripción del guacal
-                    row.append(paquete["desc"])  # Descripción Guacal n
+                    guacal_id = f"guacal_{idx}"
+                    
+                    # Preparar el texto descriptivo de los items
+                    items_descripcion = ""
+                    if guacal_id in st.session_state['guacales_items'] and st.session_state['guacales_items'][guacal_id]:
+                        items_lines = []
+                        for item in st.session_state['guacales_items'][guacal_id]:
+                            item_line = f"{item['codigo']} - {item['descripcion']} - {item['cantidad']} {item['unidad']}"
+                            items_lines.append(item_line)
+                        items_descripcion = "\n".join(items_lines)
+                    
+                    # Añadir observaciones si existen
+                    if paquete["obs"] and paquete["obs"].strip():
+                        if items_descripcion:
+                            items_descripcion += f"\n\nObservaciones: {paquete['obs']}"
+                        else:
+                            items_descripcion = f"Observaciones: {paquete['obs']}"
+                    
+                    # Agregar descripción del guacal (ahora contiene la lista detallada de items)
+                    row.append(items_descripcion)  # Descripción Guacal n
                     
                     # Procesar y agregar fotos del guacal
                     enlaces = []
