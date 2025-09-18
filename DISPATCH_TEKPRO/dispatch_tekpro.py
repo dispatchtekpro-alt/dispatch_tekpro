@@ -78,6 +78,29 @@ h2, h3, .stApp h2, .stApp h3 {
     color: #1db6b6;
     margin-bottom: 15px;
 }
+.search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+.search-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+}
+.search-item:hover {
+    background-color: #f2f2f2;
+}
+.search-item.selected {
+    background-color: #e6f7f7;
+}
+.search-highlight {
+    background-color: #ffff99;
+    font-weight: bold;
+}
 .remove-item-btn {
     color: #ff4b4b;
     cursor: pointer;
@@ -752,38 +775,109 @@ def main():
                 
                 # Mostrar la tabla de items ya agregados a este guacal
                 if st.session_state['guacales_items'][guacal_id]:
+                    # Encabezado para la tabla
+                    st.markdown("#### Items añadidos al guacal")
+                    
+                    # Crear DataFrame para mostrar los ítems
                     items_df = pd.DataFrame(st.session_state['guacales_items'][guacal_id])
-                    # Usar HTML para mostrar una tabla más estilizada
-                    table_html = "<table class='item-table'><tr><th>Código</th><th>Descripción</th><th>Cantidad</th><th>Unidad</th></tr>"
-                    for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
-                        table_html += f"<tr><td>{item['codigo']}</td><td>{item['descripcion']}</td><td>{item['cantidad']}</td><td>{item['unidad']}</td></tr>"
-                    table_html += "</table>"
-                    st.markdown(table_html, unsafe_allow_html=True)
+                    
+                    # Usar un contenedor para dar estilo a la tabla
+                    with st.container():
+                        # Crear columnas para cada ítem con opción de eliminar
+                        for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
+                            cols = st.columns([1, 3, 1, 1, 1])
+                            with cols[0]:
+                                st.text(item['codigo'])
+                            with cols[1]:
+                                st.text(item['descripcion'])
+                            with cols[2]:
+                                st.text(str(item['cantidad']))
+                            with cols[3]:
+                                st.text(item['unidad'])
+                            with cols[4]:
+                                if st.button("❌", key=f"delete_{guacal_id}_{idx}"):
+                                    st.session_state['guacales_items'][guacal_id].pop(idx)
+                                    st.success(f"Ítem eliminado del guacal {i+1}")
+                                    st.session_state['agregando_guacal'] = True
+                                    st.rerun()
+                        
+                    # Mostrar el total de ítems
+                    st.info(f"Total de ítems: {len(st.session_state['guacales_items'][guacal_id])}")
                 
                 # Formulario para añadir un nuevo ítem al guacal
                 st.markdown("<div class='add-item-section'><h4>Añadir nuevo ítem</h4>", unsafe_allow_html=True)
                 
                 # Crear columnas para organizar la entrada de datos
-                col1, col2, col3, col4, col5 = st.columns([2, 3, 1, 1, 1])
+                col1, col2 = st.columns(2)
                 
-                # Lista de códigos disponibles del database SAG
-                codigos_disponibles = [item['codigo'] for item in st.session_state['sag_database']]
-                
-                if not codigos_disponibles:
-                    st.warning("No hay códigos disponibles en la base de datos SAG. Por favor, añade datos a la hoja 'BDD SAG'.")
-                
-                # Selección de código
+                # Opciones para buscar por código o descripción
                 with col1:
-                    selected_codigo = st.selectbox(
-                        "Código:",
-                        options=codigos_disponibles if codigos_disponibles else [""],
-                        key=f"codigo_{guacal_id}"
+                    search_option = st.radio(
+                        "Buscar por:",
+                        ["Código", "Descripción"],
+                        horizontal=True,
+                        key=f"search_option_{guacal_id}"
                     )
                 
-                # Buscar la información correspondiente al código seleccionado
-                item_info = next((item for item in st.session_state['sag_database'] if item['codigo'] == selected_codigo), None)
+                # Campo de búsqueda
+                with col2:
+                    search_term = st.text_input(
+                        "Buscar:",
+                        key=f"search_term_{guacal_id}",
+                        placeholder="Escribe para buscar código o descripción"
+                    )
                 
-                # Mostrar la descripción y unidad automáticamente
+                # Procesar la base de datos para búsqueda
+                if not st.session_state['sag_database']:
+                    st.warning("No hay códigos disponibles en la base de datos SAG. Por favor, añade datos a la hoja 'BDD SAG'.")
+                    filtered_items = []
+                else:
+                    # Filtrar items según el término de búsqueda
+                    if search_term:
+                        if search_option == "Código":
+                            filtered_items = [item for item in st.session_state['sag_database'] 
+                                            if search_term.lower() in item['codigo'].lower()]
+                        else:  # Búsqueda por descripción
+                            filtered_items = [item for item in st.session_state['sag_database'] 
+                                            if search_term.lower() in item['descripcion'].lower()]
+                    else:
+                        filtered_items = st.session_state['sag_database']
+                
+                # Mostrar los resultados en formato de tabla seleccionable
+                if filtered_items:
+                    # Crear opciones para mostrar en el selectbox
+                    if search_option == "Código":
+                        options = [f"{item['codigo']} - {item['descripcion']}" for item in filtered_items]
+                    else:  # Mostrar dando prioridad a la descripción
+                        options = [f"{item['descripcion']} - {item['codigo']}" for item in filtered_items]
+                    
+                    selected_item = st.selectbox(
+                        "Seleccionar artículo:",
+                        options=options,
+                        key=f"selected_item_{guacal_id}"
+                    )
+                    
+                    # Extraer código del ítem seleccionado
+                    if search_option == "Código":
+                        selected_codigo = selected_item.split(" - ")[0]
+                    else:
+                        selected_codigo = selected_item.split(" - ")[1]
+                    
+                    # Buscar información completa del ítem
+                    item_info = next((item for item in st.session_state['sag_database'] if item['codigo'] == selected_codigo), None)
+                else:
+                    st.warning("No se encontraron coincidencias con tu búsqueda.")
+                    selected_codigo = ""
+                    item_info = None
+                
+                # Mostrar la información completa del ítem seleccionado
+                col1, col2, col3, col4 = st.columns([2, 3, 1, 1])
+                
+                # Mostrar el código
+                with col1:
+                    st.text_input("Código:", value=selected_codigo, disabled=True, key=f"codigo_display_{guacal_id}")
+                
+                # Mostrar la descripción
                 with col2:
                     descripcion = st.text_input("Descripción:", value=item_info['descripcion'] if item_info else "", disabled=True, key=f"desc_{guacal_id}")
                 
@@ -795,21 +889,22 @@ def main():
                 with col4:
                     unidad = st.text_input("Unidad:", value=item_info['unidad'] if item_info else "", disabled=True, key=f"unidad_{guacal_id}")
                 
-                # Botón para añadir el ítem
-                with col5:
-                    if st.button("Añadir", key=f"btn_add_{guacal_id}"):
-                        if item_info:
-                            new_item = {
-                                'codigo': selected_codigo,
-                                'descripcion': item_info['descripcion'],
-                                'cantidad': cantidad,
-                                'unidad': item_info['unidad']
-                            }
-                            st.session_state['guacales_items'][guacal_id].append(new_item)
-                            st.success(f"Ítem añadido al guacal {i+1}")
-                            # Forzar rerun para actualizar la tabla
-                            st.session_state['agregando_guacal'] = True
-                            st.rerun()
+                # Botón para añadir el ítem (fuera de las columnas)
+                if st.button("Añadir ítem", key=f"btn_add_{guacal_id}", type="primary"):
+                    if item_info:
+                        new_item = {
+                            'codigo': selected_codigo,
+                            'descripcion': item_info['descripcion'],
+                            'cantidad': cantidad,
+                            'unidad': item_info['unidad']
+                        }
+                        st.session_state['guacales_items'][guacal_id].append(new_item)
+                        st.success(f"Ítem añadido al guacal {i+1}")
+                        # Limpiar campo de búsqueda
+                        st.session_state[f"search_term_{guacal_id}"] = ""
+                        # Forzar rerun para actualizar la tabla
+                        st.session_state['agregando_guacal'] = True
+                        st.rerun()
                 
                 st.markdown("</div>", unsafe_allow_html=True)
                 
