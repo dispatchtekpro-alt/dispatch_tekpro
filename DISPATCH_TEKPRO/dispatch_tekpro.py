@@ -1,5 +1,23 @@
 import streamlit as st
 
+# Función de utilidad para manipular session_state de forma segura
+def set_session_state(key, value):
+    """Establece un valor en session_state de forma segura, manejando excepciones"""
+    try:
+        st.session_state[key] = value
+        return True
+    except Exception as e:
+        st.warning(f"Error al establecer {key} en session_state: {e}")
+        return False
+        
+def get_session_state(key, default=None):
+    """Obtiene un valor de session_state de forma segura, manejando excepciones"""
+    try:
+        return st.session_state.get(key, default)
+    except Exception as e:
+        st.warning(f"Error al obtener {key} de session_state: {e}")
+        return default
+
 # Configurar el título de la página que aparece en la pestaña del navegador
 st.set_page_config(
     page_title="Dispatch TEKPRO",
@@ -948,26 +966,37 @@ def main():
                 
                 # Botón para añadir el ítem (fuera de las columnas)
                 if st.button("Añadir ítem", key=f"btn_add_{guacal_id}", type="primary"):
-                    if item_info:
-                        # Crear un nuevo ítem con los datos seleccionados
-                        new_item = {
-                            'codigo': selected_codigo,
-                            'descripcion': item_info['descripcion'],
-                            'cantidad': cantidad,
-                            'unidad': item_info['unidad']
-                        }
-                        
-                        # Añadir el ítem a la lista de items del guacal en session_state
-                        st.session_state['guacales_items'][guacal_id].append(new_item)
-                        
-                        # Mostrar mensaje de éxito
-                        st.success(f"Ítem añadido al guacal {i+1}: {item_info['descripcion']} (Cantidad: {cantidad} {item_info['unidad']})")
+                    try:
+                        if item_info:
+                            # Crear un nuevo ítem con los datos seleccionados
+                            new_item = {
+                                'codigo': selected_codigo,
+                                'descripcion': item_info['descripcion'],
+                                'cantidad': cantidad,
+                                'unidad': item_info['unidad']
+                            }
+                            
+                            # Añadir el ítem a la lista de items del guacal en session_state
+                            if guacal_id in st.session_state['guacales_items']:
+                                st.session_state['guacales_items'][guacal_id].append(new_item)
+                                # Mostrar mensaje de éxito
+                                st.success(f"Ítem añadido al guacal {i+1}: {item_info['descripcion']} (Cantidad: {cantidad} {item_info['unidad']})")
+                            else:
+                                st.warning(f"No se pudo encontrar el guacal {i+1} en la sesión. Intente reiniciar la página.")
+                    except Exception as e:
+                        st.error(f"Error al añadir ítem: {str(e)}")
                         
                         # Limpiar campo de búsqueda para permitir añadir otro ítem
-                        st.session_state[f"search_term_{guacal_id}"] = ""
+                        try:
+                            # Verificar si la clave existe antes de intentar modificarla
+                            if f"search_term_{guacal_id}" in st.session_state:
+                                # En lugar de asignar una cadena vacía, removemos la clave del session_state
+                                del st.session_state[f"search_term_{guacal_id}"]
+                        except Exception as e:
+                            st.warning(f"No se pudo limpiar el término de búsqueda: {e}")
                         
-                        # Forzar rerun para actualizar la interfaz
-                        st.session_state['need_rerun'] = True
+                        # Forzar rerun para actualizar la interfaz de forma segura
+                        set_session_state('need_rerun', True)
                     else:
                         st.warning("No se ha seleccionado un ítem válido. Por favor, busque y seleccione un ítem primero.")
                 
