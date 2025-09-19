@@ -808,9 +808,9 @@ def main():
             # Variables para almacenar guacales
             paquetes = []
             
-            # Verificar si está ocurriendo un rerun por agregar guacal
-            if 'agregando_guacal' in st.session_state and st.session_state['agregando_guacal']:
-                st.session_state['agregando_guacal'] = False
+            # Verificar si es necesario hacer un rerun
+            if 'need_rerun' in st.session_state and st.session_state['need_rerun']:
+                st.session_state['need_rerun'] = False
                 try:
                     st.rerun()
                 except Exception as e:
@@ -856,8 +856,7 @@ def main():
                                 if st.button("❌", key=f"delete_{guacal_id}_{idx}"):
                                     st.session_state['guacales_items'][guacal_id].pop(idx)
                                     st.success(f"Ítem eliminado del guacal {i+1}")
-                                    st.session_state['agregando_guacal'] = True
-                                    st.rerun()
+                                    st.session_state['need_rerun'] = True
                         
                     # Mostrar el total de ítems
                     st.info(f"Total de ítems: {len(st.session_state['guacales_items'][guacal_id])}")
@@ -968,8 +967,7 @@ def main():
                         st.session_state[f"search_term_{guacal_id}"] = ""
                         
                         # Forzar rerun para actualizar la interfaz
-                        st.session_state['agregando_guacal'] = True
-                        st.rerun()
+                        st.session_state['need_rerun'] = True
                     else:
                         st.warning("No se ha seleccionado un ítem válido. Por favor, busque y seleccione un ítem primero.")
                 
@@ -1047,8 +1045,7 @@ def main():
             # Botón para agregar más guacales (fuera del formulario)
             if st.button("Agregar otro guacal", key="btn_add_guacal"):
                 st.session_state['num_paquetes'] += 1
-                st.session_state['agregando_guacal'] = True
-                st.rerun()
+                st.session_state['need_rerun'] = True
             
             # Segundo formulario para continuar con el proceso
             with st.form("dispatch_form_part2"):
@@ -1407,6 +1404,10 @@ def main():
             # Inicializar una sesión para detectar cambios en la OP seleccionada
             if 'previous_op' not in st.session_state:
                 st.session_state['previous_op'] = ""
+            
+            # Inicializar bandera para reinicio
+            if 'need_rerun' not in st.session_state:
+                st.session_state['need_rerun'] = False
                 
             # Callback para resetear los campos cuando cambia la OP
             def on_op_change():
@@ -1447,8 +1448,8 @@ def main():
                     # Actualizar el estado previo
                     st.session_state['previous_op'] = st.session_state['op_selector']
                     
-                    # Recargar la página para limpiar otros campos
-                    st.rerun()
+                    # Establecer bandera para reinicio
+                    st.session_state['need_rerun'] = True
 
             op_selected = st.selectbox("Orden de Pedido (OP)", 
                 options=["SELECCIONA"] + list(set(op_options)),
@@ -1458,6 +1459,11 @@ def main():
             # Actualizar el estado previo si no cambia
             if st.session_state['previous_op'] != op_selected:
                 st.session_state['previous_op'] = op_selected
+                
+            # Verificar si es necesario reiniciar la página
+            if st.session_state.get('need_rerun', False):
+                st.session_state['need_rerun'] = False
+                st.rerun()
             
             if op_selected != "SELECCIONA":
                 row = op_to_row.get(op_selected, [])
@@ -1513,11 +1519,11 @@ def main():
                 "Descripción general del equipo", 
                 key=f"descripcion_general{form_key_suffix}"
             )
-            foto_general = st.file_uploader(
+            fotos_generales = st.file_uploader(
                 "Foto general del equipo", 
                 type=["jpg","jpeg","png"], 
-                accept_multiple_files=False,
-                key=f"foto_general{form_key_suffix}"
+                accept_multiple_files=True,
+                key=f"fotos_generales{form_key_suffix}"
             )
             
             st.markdown("</div>", unsafe_allow_html=True)
@@ -2182,7 +2188,7 @@ def main():
                     error_validacion = True
                 
                 # Validar que se haya subido una foto general del equipo
-                if not descripcion_general or not foto_general:
+                if not descripcion_general or not fotos_generales:
                     mensajes_error.append("Debe incluir una descripción y foto general del equipo")
                     error_validacion = True
 
@@ -2222,7 +2228,7 @@ def main():
 
                 row = [
                     str(cliente), str(op), str(item), str(equipo), str(cantidad), str(fecha),
-                    str(descripcion_general), serializa_fotos(foto_general, f"FotoGeneral_{op}", folder_id),
+                    str(descripcion_general), serializa_fotos(fotos_generales, f"FotoGeneral_{op}", folder_id),
                     str(cantidad_motores), str(voltaje_motores), serializa_fotos(fotos_motores, f"Motores_{op}", folder_id),
                     str(cantidad_reductores), str(voltaje_reductores), serializa_fotos(fotos_reductores, f"Reductores_{op}", folder_id),
                     str(cantidad_bombas), str(voltaje_bombas), serializa_fotos(fotos_bombas, f"Bombas_{op}", folder_id),
@@ -2310,6 +2316,10 @@ def main():
                 
                 sheet.append_row(row)
                 st.success("Acta de entrega guardada correctamente en 'actas de entregas diligenciadas'.")
+                
+                # Mostrar información sobre las fotos subidas
+                if fotos_generales:
+                    st.info(f"Se han subido {len(fotos_generales)} fotos generales del equipo.")
                 
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
