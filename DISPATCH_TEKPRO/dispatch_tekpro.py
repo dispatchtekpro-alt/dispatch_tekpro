@@ -1,20 +1,4 @@
 import streamlit as st
-import datetime
-import json
-import gspread
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2.service_account import Credentials
-import io
-import os
-from streamlit_drawable_canvas import st_canvas
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import pandas as pd
-import json
-
-
 
 # Función de utilidad para manipular session_state de forma segura
 def set_session_state(key, value):
@@ -33,130 +17,6 @@ def get_session_state(key, default=None):
     except Exception as e:
         st.warning(f"Error al obtener {key} de session_state: {e}")
         return default
-
-# Funciones para persistir datos del formulario
-def init_form_data():
-    """Inicializa los datos del formulario en session_state si no existen"""
-    form_fields = {
-        'cliente': '',
-        'op': '',
-        'equipo': '',
-        'item': '',
-        'cantidad': '',
-        'descripcion_general': '',
-        'lider_inspeccion': '',
-        'disenador': '',
-        'recibe': '',
-        'observaciones_generales': '',
-        'cantidad_motores': 0,
-        'voltaje_motores': '',
-        'cantidad_reductores': 0,
-        'voltaje_reductores': '',
-        'cantidad_bombas': 0,
-        'voltaje_bombas': '',
-        'voltaje_turbina': '',
-        'voltaje_quemador': '',
-        'tipo_combustible_quemador': '',
-        'metodo_uso_quemador': '',
-        'voltaje_bomba_vacio': '',
-        'voltaje_compresor': '',
-        'cantidad_manometros': 0,
-        'cantidad_vacuometros': 0,
-        'cantidad_valvulas': 0,
-        'cantidad_mangueras': 0,
-        'cantidad_boquillas': 0,
-        'cantidad_reguladores': 0,
-        'descripcion_tuberia': '',
-        'descripcion_cables': '',
-        'descripcion_curvas': '',
-        'descripcion_tornilleria': '',
-        'tension_pinon1': '',
-        'tension_pinon2': '',
-        'tension_polea1': '',
-        'tension_polea2': '',
-        'cantidad_gabinete': 0,
-        'cantidad_arrancador': 0,
-        'cantidad_control_nivel': 0,
-        'cantidad_variador': 0,
-        'cantidad_sensor_temp': 0,
-        'cantidad_toma_corriente': 0,
-        'descripcion_otros_elementos': '',
-        'revision_soldadura': False,
-        'revision_sentidos_giro': False,
-        'manual_funcionamiento': False,
-        'revision_filos_acabados': False,
-        'revision_tratamientos': False,
-        'revision_tornilleria': False,
-        'revision_ruidos': False,
-        'ensayo_equipo': False
-    }
-    
-    for field, default_value in form_fields.items():
-        if f'form_data_{field}' not in st.session_state:
-            st.session_state[f'form_data_{field}'] = default_value
-
-def save_form_field(field_name, value):
-    """Guarda un campo del formulario en session_state"""
-    st.session_state[f'form_data_{field_name}'] = value
-
-def get_form_field(field_name, default=None):
-    """Obtiene un campo del formulario desde session_state"""
-    return st.session_state.get(f'form_data_{field_name}', default)
-
-def clear_form_data():
-    """Limpia todos los datos del formulario"""
-    keys_to_remove = [key for key in st.session_state.keys() if key.startswith('form_data_')]
-    for key in keys_to_remove:
-        del st.session_state[key]
-
-def show_persisted_data_summary():
-    """Muestra un resumen de los datos persistidos"""
-    persisted_data = {}
-    for key in st.session_state.keys():
-        if key.startswith('form_data_'):
-            field_name = key.replace('form_data_', '')
-            value = st.session_state[key]
-            if value and str(value).strip():  # Solo mostrar campos que tienen datos
-                persisted_data[field_name] = value
-    
-    if persisted_data:
-        with st.expander("📋 Datos guardados en memoria", expanded=False):
-            st.markdown("**Los siguientes datos están guardados y se mantendrán al recargar:**")
-            for field, value in persisted_data.items():
-                # Formatear el nombre del campo para que sea más legible
-                field_display = field.replace('_', ' ').title()
-                if len(str(value)) > 50:
-                    value_display = str(value)[:47] + "..."
-                else:
-                    value_display = str(value)
-                st.markdown(f"• **{field_display}**: {value_display}")
-            st.markdown(f"**Total de campos guardados**: {len(persisted_data)}")
-            
-            # Opción para descargar datos como JSON
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("📥 Descargar datos como backup"):
-                    json_data = json.dumps(persisted_data, indent=2, ensure_ascii=False)
-                    st.download_button(
-                        label="💾 Descargar archivo JSON",
-                        data=json_data,
-                        file_name=f"backup_acta_entrega_{datetime.date.today().strftime('%Y%m%d')}.json",
-                        mime="application/json"
-                    )
-            with col2:
-                uploaded_backup = st.file_uploader("📤 Cargar backup", type=['json'], help="Sube un archivo JSON previamente descargado para restaurar los datos")
-                if uploaded_backup:
-                    try:
-                        backup_data = json.loads(uploaded_backup.read().decode())
-                        if st.button("🔄 Restaurar datos desde backup"):
-                            for field, value in backup_data.items():
-                                save_form_field(field, value)
-                            st.success(f"Se han restaurado {len(backup_data)} campos desde el backup")
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"Error al cargar el backup: {e}")
-    else:
-        st.info("No hay datos persistidos actualmente.")
 
 # Configurar el título de la página que aparece en la pestaña del navegador
 st.set_page_config(
@@ -275,6 +135,21 @@ h2, h3, .stApp h2, .stApp h3 {
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 </style>
 ''', unsafe_allow_html=True)
+
+
+import gspread
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+from google.oauth2.service_account import Credentials
+import io
+import os
+from streamlit_drawable_canvas import st_canvas
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import pandas as pd
+import json
+
 
 # Configuración
 SCOPES = [
@@ -536,9 +411,6 @@ def enviar_correo(destinatario, asunto, mensaje):
 def main():
     # Importar datetime al inicio de la función main
     import datetime
-    
-    # Inicializar los datos del formulario para persistencia
-    init_form_data()
 
     # Inicializar la base de datos SAG
     sag_db = get_sag_database()
@@ -1493,26 +1365,6 @@ def main():
             authorize_drive_oauth()
 
         st.markdown("<h3 style='color:#1db6b6;'>ACTA DE ENTREGA</h3>", unsafe_allow_html=True)
-        
-        # Aviso sobre persistencia de datos y botón para limpiar
-        col1, col2, col3 = st.columns([2, 1, 1])
-        with col1:
-            st.info("💾 Los datos del formulario se guardan automáticamente mientras trabajas. Al recargar la página, tus datos se mantendrán.")
-        with col2:
-            if st.button("🗑️ Limpiar formulario", help="Elimina todos los datos guardados del formulario"):
-                clear_form_data()
-                st.success("Datos del formulario eliminados correctamente")
-                st.rerun()
-        with col3:
-            if st.button("📊 Ver datos guardados", help="Muestra los datos que están persistidos en memoria"):
-                st.session_state['show_persisted_summary'] = True
-        
-        # Mostrar resumen de datos persistidos si se solicitó
-        if st.session_state.get('show_persisted_summary', False):
-            show_persisted_data_summary()
-            if st.button("❌ Cerrar resumen"):
-                st.session_state['show_persisted_summary'] = False
-                st.rerun()
 
         with st.expander("Datos Generales del Proyecto", expanded=True):
             st.markdown("""
@@ -1585,14 +1437,10 @@ def main():
             if 'need_rerun' not in st.session_state:
                 st.session_state['need_rerun'] = False
                 
-            # Inicializar bandera para cambio de OP
-            if 'op_changed' not in st.session_state:
-                st.session_state['op_changed'] = False
-                
-            # Callback para limpiar campos cuando cambia la OP
+            # Callback para resetear los campos cuando cambia la OP
             def on_op_change():
                 if st.session_state['previous_op'] != st.session_state['op_selector']:
-                    # Limpiar solo los campos del formulario secundarios (no los principales)
+                    # Limpiar todos los checkbox de selección
                     for key in list(st.session_state.keys()):
                         # Limpiar checkboxes de mostrar elementos
                         if key.startswith('cb_mostrar_'):
@@ -1619,132 +1467,61 @@ def main():
                                       'revision_tratamientos', 'revision_tornilleria',
                                       'revision_ruidos', 'ensayo_equipo', 
                                       'observaciones_generales', 'lider_inspeccion',
-                                      'encargado_soldador', 'disenador', 'descripcion_general']
+                                      'encargado_soldador', 'disenador']
                     
                     for campo in campos_a_limpiar:
                         if campo in st.session_state:
                             del st.session_state[campo]
-                        # También limpiar de los datos persistidos
-                        save_form_field(campo, '')
                     
                     # Actualizar el estado previo
                     st.session_state['previous_op'] = st.session_state['op_selector']
+                    
+                    # Establecer bandera para reinicio
+                    st.session_state['need_rerun'] = True
 
             op_selected = st.selectbox("Orden de Pedido (OP)", 
                 options=["SELECCIONA"] + list(set(op_options)),
                 key="op_selector",
                 on_change=on_op_change)
+            
+            # Actualizar el estado previo si no cambia
+            if st.session_state['previous_op'] != op_selected:
+                st.session_state['previous_op'] = op_selected
                 
-            # Cargar datos de la OP seleccionada ANTES de verificar el rerun
-            if op_selected != "SELECCIONA":
-                row = op_to_row.get(op_selected, [])
-                try:
-                    if all_rows and len(all_rows) > 0:
-                        headers = [h.strip().lower() for h in all_rows[0]]
-                        cliente_idx = headers.index("cliente") if "cliente" in headers else None
-                        equipo_idx = headers.index("equipo") if "equipo" in headers else None
-                        item_idx = headers.index("item") if "item" in headers else None
-                        cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
-                        fecha_idx = headers.index("fecha") if "fecha" in headers else None
-
-                        if row and len(row) > 0:
-                            auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
-                            auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
-                            auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
-                            auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
-                            try:
-                                auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
-                            except Exception:
-                                auto_fecha = datetime.date.today()
-                        else:
-                            # No se encontró la fila para esta OP
-                            auto_cliente = ""
-                            auto_equipo = ""
-                            auto_item = ""
-                            auto_cantidad = ""
-                            auto_fecha = datetime.date.today()
-                except Exception as e:
-                    # Error al procesar los datos
-                    auto_cliente = ""
-                    auto_equipo = ""
-                    auto_item = ""
-                    auto_cantidad = ""
-                    auto_fecha = datetime.date.today()
-            else:
-                # No hay OP seleccionada, limpiar variables auto-completadas
-                auto_cliente = ""
-                auto_equipo = ""
-                auto_item = ""
-                auto_cantidad = ""
-                auto_fecha = datetime.date.today()
-                
-            # Verificar si es necesario reiniciar la página (DESPUÉS de cargar los datos)
+            # Verificar si es necesario reiniciar la página
             if st.session_state.get('need_rerun', False):
                 st.session_state['need_rerun'] = False
                 st.rerun()
+            
+            if op_selected != "SELECCIONA":
+                row = op_to_row.get(op_selected, [])
+                try:
+                    headers = [h.strip().lower() for h in all_rows[0]]
+                    cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                    equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                    item_idx = headers.index("item") if "item" in headers else None
+                    cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                    fecha_idx = headers.index("fecha") if "fecha" in headers else None
 
-            # Determinar valores a mostrar: priorizar datos de OP sobre persistidos
-            if op_selected != "SELECCIONA" and (auto_cliente or auto_equipo or auto_item or auto_cantidad):
-                # Hay una OP seleccionada y datos disponibles: usar datos de la OP
-                cliente_value = auto_cliente
-                equipo_value = auto_equipo  
-                item_value = auto_item
-                cantidad_value = auto_cantidad
-                fecha_value = auto_fecha
-                
-                # Guardar en persistencia para mantenerlos al recargar
-                save_form_field('cliente', auto_cliente)
-                save_form_field('equipo', auto_equipo)
-                save_form_field('item', auto_item)
-                save_form_field('cantidad', auto_cantidad)
-                save_form_field('fecha', auto_fecha)
-                
-                # Mostrar confirmación solo si efectivamente se cargaron datos
-                if auto_cliente or auto_equipo:
-                    st.success(f"✅ Datos cargados automáticamente para OP: {op_selected}")
-                    
-            elif op_selected == "SELECCIONA":
-                # No hay OP seleccionada: usar valores persistidos o vacíos
-                cliente_value = get_form_field('cliente', '')
-                equipo_value = get_form_field('equipo', '')
-                item_value = get_form_field('item', '')
-                cantidad_value = get_form_field('cantidad', '')
-                fecha_value = get_form_field('fecha', datetime.date.today())
-                
+                    auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                    auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                    auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                    auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                    try:
+                        auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                    except Exception:
+                        auto_fecha = datetime.date.today()
+                except Exception:
+                    pass
             else:
-                # OP seleccionada pero sin datos: mantener valores persistidos
-                cliente_value = get_form_field('cliente', '')
-                equipo_value = get_form_field('equipo', '')
-                item_value = get_form_field('item', '')
-                cantidad_value = get_form_field('cantidad', '')
-                fecha_value = get_form_field('fecha', datetime.date.today())
-                
-                # Mostrar advertencia si no se encontraron datos
-                if op_selected != "SELECCIONA":
-                    st.warning(f"⚠️ No se encontraron datos para la OP: {op_selected}")
-            
-            op_value = op_selected if op_selected != "SELECCIONA" else get_form_field('op', '')
-             
-            cliente = st.text_input("Cliente", value=cliente_value, key="cliente_input")
-            op = st.text_input("OP (si es nueva)", value=op_value, key="op_input")
-            equipo = st.text_input("Equipo", value=equipo_value, key="equipo_input")
-            item = st.text_input("Ítem", value=item_value, key="item_input")
-            cantidad = st.text_input("Cantidad", value=cantidad_value, key="cantidad_input")
-            fecha = st.date_input("Fecha", value=fecha_value, key="fecha_acta")
-            
-            # Guardar los valores en session_state cuando cambien
-            if cliente != get_form_field('cliente'):
-                save_form_field('cliente', cliente)
-            if op != get_form_field('op'):
-                save_form_field('op', op)
-            if equipo != get_form_field('equipo'):
-                save_form_field('equipo', equipo)
-            if item != get_form_field('item'):
-                save_form_field('item', item)
-            if cantidad != get_form_field('cantidad'):
-                save_form_field('cantidad', cantidad)
-            if fecha != get_form_field('fecha'):
-                save_form_field('fecha', fecha)
+                op_selected = ""
+
+            cliente = st.text_input("Cliente", value=auto_cliente)
+            op = st.text_input("OP (si es nueva)", value=op_selected, key="op_input")
+            equipo = st.text_input("Equipo", value=auto_equipo)
+            item = st.text_input("Ítem", value=auto_item)
+            cantidad = st.text_input("Cantidad", value=auto_cantidad)
+            fecha = st.date_input("Fecha", value=auto_fecha, key="fecha_acta")
             st.markdown("</div>", unsafe_allow_html=True)
         
         creds = get_service_account_creds()
@@ -1756,6 +1533,32 @@ def main():
         # --- INFORMACIÓN GENERAL DEL EQUIPO ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Información General del Equipo")
+        
+        # Crear un formulario independiente para la información general del equipo
+        with st.form("equipo_general_form"):
+            st.markdown("""
+                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                <b style='font-size:1.1em;color:#1db6b6'>Descripción y Foto General</b>
+            """, unsafe_allow_html=True)
+            
+            # Utilizamos la clave única para cada OP
+            form_key_suffix = f"_{op}" if op else "_new"
+            descripcion_general = st.text_area(
+                "Descripción general del equipo", 
+                key=f"descripcion_general{form_key_suffix}"
+            )
+            fotos_generales = st.file_uploader(
+                "Foto general del equipo", 
+                type=["jpg","jpeg","png"], 
+                accept_multiple_files=True,
+                key=f"fotos_generales{form_key_suffix}"
+            )
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+            equipo_general_submitted = st.form_submit_button("Guardar información general")
+            
+        if equipo_general_submitted:
+            st.success("Información general del equipo guardada correctamente")
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -1829,34 +1632,6 @@ def main():
 
 
         with st.form("acta_entrega_form"):
-             
-            # --- INFORMACIÓN GENERAL DEL EQUIPO DENTRO DEL FORMULARIO PRINCIPAL ---
-            st.markdown("### Información General del Equipo")
-            st.markdown("""
-                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
-                <b style='font-size:1.1em;color:#1db6b6'>Descripción y Foto General</b>
-            """, unsafe_allow_html=True)
-            
-            # Utilizamos la clave única para cada OP
-            form_key_suffix = f"_{op}" if op else "_new"
-            descripcion_general_value = get_form_field('descripcion_general', '')
-            descripcion_general = st.text_area(
-                "Descripción general del equipo", 
-                value=descripcion_general_value,
-                key=f"descripcion_general{form_key_suffix}"
-            )
-            
-            # Guardar la descripción cuando cambie
-            if descripcion_general != get_form_field('descripcion_general'):
-                save_form_field('descripcion_general', descripcion_general)
-            fotos_generales = st.file_uploader(
-                "Foto general del equipo", 
-                type=["jpg","jpeg","png"], 
-                accept_multiple_files=True,
-                key=f"fotos_generales{form_key_suffix}"
-            )
-            
-            st.markdown("</div>", unsafe_allow_html=True)
 
             # --- Secciones visuales para cada artículo ---
             def seccion_articulo(nombre, mostrar, campos):
@@ -1872,86 +1647,43 @@ def main():
                         
                         for campo in campos:
                             if campo['tipo'] == 'number':
-                                # Usar persistencia para campos numéricos
-                                persisted_value = get_form_field(campo['nombre'], 0)
                                 resultados[campo['nombre']] = st.number_input(
                                     campo['label'], 
                                     min_value=0, 
                                     step=1, 
-                                    value=persisted_value,
                                     format="%d",
                                     key=f"{campo['nombre']}{key_suffix}"
                                 )
-                                # Guardar si cambió
-                                if resultados[campo['nombre']] != get_form_field(campo['nombre']):
-                                    save_form_field(campo['nombre'], resultados[campo['nombre']])
-                                    
                             elif campo['tipo'] == 'text':
-                                # Usar persistencia para campos de texto
-                                persisted_value = get_form_field(campo['nombre'], '')
                                 resultados[campo['nombre']] = st.text_input(
                                     campo['label'],
-                                    value=persisted_value,
                                     key=f"{campo['nombre']}{key_suffix}"
                                 )
-                                # Guardar si cambió
-                                if resultados[campo['nombre']] != get_form_field(campo['nombre']):
-                                    save_form_field(campo['nombre'], resultados[campo['nombre']])
-                                    
                             elif campo['tipo'] == 'text_area':
-                                # Usar persistencia para areas de texto
-                                persisted_value = get_form_field(campo['nombre'], '')
                                 resultados[campo['nombre']] = st.text_area(
                                     campo['label'],
-                                    value=persisted_value,
                                     key=f"{campo['nombre']}{key_suffix}"
                                 )
-                                # Guardar si cambió
-                                if resultados[campo['nombre']] != get_form_field(campo['nombre']):
-                                    save_form_field(campo['nombre'], resultados[campo['nombre']])
-                                    
                             elif campo['tipo'] == 'file':
-                                # Los archivos no se pueden persistir por limitaciones de Streamlit
                                 resultados[campo['nombre']] = st.file_uploader(
                                     campo['label'], 
                                     type=["jpg","jpeg","png"], 
                                     accept_multiple_files=True, 
                                     key=f"fotos_{nombre}{key_suffix}"
                                 )
-                                
                             elif campo['tipo'] == 'select':
                                 if 'opciones' in campo:
-                                    # Usar persistencia para selectbox
-                                    persisted_value = get_form_field(campo['nombre'], '')
-                                    try:
-                                        index = campo['opciones'].index(persisted_value) if persisted_value in campo['opciones'] else 0
-                                    except:
-                                        index = 0
                                     resultados[campo['nombre']] = st.selectbox(
                                         campo['label'], 
                                         campo['opciones'], 
-                                        index=index,
                                         key=f"select_{campo['nombre']}{key_suffix}"
                                     )
-                                    # Guardar si cambió
-                                    if resultados[campo['nombre']] != get_form_field(campo['nombre']):
-                                        save_form_field(campo['nombre'], resultados[campo['nombre']])
                                 else:
-                                    opciones_default = ["", "Opción 1", "Opción 2"]
-                                    persisted_value = get_form_field(campo['nombre'], '')
-                                    try:
-                                        index = opciones_default.index(persisted_value) if persisted_value in opciones_default else 0
-                                    except:
-                                        index = 0
                                     resultados[campo['nombre']] = st.selectbox(
                                         campo['label'], 
-                                        opciones_default, 
-                                        index=index,
+                                        ["", "Opción 1", "Opción 2"], 
                                         key=f"select_{campo['nombre']}{key_suffix}"
                                     )
-                                    # Guardar si cambió
-                                    if resultados[campo['nombre']] != get_form_field(campo['nombre']):
-                                        save_form_field(campo['nombre'], resultados[campo['nombre']])
                         st.markdown("</div>", unsafe_allow_html=True)
                         return resultados
                 else:
@@ -2249,50 +1981,26 @@ def main():
 
             st.markdown("<hr style='border: none; border-top: 2px solid #1db6b6; margin: 1.5em 0;'>", unsafe_allow_html=True)
             st.markdown("<b>Información final</b>", unsafe_allow_html=True)
-            observaciones_generales_value = get_form_field('observaciones_generales', '')
             observaciones_generales = st.text_area(
                 "Observaciones generales",
-                value=observaciones_generales_value,
                 key=f"observaciones_generales{key_suffix}"
             )
-            if observaciones_generales != get_form_field('observaciones_generales'):
-                save_form_field('observaciones_generales', observaciones_generales)
 
-            lider_opciones = ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"]
-            lider_value = get_form_field('lider_inspeccion', '')
-            lider_index = lider_opciones.index(lider_value) if lider_value in lider_opciones else 0
             lider_inspeccion = st.selectbox(
                 "Líder de inspección",
-                lider_opciones,
-                index=lider_index,
+                ["", "Daniel Valbuena", "Alejandro Diaz", "Juan Andres Zapata", "Juan David Martinez", "Victor Manuel Baena", "Diomer Arbelaez"],
                 key=f"lider_inspeccion{key_suffix}"
             )
-            if lider_inspeccion != get_form_field('lider_inspeccion'):
-                save_form_field('lider_inspeccion', lider_inspeccion)
-                
-            soldador_opciones = ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"]
-            soldador_value = get_form_field('encargado_soldador', '')
-            soldador_index = soldador_opciones.index(soldador_value) if soldador_value in soldador_opciones else 0
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                soldador_opciones,
-                index=soldador_index,
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"],
                 key=f"encargado_soldador{key_suffix}"
             )
-            if encargado_soldador != get_form_field('encargado_soldador'):
-                save_form_field('encargado_soldador', encargado_soldador)
-                
-            disenador_opciones = ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"]
-            disenador_value = get_form_field('disenador', '')
-            disenador_index = disenador_opciones.index(disenador_value) if disenador_value in disenador_opciones else 0
             disenador = st.selectbox(
                 "Diseñador",
-                disenador_opciones,
-                index=disenador_index,
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"],
                 key=f"disenador{key_suffix}"
             )
-            if disenador != get_form_field('disenador'):
-                save_form_field('disenador', disenador)
             fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
 
             # La notificación por correo se incluirá en el formulario como un checkbox
