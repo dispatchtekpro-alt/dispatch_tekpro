@@ -1585,10 +1585,18 @@ def main():
             if 'need_rerun' not in st.session_state:
                 st.session_state['need_rerun'] = False
                 
+            # Inicializar bandera para cambio de OP
+            if 'op_changed' not in st.session_state:
+                st.session_state['op_changed'] = False
+                
             # Callback para resetear los campos cuando cambia la OP
             def on_op_change():
                 if st.session_state['previous_op'] != st.session_state['op_selector']:
-                    # Limpiar todos los checkbox de selección
+                    # Marcar que la OP ha cambiado para forzar la actualización de datos
+                    st.session_state['op_changed'] = True
+                    
+                    # Limpiar algunos datos del formulario cuando cambie la OP
+                    # Pero NO limpiar los datos principales (cliente, equipo, etc.) ya que se auto-completarán
                     for key in list(st.session_state.keys()):
                         # Limpiar checkboxes de mostrar elementos
                         if key.startswith('cb_mostrar_'):
@@ -1663,14 +1671,52 @@ def main():
                     pass
             else:
                 op_selected = ""
+                # Si no hay OP seleccionada, limpiar variables auto-completadas
+                auto_cliente = ""
+                auto_equipo = ""
+                auto_item = ""
+                auto_cantidad = ""
+                auto_fecha = datetime.date.today()
 
-            # Usar valores persistidos o valores auto-completados
-            cliente_value = get_form_field('cliente', auto_cliente) if auto_cliente else get_form_field('cliente', '')
-            op_value = get_form_field('op', op_selected) if op_selected else get_form_field('op', '')
-            equipo_value = get_form_field('equipo', auto_equipo) if auto_equipo else get_form_field('equipo', '')
-            item_value = get_form_field('item', auto_item) if auto_item else get_form_field('item', '')
-            cantidad_value = get_form_field('cantidad', auto_cantidad) if auto_cantidad else get_form_field('cantidad', '')
-            fecha_value = auto_fecha if auto_fecha != datetime.date.today() else get_form_field('fecha', datetime.date.today())
+            # Determinar valores a usar: si la OP cambió o hay datos auto-completados, usarlos
+            # De lo contrario, usar valores persistidos
+            op_changed = st.session_state.get('op_changed', False)
+            
+            if op_changed or auto_cliente:
+                # Si la OP cambió o hay datos auto-completados, usar esos datos y guardarlos
+                cliente_value = auto_cliente
+                equipo_value = auto_equipo  
+                item_value = auto_item
+                cantidad_value = auto_cantidad
+                fecha_value = auto_fecha
+                
+                # Guardar los nuevos valores en persistencia
+                if auto_cliente:
+                    save_form_field('cliente', auto_cliente)
+                if auto_equipo:
+                    save_form_field('equipo', auto_equipo)
+                if auto_item:
+                    save_form_field('item', auto_item)
+                if auto_cantidad:
+                    save_form_field('cantidad', auto_cantidad)
+                save_form_field('fecha', auto_fecha)
+                
+                # Mostrar mensaje informativo si se cargaron datos de OP
+                if auto_cliente and op_selected != "SELECCIONA":
+                    st.success(f"✅ Datos cargados automáticamente para OP: {op_selected}")
+                
+                # Limpiar la bandera
+                if op_changed:
+                    st.session_state['op_changed'] = False
+            else:
+                # Usar valores persistidos si no hay cambio de OP ni auto-completado
+                cliente_value = get_form_field('cliente', '')
+                equipo_value = get_form_field('equipo', '')
+                item_value = get_form_field('item', '')
+                cantidad_value = get_form_field('cantidad', '')
+                fecha_value = get_form_field('fecha', datetime.date.today())
+            
+            op_value = op_selected if op_selected != "SELECCIONA" else get_form_field('op', '')
             
             cliente = st.text_input("Cliente", value=cliente_value, key="cliente_input")
             op = st.text_input("OP (si es nueva)", value=op_value, key="op_input")
