@@ -1530,9 +1530,7 @@ def main():
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
        
-        # --- INFORMACIÓN GENERAL DEL EQUIPO ---
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("Información General del Equipo")
+
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -2381,3 +2379,4 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
