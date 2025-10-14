@@ -1576,10 +1576,6 @@ def main():
             except Exception as e:
                 st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
                 pass
-            
-            # Debug: Mostrar información sobre las OPs cargadas
-            st.info(f"🔍 Debug - OPs disponibles ({len(op_options)}): {op_options}")
-            st.info(f"🔍 Debug - Mapeo OP->Fila tiene {len(op_to_row)} entradas")
 
             # Inicializar una sesión para detectar cambios en la OP seleccionada
             if 'previous_op' not in st.session_state:
@@ -1593,14 +1589,10 @@ def main():
             if 'op_changed' not in st.session_state:
                 st.session_state['op_changed'] = False
                 
-            # Callback para resetear los campos cuando cambia la OP
+            # Callback para limpiar campos cuando cambia la OP
             def on_op_change():
                 if st.session_state['previous_op'] != st.session_state['op_selector']:
-                    # Marcar que la OP ha cambiado para forzar la actualización de datos
-                    st.session_state['op_changed'] = True
-                    
-                    # Limpiar algunos datos del formulario cuando cambie la OP
-                    # Pero NO limpiar los datos principales (cliente, equipo, etc.) ya que se auto-completarán
+                    # Limpiar solo los campos del formulario secundarios (no los principales)
                     for key in list(st.session_state.keys()):
                         # Limpiar checkboxes de mostrar elementos
                         if key.startswith('cb_mostrar_'):
@@ -1627,116 +1619,112 @@ def main():
                                       'revision_tratamientos', 'revision_tornilleria',
                                       'revision_ruidos', 'ensayo_equipo', 
                                       'observaciones_generales', 'lider_inspeccion',
-                                      'encargado_soldador', 'disenador']
+                                      'encargado_soldador', 'disenador', 'descripcion_general']
                     
                     for campo in campos_a_limpiar:
                         if campo in st.session_state:
                             del st.session_state[campo]
+                        # También limpiar de los datos persistidos
+                        save_form_field(campo, '')
                     
                     # Actualizar el estado previo
                     st.session_state['previous_op'] = st.session_state['op_selector']
-                    
-                    # Establecer bandera para reinicio
-                    st.session_state['need_rerun'] = True
 
             op_selected = st.selectbox("Orden de Pedido (OP)", 
                 options=["SELECCIONA"] + list(set(op_options)),
                 key="op_selector",
                 on_change=on_op_change)
-            
-            # Actualizar el estado previo si no cambia
-            if st.session_state['previous_op'] != op_selected:
-                st.session_state['previous_op'] = op_selected
                 
-            # Verificar si es necesario reiniciar la página
-            if st.session_state.get('need_rerun', False):
-                st.session_state['need_rerun'] = False
-                st.rerun()
-            
+            # Cargar datos de la OP seleccionada ANTES de verificar el rerun
             if op_selected != "SELECCIONA":
                 row = op_to_row.get(op_selected, [])
-                
-                # Debug: Mostrar información de la fila encontrada
-                st.info(f"🔍 Debug - OP seleccionada: {op_selected}")
-                st.info(f"🔍 Debug - Fila encontrada: {len(row)} columnas")
-                if row:
-                    st.info(f"🔍 Debug - Primeras 5 columnas: {row[:5]}")
-                
                 try:
-                    headers = [h.strip().lower() for h in all_rows[0]]
-                    st.info(f"🔍 Debug - Encabezados disponibles: {headers[:10]}")  # Mostrar primeros 10 encabezados
-                    
-                    cliente_idx = headers.index("cliente") if "cliente" in headers else None
-                    equipo_idx = headers.index("equipo") if "equipo" in headers else None
-                    item_idx = headers.index("item") if "item" in headers else None
-                    cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
-                    fecha_idx = headers.index("fecha") if "fecha" in headers else None
-                    
-                    st.info(f"🔍 Debug - Índices: cliente={cliente_idx}, equipo={equipo_idx}, item={item_idx}, cantidad={cantidad_idx}")
+                    if all_rows and len(all_rows) > 0:
+                        headers = [h.strip().lower() for h in all_rows[0]]
+                        cliente_idx = headers.index("cliente") if "cliente" in headers else None
+                        equipo_idx = headers.index("equipo") if "equipo" in headers else None
+                        item_idx = headers.index("item") if "item" in headers else None
+                        cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
+                        fecha_idx = headers.index("fecha") if "fecha" in headers else None
 
-                    auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
-                    auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
-                    auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
-                    auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
-                    
-                    st.info(f"🔍 Debug - Datos extraídos: cliente='{auto_cliente}', equipo='{auto_equipo}', item='{auto_item}', cantidad='{auto_cantidad}'")
-                    
-                    try:
-                        auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
-                    except Exception:
-                        auto_fecha = datetime.date.today()
+                        if row and len(row) > 0:
+                            auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
+                            auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
+                            auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
+                            auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                            try:
+                                auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
+                            except Exception:
+                                auto_fecha = datetime.date.today()
+                        else:
+                            # No se encontró la fila para esta OP
+                            auto_cliente = ""
+                            auto_equipo = ""
+                            auto_item = ""
+                            auto_cantidad = ""
+                            auto_fecha = datetime.date.today()
                 except Exception as e:
-                    st.error(f"🔍 Debug - Error al procesar datos: {str(e)}")
-                    pass
+                    # Error al procesar los datos
+                    auto_cliente = ""
+                    auto_equipo = ""
+                    auto_item = ""
+                    auto_cantidad = ""
+                    auto_fecha = datetime.date.today()
             else:
-                op_selected = ""
-                # Si no hay OP seleccionada, limpiar variables auto-completadas
+                # No hay OP seleccionada, limpiar variables auto-completadas
                 auto_cliente = ""
                 auto_equipo = ""
                 auto_item = ""
                 auto_cantidad = ""
                 auto_fecha = datetime.date.today()
+                
+            # Verificar si es necesario reiniciar la página (DESPUÉS de cargar los datos)
+            if st.session_state.get('need_rerun', False):
+                st.session_state['need_rerun'] = False
+                st.rerun()
 
-            # Determinar valores a usar: si la OP cambió o hay datos auto-completados, usarlos
-            # De lo contrario, usar valores persistidos
-            op_changed = st.session_state.get('op_changed', False)
-            
-            if op_changed or auto_cliente:
-                # Si la OP cambió o hay datos auto-completados, usar esos datos y guardarlos
+            # Determinar valores a mostrar: priorizar datos de OP sobre persistidos
+            if op_selected != "SELECCIONA" and (auto_cliente or auto_equipo or auto_item or auto_cantidad):
+                # Hay una OP seleccionada y datos disponibles: usar datos de la OP
                 cliente_value = auto_cliente
                 equipo_value = auto_equipo  
                 item_value = auto_item
                 cantidad_value = auto_cantidad
                 fecha_value = auto_fecha
                 
-                # Guardar los nuevos valores en persistencia
-                if auto_cliente:
-                    save_form_field('cliente', auto_cliente)
-                if auto_equipo:
-                    save_form_field('equipo', auto_equipo)
-                if auto_item:
-                    save_form_field('item', auto_item)
-                if auto_cantidad:
-                    save_form_field('cantidad', auto_cantidad)
+                # Guardar en persistencia para mantenerlos al recargar
+                save_form_field('cliente', auto_cliente)
+                save_form_field('equipo', auto_equipo)
+                save_form_field('item', auto_item)
+                save_form_field('cantidad', auto_cantidad)
                 save_form_field('fecha', auto_fecha)
                 
-                # Mostrar mensaje informativo si se cargaron datos de OP
-                if auto_cliente and op_selected != "SELECCIONA":
+                # Mostrar confirmación solo si efectivamente se cargaron datos
+                if auto_cliente or auto_equipo:
                     st.success(f"✅ Datos cargados automáticamente para OP: {op_selected}")
-                
-                # Limpiar la bandera
-                if op_changed:
-                    st.session_state['op_changed'] = False
-            else:
-                # Usar valores persistidos si no hay cambio de OP ni auto-completado
+                    
+            elif op_selected == "SELECCIONA":
+                # No hay OP seleccionada: usar valores persistidos o vacíos
                 cliente_value = get_form_field('cliente', '')
                 equipo_value = get_form_field('equipo', '')
                 item_value = get_form_field('item', '')
                 cantidad_value = get_form_field('cantidad', '')
                 fecha_value = get_form_field('fecha', datetime.date.today())
+                
+            else:
+                # OP seleccionada pero sin datos: mantener valores persistidos
+                cliente_value = get_form_field('cliente', '')
+                equipo_value = get_form_field('equipo', '')
+                item_value = get_form_field('item', '')
+                cantidad_value = get_form_field('cantidad', '')
+                fecha_value = get_form_field('fecha', datetime.date.today())
+                
+                # Mostrar advertencia si no se encontraron datos
+                if op_selected != "SELECCIONA":
+                    st.warning(f"⚠️ No se encontraron datos para la OP: {op_selected}")
             
             op_value = op_selected if op_selected != "SELECCIONA" else get_form_field('op', '')
-            
+             
             cliente = st.text_input("Cliente", value=cliente_value, key="cliente_input")
             op = st.text_input("OP (si es nueva)", value=op_value, key="op_input")
             equipo = st.text_input("Equipo", value=equipo_value, key="equipo_input")
