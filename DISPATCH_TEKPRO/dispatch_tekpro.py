@@ -1576,6 +1576,10 @@ def main():
             except Exception as e:
                 st.warning(f"No se pudieron cargar las órdenes de pedido existentes: {e}")
                 pass
+            
+            # Debug: Mostrar información sobre las OPs cargadas
+            st.info(f"🔍 Debug - OPs disponibles ({len(op_options)}): {op_options}")
+            st.info(f"🔍 Debug - Mapeo OP->Fila tiene {len(op_to_row)} entradas")
 
             # Inicializar una sesión para detectar cambios en la OP seleccionada
             if 'previous_op' not in st.session_state:
@@ -1651,23 +1655,38 @@ def main():
             
             if op_selected != "SELECCIONA":
                 row = op_to_row.get(op_selected, [])
+                
+                # Debug: Mostrar información de la fila encontrada
+                st.info(f"🔍 Debug - OP seleccionada: {op_selected}")
+                st.info(f"🔍 Debug - Fila encontrada: {len(row)} columnas")
+                if row:
+                    st.info(f"🔍 Debug - Primeras 5 columnas: {row[:5]}")
+                
                 try:
                     headers = [h.strip().lower() for h in all_rows[0]]
+                    st.info(f"🔍 Debug - Encabezados disponibles: {headers[:10]}")  # Mostrar primeros 10 encabezados
+                    
                     cliente_idx = headers.index("cliente") if "cliente" in headers else None
                     equipo_idx = headers.index("equipo") if "equipo" in headers else None
                     item_idx = headers.index("item") if "item" in headers else None
                     cantidad_idx = headers.index("cantidad") if "cantidad" in headers else None
                     fecha_idx = headers.index("fecha") if "fecha" in headers else None
+                    
+                    st.info(f"🔍 Debug - Índices: cliente={cliente_idx}, equipo={equipo_idx}, item={item_idx}, cantidad={cantidad_idx}")
 
                     auto_cliente = row[cliente_idx] if cliente_idx is not None and len(row) > cliente_idx else ""
                     auto_equipo = row[equipo_idx] if equipo_idx is not None and len(row) > equipo_idx else ""
                     auto_item = row[item_idx] if item_idx is not None and len(row) > item_idx else ""
                     auto_cantidad = row[cantidad_idx] if cantidad_idx is not None and len(row) > cantidad_idx else ""
+                    
+                    st.info(f"🔍 Debug - Datos extraídos: cliente='{auto_cliente}', equipo='{auto_equipo}', item='{auto_item}', cantidad='{auto_cantidad}'")
+                    
                     try:
                         auto_fecha = datetime.datetime.strptime(row[fecha_idx], "%Y-%m-%d").date() if fecha_idx is not None and len(row) > fecha_idx and row[fecha_idx] else datetime.date.today()
                     except Exception:
                         auto_fecha = datetime.date.today()
-                except Exception:
+                except Exception as e:
+                    st.error(f"🔍 Debug - Error al procesar datos: {str(e)}")
                     pass
             else:
                 op_selected = ""
