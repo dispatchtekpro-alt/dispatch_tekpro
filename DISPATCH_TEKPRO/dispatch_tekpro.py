@@ -1533,32 +1533,6 @@ def main():
         # --- INFORMACIÓN GENERAL DEL EQUIPO ---
         st.markdown("<hr>", unsafe_allow_html=True)
         st.subheader("Información General del Equipo")
-        
-        # Crear un formulario independiente para la información general del equipo
-        with st.form("equipo_general_form"):
-            st.markdown("""
-                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
-                <b style='font-size:1.1em;color:#1db6b6'>Descripción y Foto General</b>
-            """, unsafe_allow_html=True)
-            
-            # Utilizamos la clave única para cada OP
-            form_key_suffix = f"_{op}" if op else "_new"
-            descripcion_general = st.text_area(
-                "Descripción general del equipo", 
-                key=f"descripcion_general{form_key_suffix}"
-            )
-            fotos_generales = st.file_uploader(
-                "Foto general del equipo", 
-                type=["jpg","jpeg","png"], 
-                accept_multiple_files=True,
-                key=f"fotos_generales{form_key_suffix}"
-            )
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-            equipo_general_submitted = st.form_submit_button("Guardar información general")
-            
-        if equipo_general_submitted:
-            st.success("Información general del equipo guardada correctamente")
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -1632,6 +1606,28 @@ def main():
 
 
         with st.form("acta_entrega_form"):
+            
+            # --- INFORMACIÓN GENERAL DEL EQUIPO DENTRO DEL FORMULARIO PRINCIPAL ---
+            st.markdown("### Información General del Equipo")
+            st.markdown("""
+                <div style='background:#f7fafb;padding:1em 1.5em 1em 1.5em;border-radius:8px;border:1px solid #1db6b6;margin-bottom:1.5em;border-top: 3px solid #1db6b6;'>
+                <b style='font-size:1.1em;color:#1db6b6'>Descripción y Foto General</b>
+            """, unsafe_allow_html=True)
+            
+            # Utilizamos la clave única para cada OP
+            form_key_suffix = f"_{op}" if op else "_new"
+            descripcion_general = st.text_area(
+                "Descripción general del equipo", 
+                key=f"descripcion_general{form_key_suffix}"
+            )
+            fotos_generales = st.file_uploader(
+                "Foto general del equipo", 
+                type=["jpg","jpeg","png"], 
+                accept_multiple_files=True,
+                key=f"fotos_generales{form_key_suffix}"
+            )
+            
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # --- Secciones visuales para cada artículo ---
             def seccion_articulo(nombre, mostrar, campos):
