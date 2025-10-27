@@ -1484,6 +1484,10 @@ def main():
                 key="op_selector",
                 on_change=on_op_change)
             
+            # Mostrar mensaje informativo si no se ha seleccionado una OP
+            if op_selected == "SELECCIONA":
+                st.info("ℹ️ **Debe seleccionar una Orden de Pedido para continuar.** Los datos se cargarán automáticamente al seleccionar una OP.")
+            
             # Actualizar el estado previo si no cambia
             if st.session_state['previous_op'] != op_selected:
                 st.session_state['previous_op'] = op_selected
@@ -1517,7 +1521,7 @@ def main():
                 op_selected = ""
 
             cliente = st.text_input("Cliente", value=auto_cliente)
-            op = st.text_input("OP (si es nueva)", value=op_selected, key="op_input")
+            op = st.text_input("OP", value=op_selected, key="op_input", disabled=True)
             equipo = st.text_input("Equipo", value=auto_equipo)
             item = st.text_input("Ítem", value=auto_item)
             cantidad = st.text_input("Cantidad", value=auto_cantidad)
@@ -1530,7 +1534,9 @@ def main():
         file_name = st.secrets.drive_config.FILE_NAME
         worksheet_name = "Acta de entrega"
        
-
+        # --- INFORMACIÓN GENERAL DEL EQUIPO ---
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("Información General del Equipo")
 
         # --- ESPACIO SOLO PARA LISTAS DE CHEQUEO HE INFOS ---
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -2204,9 +2210,14 @@ def main():
                     mensajes_error.append("Seleccione un diseñador")
                     error_validacion = True
                 
+                # Validar que se haya seleccionado una OP
+                if not op or op == "SELECCIONA" or op_selected == "SELECCIONA":
+                    mensajes_error.append("Debe seleccionar una Orden de Pedido (OP) válida")
+                    error_validacion = True
+                
                 # Campos obligatorios generales
-                if not cliente or not op or not item or not equipo or not cantidad:
-                    mensajes_error.append("Complete todos los campos de información general (Cliente, OP, Item, Equipo y Cantidad)")
+                if not cliente or not item or not equipo or not cantidad:
+                    mensajes_error.append("Complete todos los campos de información general (Cliente, Item, Equipo y Cantidad)")
                     error_validacion = True
                 
                 # Validar que se haya subido una foto general del equipo
@@ -2379,4 +2390,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
