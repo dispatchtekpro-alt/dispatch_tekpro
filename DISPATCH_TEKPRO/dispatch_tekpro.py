@@ -1521,7 +1521,8 @@ def main():
                 op_selected = ""
 
             cliente = st.text_input("Cliente", value=auto_cliente)
-            op = st.text_input("OP", value=op_selected, key="op_input", disabled=True)
+            # OP se almacena internamente pero no se muestra en la interfaz
+            op = op_selected
             equipo = st.text_input("Equipo", value=auto_equipo)
             item = st.text_input("Ítem", value=auto_item)
             cantidad = st.text_input("Cantidad", value=auto_cantidad)
