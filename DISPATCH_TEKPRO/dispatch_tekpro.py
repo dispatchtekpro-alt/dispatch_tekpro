@@ -2009,9 +2009,52 @@ def main():
             if enviar_notificacion:
                 st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
 
-            submitted = st.form_submit_button("Guardar acta de entrega")
+            # Crear columnas para los botones
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                submitted = st.form_submit_button("Guardar acta de entrega", type="primary")
+            
+            with col2:
+                limpiar = st.form_submit_button("Limpiar Acta", type="secondary")
 
             # Validación: solo encabezado y responsables son obligatorios
+
+            # Manejar el botón limpiar
+            if limpiar:
+                # Limpiar todos los campos del session state relacionados con el formulario
+                keys_to_clear = [
+                    'op_selector', 'previous_op', 'need_rerun',
+                    'mostrar_motores', 'mostrar_reductor', 'mostrar_bomba', 'mostrar_turbina',
+                    'mostrar_quemador', 'mostrar_bomba_vacio', 'mostrar_compresor', 'mostrar_manometros',
+                    'mostrar_vacuometros', 'mostrar_valvulas', 'mostrar_mangueras', 'mostrar_boquillas',
+                    'mostrar_reguladores', 'mostrar_tuberia', 'mostrar_cables', 'mostrar_tornilleria',
+                    'mostrar_curvas', 'mostrar_pinon1', 'mostrar_pinon2', 'mostrar_polea1', 'mostrar_polea2',
+                    'mostrar_gabinete', 'mostrar_arrancadores', 'mostrar_control_nivel', 'mostrar_variadores',
+                    'mostrar_sensores_temperatura', 'mostrar_toma_corriente', 'mostrar_otros_elementos'
+                ]
+                
+                # Limpiar todas las keys del session state relacionadas con el formulario
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                
+                # Limpiar también cualquier otra key que contenga datos del formulario
+                keys_to_remove = []
+                for key in st.session_state.keys():
+                    if any(x in key.lower() for x in ['acta', 'motor', 'bomba', 'turbina', 'quemador', 'compresor', 
+                                                     'manometro', 'vacuometro', 'valvula', 'manguera', 'boquilla',
+                                                     'regulador', 'tuberia', 'cable', 'tornilleria', 'curva',
+                                                     'pinon', 'polea', 'gabinete', 'arrancador', 'control', 
+                                                     'variador', 'sensor', 'toma', 'otros']):
+                        keys_to_remove.append(key)
+                
+                for key in keys_to_remove:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                
+                st.success("✅ Todos los campos han sido limpiados exitosamente.")
+                st.rerun()
 
             if submitted:
                 # Validar que todos los campos de elementos seleccionados estén completos
