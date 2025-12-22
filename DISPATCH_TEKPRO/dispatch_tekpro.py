@@ -413,11 +413,9 @@ def main():
         row_acta = []
         
         if orden_pedido_val and orden_pedido_val != "SELECCIONA":
-            st.success(f"✅ OP seleccionada: {orden_pedido_val}")  # Debug 1
             try:
                 diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
                 diligenciadas_rows = diligenciadas_sheet.get_all_values()
-                st.info(f"📊 Filas en hoja: {len(diligenciadas_rows)}")  # Debug 2
                 if diligenciadas_rows:
                     diligenciadas_headers = [h.strip().lower() for h in diligenciadas_rows[0]]
                     headers_dili = diligenciadas_headers
@@ -425,14 +423,9 @@ def main():
                     equipo_idx = headers_dili.index("equipo dili") if "equipo dili" in headers_dili else None
                     op_idx = headers_dili.index("op dili") if "op dili" in headers_dili else None
                     
-                    st.write(f"🔍 op_idx: {op_idx}")  # Debug 3
-                    
                     if op_idx is not None:
-                        fila_encontrada = False
                         for row in diligenciadas_rows[1:]:
                             if len(row) > op_idx and row[op_idx].strip() == orden_pedido_val:
-                                fila_encontrada = True
-                                st.success(f"✅ Fila encontrada para OP: {orden_pedido_val}")  # Debug 4
                                 row_acta = row
                                 if cliente_idx is not None and len(row) > cliente_idx:
                                     auto_cliente = row[cliente_idx]
@@ -452,13 +445,6 @@ def main():
                                     "otros elementos": "Otros Elementos"
                                 }
                                 
-                                # Debug: mostrar todas las columnas con "dili"
-                                st.write("🔎 Buscando artículos en columnas...")
-                                for idx_col, header in enumerate(headers_dili):
-                                    if "dili" in header:
-                                        valor_col = row[idx_col] if idx_col < len(row) else "N/A"
-                                        st.write(f"   Col {idx_col}: `{header}` = `{valor_col}`")
-                                
                                 for idx_col, header in enumerate(headers_dili):
                                     for busqueda, nombre_articulo in articulos_busqueda.items():
                                         # Verificar si el header contiene el término de búsqueda
@@ -469,38 +455,10 @@ def main():
                                                 if valor in ["si", "sí", "x", "1", "true", "yes"]:
                                                     if nombre_articulo not in articulos_presentes:
                                                         articulos_presentes.append(nombre_articulo)
-                                                        st.write(f"   ✅ Encontrado: {nombre_articulo} (valor: {valor})")
                                             break
                                 break
-                        
-                        if not fila_encontrada:
-                            st.warning(f"⚠️ No se encontró fila para OP: {orden_pedido_val}")
-                    else:
-                        st.warning("⚠️ No se encontró columna 'op dili' en los headers")
             except Exception as e:
                 st.warning(f"Error al obtener información: {e}")
-
-        # Debug: Mostrar columnas disponibles (temporal para diagnóstico)
-        if orden_pedido_val and orden_pedido_val != "SELECCIONA":
-            st.info(f"🔧 DEBUG - Artículos encontrados: {len(articulos_presentes)} - {articulos_presentes}")
-            with st.expander("🔧 Debug: Ver columnas disponibles en el acta", expanded=True):
-                if diligenciadas_headers:
-                    # Filtrar columnas que contengan "dili"
-                    cols_dili = [h for h in diligenciadas_headers if "dili" in h]
-                    st.write("**Columnas con 'dili' en el nombre:**")
-                    for col in cols_dili:
-                        st.write(f"- `{col}`")
-                    
-                    if row_acta:
-                        st.write("**Valores de la fila seleccionada (columnas con 'dili'):**")
-                        for idx, h in enumerate(diligenciadas_headers):
-                            if "dili" in h and idx < len(row_acta):
-                                valor = row_acta[idx]
-                                st.write(f"- `{h}` = **'{valor}'**")
-                    else:
-                        st.warning("No se encontró la fila del acta para esta OP")
-                else:
-                    st.warning("No se encontraron headers en la hoja")
 
         # Mostrar información del cliente y equipo antes del formulario
         if orden_pedido_val and orden_pedido_val != "SELECCIONA" and auto_cliente:
@@ -519,7 +477,7 @@ def main():
             # Encargado almacén como selectbox con solo Andrea Ochoa
             encargado_almacen = st.selectbox(
                 "Encargado almacén",
-                ["", "Andrea Ochoa"]
+                ["", "Angela Zapata"]
             )
             
 
