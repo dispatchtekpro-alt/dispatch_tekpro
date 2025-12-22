@@ -433,21 +433,49 @@ def main():
                                     auto_equipo = row[equipo_idx]
                                 
                                 # Obtener artículos presentes desde el acta
-                                articulos_columnas = [
-                                    "motores dili", "reductor dili", "bomba dili", "turbina dili",
-                                    "quemador dili", "bomba de vacio dili", "compresor dili",
-                                    "otros elementos dili"
-                                ]
-                                for col_name in articulos_columnas:
-                                    if col_name in headers_dili:
-                                        col_idx = headers_dili.index(col_name)
-                                        if col_idx < len(row) and row[col_idx].strip().lower() in ["si", "sí", "x", "1", "true"]:
-                                            # Formatear nombre del artículo
-                                            nombre_articulo = col_name.replace(" dili", "").replace("_", " ").title()
-                                            articulos_presentes.append(nombre_articulo)
+                                # Buscar columnas que contengan estos términos (más flexible)
+                                articulos_busqueda = {
+                                    "motor": "Motores",
+                                    "reductor": "Reductor",
+                                    "bomba": "Bomba",
+                                    "turbina": "Turbina",
+                                    "quemador": "Quemador",
+                                    "vacio": "Bomba De Vacio",
+                                    "compresor": "Compresor",
+                                    "otros elementos": "Otros Elementos"
+                                }
+                                
+                                for idx_col, header in enumerate(headers_dili):
+                                    for busqueda, nombre_articulo in articulos_busqueda.items():
+                                        # Verificar si el header contiene el término de búsqueda
+                                        if busqueda in header and "dili" in header:
+                                            # Verificar si el valor indica "Sí"
+                                            if idx_col < len(row):
+                                                valor = row[idx_col].strip().lower()
+                                                if valor in ["si", "sí", "x", "1", "true", "yes"]:
+                                                    if nombre_articulo not in articulos_presentes:
+                                                        articulos_presentes.append(nombre_articulo)
+                                            break
                                 break
             except Exception as e:
                 st.warning(f"Error al obtener información: {e}")
+
+        # Debug: Mostrar columnas disponibles (temporal para diagnóstico)
+        if orden_pedido_val and orden_pedido_val != "SELECCIONA":
+            with st.expander("🔧 Debug: Ver columnas disponibles en el acta", expanded=False):
+                if diligenciadas_headers:
+                    # Filtrar columnas que contengan "dili"
+                    cols_dili = [h for h in diligenciadas_headers if "dili" in h]
+                    st.write("**Columnas con 'dili' en el nombre:**")
+                    st.write(cols_dili)
+                    
+                    if row_acta:
+                        st.write("**Valores de la fila seleccionada:**")
+                        for idx, h in enumerate(diligenciadas_headers):
+                            if "dili" in h and idx < len(row_acta):
+                                st.write(f"- {h}: '{row_acta[idx]}'")
+                else:
+                    st.write("No se encontraron headers")
 
         # Mostrar información del cliente y equipo antes del formulario
         if orden_pedido_val and orden_pedido_val != "SELECCIONA" and auto_cliente:
