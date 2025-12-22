@@ -157,114 +157,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 
-# Simulación de base de datos SAG - Podría ser reemplazado por una conexión real a la BDD
-def get_sag_database():
-    """
-    Obtiene los datos de la base de datos SAG desde la hoja 'BDD SAG' en Google Sheets.
-    Estructura de la hoja esperada:
-    - Primera columna: Código del artículo
-    - Segunda columna: Descripción del artículo
-    - Tercera columna: Unidad del artículo
-    """
-    try:
-        # Configurar acceso a la hoja de cálculo
-        creds = get_service_account_creds()
-        file_name = st.secrets.drive_config.FILE_NAME
-        sheet_client = gspread.authorize(creds)
-        
-        # Abrir la hoja específica "BDD SAG"
-        try:
-            sag_sheet = sheet_client.open(file_name).worksheet("BDD SAG")
-            sag_data = sag_sheet.get_all_values()
-            
-            # Verificar que hay datos y encabezados
-            if not sag_data or len(sag_data) < 2:  # Al menos debe haber encabezados y un dato
-                st.warning("La hoja BDD SAG está vacía o no tiene suficientes datos.")
-                return []
-            
-            # Obtener los encabezados
-            headers = sag_data[0]
-            
-            # Verificar que las columnas necesarias están presentes
-            required_columns = ["CODIGO", "DESCRIPCION", "UNIDAD"]
-            column_indices = {}
-            
-            for req_col in required_columns:
-                found = False
-                for i, header in enumerate(headers):
-                    if header.upper().strip() == req_col:
-                        column_indices[req_col] = i
-                        found = True
-                        break
-                
-                if not found:
-                    st.warning(f"No se encontró la columna {req_col} en la hoja BDD SAG.")
-                    return []
-            
-            # Construir la base de datos
-            sag_db = []
-            for row in sag_data[1:]:  # Omitir encabezados
-                if len(row) > max(column_indices.values()):  # Asegurar que la fila tiene suficientes columnas
-                    codigo = row[column_indices["CODIGO"]].strip()
-                    descripcion = row[column_indices["DESCRIPCION"]].strip()
-                    unidad = row[column_indices["UNIDAD"]].strip()
-                    
-                    if codigo and descripcion:  # Solo agregar si tiene al menos código y descripción
-                        sag_db.append({
-                            "codigo": codigo,
-                            "descripcion": descripcion,
-                            "unidad": unidad if unidad else "UND"  # Valor predeterminado si no hay unidad
-                        })
-            
-            return sag_db
-            
-        except gspread.exceptions.WorksheetNotFound:
-            st.warning("No se encontró la hoja 'BDD SAG' en el documento. Creando una hoja de ejemplo...")
-            # Crear la hoja si no existe
-            try:
-                sheet = sheet_client.open(file_name)
-                worksheet = sheet.add_worksheet(title="BDD SAG", rows=100, cols=20)
-                
-                # Añadir encabezados
-                headers = ["CODIGO", "DESCRIPCION", "UNIDAD"]
-                worksheet.update('A1:C1', [headers])
-                
-                # Añadir algunos datos de ejemplo
-                sample_data = [
-                    ["M001", "Motor eléctrico 5HP", "UND"],
-                    ["M002", "Motor eléctrico 10HP", "UND"],
-                    ["R001", "Reductor 1:10", "UND"],
-                    ["B001", "Bomba centrífuga 1HP", "UND"],
-                    ["V001", "Válvula de bola 1\"", "UND"]
-                ]
-                worksheet.update('A2:C6', sample_data)
-                
-                # Formatear encabezados (negrita, centrados)
-                worksheet.format('A1:C1', {
-                    "textFormat": {"bold": True},
-                    "horizontalAlignment": "CENTER"
-                })
-                
-                st.success("Se ha creado la hoja 'BDD SAG' con datos de ejemplo.")
-                
-                # Convertir los datos de muestra al formato requerido
-                return [{"codigo": code, "descripcion": desc, "unidad": unit} for code, desc, unit in sample_data]
-                
-            except Exception as e:
-                st.error(f"Error al crear la hoja BDD SAG: {str(e)}")
-                return []
-                
-    except Exception as e:
-        st.error(f"Error al obtener datos de BDD SAG: {str(e)}")
-        # En caso de error, devolver algunos datos de muestra
-        return [
-            {"codigo": "M001", "descripcion": "Motor eléctrico 5HP", "unidad": "UND"},
-            {"codigo": "B001", "descripcion": "Bomba centrífuga 1HP", "unidad": "UND"},
-            {"codigo": "V001", "descripcion": "Válvula de bola 1\"", "unidad": "UND"},
-            {"codigo": "T003", "descripcion": "Tornillo inox 3/8\"", "unidad": "UND"},
-            {"codigo": "J001", "descripcion": "Junta de caucho 1\"", "unidad": "UND"}
-        ]
-
 # Cargar credenciales de Service Account
 def get_service_account_creds():
     if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
@@ -412,17 +304,6 @@ def main():
     # Importar datetime al inicio de la función main
     import datetime
 
-    # Inicializar la base de datos SAG
-    sag_db = get_sag_database()
-    
-    # Guardar la base de datos en session_state para reutilizarla
-    if 'sag_db' not in st.session_state:
-        st.session_state.sag_db = sag_db
-    
-    # Asegurar que sag_database está disponible para la selección de productos
-    if 'sag_database' not in st.session_state:
-        st.session_state['sag_database'] = sag_db
-
     # Menú de inicio
     col1, col2 = st.columns([4,1])
     with col1:
@@ -463,24 +344,11 @@ def main():
                     "Fecha", 
                     "Cliente", 
                     "Equipo", 
-                    "Encargado almacén", 
-                    "Encargado ingeniería y diseño", 
                     "Encargado logística", 
-                    "Firma encargado logística", 
-                    "Observaciones adicionales", 
-                    "Artículos enviados", 
-                    "Artículos no enviados"
+                    "Número de guacales",
+                    "Descripción general",
+                    "Observaciones"
                 ]
-                
-                # Agregar encabezados para cada guacal (1-7)
-                for i in range(1, 8):
-                    headers.extend([
-                        f"Descripción Guacal {i}",
-                        f"Dimensiones Guacal {i}",
-                        f"Peso Bruto Guacal {i} (kg)",
-                        f"Peso Neto Guacal {i} (kg)",
-                        f"Fotos Guacal {i}"
-                    ])
                 
                 # Si la hoja está vacía o los encabezados no coinciden, establecer los encabezados
                 if not empaque_values or empaque_values[0] != headers:
@@ -508,204 +376,81 @@ def main():
         # Asegurar que los encabezados estén configurados
         lista_empaque_headers = setup_lista_empaque_headers()
 
-        # Leer órdenes de pedido existentes desde ACTA DE ENTREGA, solo mostrar las que estén completas
+        # Leer órdenes de pedido existentes desde actas diligenciadas
+        ordenes_list = []
         try:
-            acta_sheet = sheet_client.open(file_name).worksheet("Acta de entrega")
-            acta_rows = acta_sheet.get_all_values()
-            headers = acta_rows[0] if acta_rows else []
-            # Usar encabezados estándar proporcionados por el usuario
-            encabezados_estandar = [
-                "cliente", "OP", "Item", "Equipo", "Cantidad", "fecha", "cantidad motores", "voltaje motores", "fotos motores",
-                "cantidad reductores", "voltaje reductores", "fotos reductores", "cantidad bombas", "voltaje bombas", "fotos bombas",
-                "voltaje turbina", "foto turbina", "voltaje quemador", "foto quemador", "voltaje bomba de vacio", "foto bomba de vacio",
-                "voltaje compresor", "foto compresor", "cantidad manometros", "foto manometros", "cantidad vacuometros", "foto vacuometros",
-                "cantidad valvulas", "foto valvulas", "cantidad mangueras", "foto mangueras", "cantidad boquillas", "foto boquillas",
-                "cantidad reguladores aire/gas", "foto reguladores", "tension piñon 1", "foto piñon 1", "tension piñon 2", "foto piñon 2",
-                "tension polea 1", "foto polea 1", "tension polea 2", "foto polea 2", "cantidad gabinete electrico", "foto gabinete",
-                "cantidad arrancadores", "foto arrancadores", "cantidad control de nivel", "foto control de nivel", "cantidad variadores de velociad", "foto variadores de velocidad",
-                "cantidad sensores de temperatura", "foto sensores de temperatura", "cantidad toma corriente", "foto toma corrientes", "otros elementos",
-                "revision de soldadura", "revision de sentidos de giro", "manual de funcionamiento", "revision de filos y acabados", "revision de tratamientos", "revision de tornilleria",
-                "revision de ruidos", "ensayo equipo", "observciones generales", "lider de inspeccion", "diseñador", "recibe", "fecha de entrega"
-            ]
-            
-            # Obtener OPs ya diligenciadas para filtrarlas
-            ops_diligenciadas = set()
+            diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
+            diligenciadas_rows = diligenciadas_sheet.get_all_values()
+            if diligenciadas_rows:
+                diligenciadas_headers = [h.strip().lower() for h in diligenciadas_rows[0]]
+                op_dili_idx = None
+                for idx, h in enumerate(diligenciadas_headers):
+                    if "op dili" in h:
+                        op_dili_idx = idx
+                        break
+                
+                if op_dili_idx is not None:
+                    for row in diligenciadas_rows[1:]:
+                        if len(row) > op_dili_idx and row[op_dili_idx].strip():
+                            ordenes_list.append(row[op_dili_idx].strip())
+        except Exception as e:
+            st.warning(f"No se pudieron cargar las actas: {e}")
+        except Exception:
+            ordenes_list = []
+
+        st.markdown("<b>Selecciona la orden de pedido:</b>", unsafe_allow_html=True)
+        orden_pedido_val = st.selectbox(
+            "OP:",
+            ["SELECCIONA"] + (ordenes_list if ordenes_list else []),
+            key="orden_pedido_selectbox"
+        )
+        
+        # Obtener información básica de la OP seleccionada
+        auto_cliente = ""
+        auto_equipo = ""
+        articulos_presentes = []
+        diligenciadas_headers = []
+        row_acta = []
+        
+        if orden_pedido_val and orden_pedido_val != "SELECCIONA":
             try:
                 diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
                 diligenciadas_rows = diligenciadas_sheet.get_all_values()
                 if diligenciadas_rows:
                     diligenciadas_headers = [h.strip().lower() for h in diligenciadas_rows[0]]
-                    op_dili_idx = None
-                    for idx, h in enumerate(diligenciadas_headers):
-                        if "op dili" in h:
-                            op_dili_idx = idx
-                            break
+                    headers_dili = diligenciadas_headers
+                    cliente_idx = headers_dili.index("cliente dili") if "cliente dili" in headers_dili else None
+                    equipo_idx = headers_dili.index("equipo dili") if "equipo dili" in headers_dili else None
+                    op_idx = headers_dili.index("op dili") if "op dili" in headers_dili else None
                     
-                    if op_dili_idx is not None:
+                    if op_idx is not None:
                         for row in diligenciadas_rows[1:]:
-                            if len(row) > op_dili_idx and row[op_dili_idx].strip():
-                                ops_diligenciadas.add(row[op_dili_idx].strip())
+                            if len(row) > op_idx and row[op_idx].strip() == orden_pedido_val:
+                                row_acta = row
+                                if cliente_idx is not None and len(row) > cliente_idx:
+                                    auto_cliente = row[cliente_idx]
+                                if equipo_idx is not None and len(row) > equipo_idx:
+                                    auto_equipo = row[equipo_idx]
+                                
+                                # Obtener artículos presentes desde el acta
+                                articulos_columnas = [
+                                    "motores dili", "reductor dili", "bomba dili", "turbina dili",
+                                    "quemador dili", "bomba de vacio dili", "compresor dili",
+                                    "otros elementos dili"
+                                ]
+                                for col_name in articulos_columnas:
+                                    if col_name in headers_dili:
+                                        col_idx = headers_dili.index(col_name)
+                                        if col_idx < len(row) and row[col_idx].strip().lower() in ["si", "sí", "x", "1", "true"]:
+                                            # Formatear nombre del artículo
+                                            nombre_articulo = col_name.replace(" dili", "").replace("_", " ").title()
+                                            articulos_presentes.append(nombre_articulo)
+                                break
             except Exception as e:
-                st.warning(f"No se pudieron cargar las actas de entrega diligenciadas: {e}")
-            
-            # Buscar índice de OP (exacto)
-            op_idx = None
-            for idx, h in enumerate(headers):
-                if h.strip().lower() == "op":
-                    op_idx = idx
-                    break
-            ordenes_existentes = {}
-            ordenes_list = []
-            # Obtener las OPs que ya están en la hoja de Lista de empaque
-            ops_lista_empaque = set()
-            try:
-                empaque_sheet = sheet_client.open(file_name).worksheet("Lista de empaque")
-                empaque_rows = empaque_sheet.get_all_values()
-                if empaque_rows:
-                    # Asumiendo que la primera columna es la OP en la hoja Lista de empaque
-                    for row in empaque_rows[1:]:  # Saltar la fila de encabezados
-                        if row and row[0].strip():
-                            ops_lista_empaque.add(row[0].strip())
-            except Exception as e:
-                st.warning(f"No se pudieron cargar las OPs de Lista de empaque: {e}")
-            
-            # Recopilar datos solo de OPs diligenciadas que NO estén en Lista de empaque
-            try:
-                for row in diligenciadas_rows[1:]:
-                    if op_dili_idx is not None and len(row) > op_dili_idx and row[op_dili_idx].strip():
-                        orden_dili = row[op_dili_idx].strip()
-                        # Solo agregar si la OP no está ya en Lista de empaque
-                        if orden_dili not in ops_lista_empaque:
-                            ordenes_existentes[orden_dili] = row  # Agregar a las existentes
-                            ordenes_list.append(orden_dili)       # Agregar a la lista de selección
-                
-                if not ordenes_list:
-                    if ops_lista_empaque:
-                        st.warning("Todas las órdenes ya están registradas en 'Lista de empaque'.")
-                    else:
-                        st.warning("No hay órdenes de pedido en 'actas de entregas diligenciadas'.")
-            except Exception as e:
-                st.warning(f"Error al procesar actas diligenciadas para mostrar OPs: {e}")
-        except Exception:
-            ordenes_existentes = {}
-            ordenes_list = []
-
-        if 'drive_oauth_token' not in st.session_state:
-            authorize_drive_oauth()
-
-        st.markdown("<b>Orden de pedido</b> (elige una existente o agrega una nueva)", unsafe_allow_html=True)
-        orden_pedido_val = st.selectbox(
-            "Selecciona una orden de pedido existente:",
-            ordenes_list if ordenes_list else ["No hay órdenes registradas"],
-            key="orden_pedido_selectbox"
-        )
-       
-
-        # Variables para almacenar información de cliente, equipo y diseñador
-        auto_cliente = ""
-        auto_equipo = ""
-        auto_disenador = ""
-        
-        # Intentar obtener información de "actas de entregas diligenciadas" primero
-        try:
-            diligenciadas_sheet = sheet_client.open(file_name).worksheet("actas de entregas diligenciadas")
-            diligenciadas_rows = diligenciadas_sheet.get_all_values()
-            if diligenciadas_rows:
-                headers_dili = [h.strip().lower() for h in diligenciadas_rows[0]]
-                cliente_idx = None
-                equipo_idx = None
-                disenador_idx = None
-                op_idx = None
-                
-                # Encontrar índices de las columnas relevantes (buscando coincidencias exactas)
-                for idx, h in enumerate(headers_dili):
-                    if h == "cliente dili":
-                        cliente_idx = idx
-                    elif h == "equipo dili":
-                        equipo_idx = idx
-                    elif h == "diseñador dili":
-                        disenador_idx = idx
-                    elif h == "op dili":
-                        op_idx = idx
-                
-                # Buscar si la OP actual está en las diligenciadas
-                if op_idx is not None and orden_pedido_val != "No hay órdenes registradas":
-                    for row in diligenciadas_rows[1:]:
-                        if len(row) > op_idx and row[op_idx].strip() == orden_pedido_val:
-                            # Si encontramos la OP, obtenemos los datos
-                            if cliente_idx is not None and len(row) > cliente_idx:
-                                auto_cliente = row[cliente_idx]
-                            if equipo_idx is not None and len(row) > equipo_idx:
-                                auto_equipo = row[equipo_idx]
-                            if disenador_idx is not None and len(row) > disenador_idx:
-                                auto_disenador = row[disenador_idx]
-                            break
-        except Exception as e:
-            st.warning(f"No se pudo obtener información de actas diligenciadas: {e}")
-            
-            # No es necesario buscar en actas de entrega porque solo usamos diligenciadas        # Obtener solo los artículos que tienen fotos diligenciadas
-        articulos_presentes = []
-        if orden_pedido_val and orden_pedido_val in ordenes_existentes:
-            row = ordenes_existentes[orden_pedido_val]
-            headers = diligenciadas_headers
-            
-            # Mapeo de nombre de artículo a columna de foto correspondiente
-            mapeo_articulos_fotos = {
-                "Motores": "fotos motores dili",
-                "Reductores": "fotos reductores dili",
-                "Bombas": "fotos bombas dili",
-                "Turbina": "foto turbina dili",
-                "Quemador": "foto quemador dili",
-                "Bomba de vacío": "foto bomba de vacio dili",
-                "Compresor": "foto compresor dili",
-                "Manómetros": "foto manometros dili",
-                "Vacuómetros": "foto vacuometros dili",
-                "Válvulas": "foto valvulas dili",
-                "Mangueras": "foto mangueras dili",
-                "Boquillas": "foto boquillas dili",
-                "Reguladores aire/gas": "foto reguladores dili",
-                "Tuberia": "foto tuberia dili",
-                "Cables": "foto cables dili",
-                "Tornillería": "foto tornilleria dili",
-                "Curvas": "foto curvas dili",
-                "Piñón 1": "foto piñon 1 dili",
-                "Piñón 2": "foto piñon 2 dili",
-                "Polea 1": "foto polea 1 dili",
-                "Polea 2": "foto polea 2 dili",
-                "Gabinete eléctrico": "foto gabinete dili",
-                "Arrancadores": "foto arrancadores dili",
-                "Control de nivel": "foto control de nivel dili",
-                "Variadores de velocidad": "foto variadores de velocidad dili",
-                "Sensores de temperatura": "foto sensores de temperatura dili",
-                "Toma corriente": "foto toma corrientes dili",
-                "Otros elementos": "fotos otros elementos dili"
-            }
-            
-            # Verificar si el artículo tiene foto diligenciada
-            for art, col_foto in mapeo_articulos_fotos.items():
-                try:
-                    if col_foto in headers:
-                        idx = headers.index(col_foto)
-                        valor = row[idx] if idx < len(row) else ""
-                        if valor and valor.strip().lower() not in ["", "sin foto", "error al subir foto"]:
-                            articulos_presentes.append(art)
-                except Exception as e:
-                    st.warning(f"Error al procesar artículo {art}: {e}")
-            
-            # Mostrar mensaje si no hay artículos con fotos
-            if not articulos_presentes:
-                st.warning("No se encontraron artículos con fotos diligenciadas en esta orden de pedido.")
-
-        # Estado dinámico para número de paquetes
-        if 'num_paquetes' not in st.session_state:
-            st.session_state['num_paquetes'] = 1
-            
-        # Inicializar el estado para los items de guacales si no existe
-        if 'guacales_items' not in st.session_state:
-            st.session_state['guacales_items'] = {}
+                st.warning(f"Error al obtener información: {e}")
 
         # Mostrar información del cliente y equipo antes del formulario
-        if orden_pedido_val and orden_pedido_val != "No hay órdenes registradas" and auto_cliente:
+        if orden_pedido_val and orden_pedido_val != "SELECCIONA" and auto_cliente:
             st.markdown(f"""
             <div style='background:#f7fafb; padding:1em; border-left:4px solid #1db6b6; border-radius:4px; margin-bottom:20px;'>
                 <p style='margin:0; font-weight:bold; color:#1db6b6;'>Información del proyecto</p>
@@ -714,7 +459,8 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
-        with st.form("dispatch_form"):
+        # Formulario simplificado
+        with st.form("lista_empaque_form"):
             fecha = st.date_input("Fecha del día", value=datetime.date.today())
 
             # Encargado almacén como selectbox con solo Andrea Ochoa
@@ -743,7 +489,7 @@ def main():
                 key="firma_canvas"
             )
             
-            # Usar diseñador de las actas si está disponible
+            # Encargado ingeniería y diseño
             encargado_ingenieria = st.selectbox(
                 "Encargado ingeniería y diseño",
                 [
@@ -755,51 +501,30 @@ def main():
                     "Victor Manuel Baena",
                     "Diomer Arbelaez",
                     "Jose Perez"
-                ],
-                index=([
-                    "",
-                    "Alejandro Diaz",
-                    "Juan David Martinez",
-                    "Juan Andres Zapata",
-                    "Daniel Valbuena",
-                    "Victor Manuel Baena",
-                    "Diomer Arbelaez",
-                    "Jose Perez"
-                ].index(auto_disenador) if auto_disenador in [
-                    "",
-                    "Alejandro Diaz",
-                    "Juan David Martinez",
-                    "Juan Andres Zapata",
-                    "Daniel Valbuena",
-                    "Victor Manuel Baena",
-                    "Diomer Arbelaez",
-                    "Jose Perez"
-                ] else 0)
+                ]
             )
 
+            # Sección de artículos a empacar
             st.markdown("<b>Selecciona los artículos a empacar:</b>", unsafe_allow_html=True)
             
+            articulos_seleccion = {}
             if not articulos_presentes:
-                st.warning("No se encontraron artículos. No hay elementos para empacar.")
-                
+                st.warning("No se encontraron artículos en el acta. Seleccione una OP válida.")
             else:
-                st.info(f"Se encontraron {len(articulos_presentes)} artículos .")
-                articulos_seleccion = {}
+                st.info(f"Se encontraron {len(articulos_presentes)} artículos en el acta.")
                 for art in articulos_presentes:
                     articulos_seleccion[art] = st.checkbox(art, value=True, key=f"empacar_{art}")
                     
-                    # Si es 'Otros elementos', mostrar la descripción registrada en el acta justo debajo
+                    # Si es 'Otros Elementos', mostrar la descripción registrada en el acta
                     if art.lower() == "otros elementos":
                         desc_otros = ""
-                        # Buscar columna de descripción de otros elementos
                         for idx, h in enumerate(diligenciadas_headers):
                             if "descripcion otros elementos" in h.lower():
-                                desc_otros = row[idx] if idx < len(row) else ""
+                                desc_otros = row_acta[idx] if idx < len(row_acta) else ""
                                 break
                         if desc_otros and desc_otros.strip():
                             st.markdown(f"<div style='margin-left:2em; color:#6c757d; font-size:0.97em; background:#f7fafb; border-left:3px solid #1db6b6; padding:0.5em 1em; border-radius:6px; margin-bottom:0.5em;'><b>Descripción:</b> {desc_otros}</div>", unsafe_allow_html=True)
 
-            
             st.markdown("<b>Paquetes (guacales):</b>", unsafe_allow_html=True)
             
             # Campo para observaciones
@@ -825,6 +550,10 @@ def main():
             # Variables para almacenar guacales
             paquetes = []
             
+            # Inicializar número de guacales si no existe
+            if 'num_paquetes' not in st.session_state:
+                st.session_state['num_paquetes'] = 1
+            
             # Verificar si es necesario hacer un rerun
             if 'need_rerun' in st.session_state and st.session_state['need_rerun']:
                 st.session_state['need_rerun'] = False
@@ -838,236 +567,20 @@ def main():
             for i in range(st.session_state['num_paquetes']):
                 st.markdown(f"<b>Guacal {i+1}</b>", unsafe_allow_html=True)
                 
-                # Definir el ID único para este guacal
-                guacal_id = f"guacal_{i+1}"
-                
-                # Inicializar la lista de items para este guacal si no existe
-                if guacal_id not in st.session_state['guacales_items']:
-                    st.session_state['guacales_items'][guacal_id] = []
-                
-                # Crear contenedor para la tabla de items de este guacal
-                st.markdown("<b>Items del guacal:</b>", unsafe_allow_html=True)
-                
-                # Mostrar la tabla de items ya agregados a este guacal
-                if st.session_state['guacales_items'][guacal_id]:
-                    # Encabezado para la tabla
-                    st.markdown("#### Items añadidos al guacal")
-                    
-                    # Crear DataFrame para mostrar los ítems
-                    items_df = pd.DataFrame(st.session_state['guacales_items'][guacal_id])
-                    
-                    # Usar un contenedor para dar estilo a la tabla
-                    with st.container():
-                        # Crear columnas para cada ítem con opción de eliminar
-                        for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
-                            cols = st.columns([1, 3, 1, 1, 1])
-                            with cols[0]:
-                                st.text(item['codigo'])
-                            with cols[1]:
-                                st.text(item['descripcion'])
-                            with cols[2]:
-                                st.text(str(item['cantidad']))
-                            with cols[3]:
-                                st.text(item['unidad'])
-                            with cols[4]:
-                                if st.button("❌", key=f"delete_{guacal_id}_{idx}"):
-                                    st.session_state['guacales_items'][guacal_id].pop(idx)
-                                    st.success(f"Ítem eliminado del guacal {i+1}")
-                                    st.session_state['need_rerun'] = True
-                        
-                    # Mostrar el total de ítems
-                    st.info(f"Total de ítems: {len(st.session_state['guacales_items'][guacal_id])}")
-                
-                # Formulario para añadir un nuevo ítem al guacal
-                st.markdown("<div class='add-item-section'><h4>Añadir nuevo ítem</h4>", unsafe_allow_html=True)
-                
-                # Crear columnas para organizar la entrada de datos
-                col1, col2 = st.columns(2)
-                
-                # Opciones para buscar por código o descripción
-                with col1:
-                    search_option = st.radio(
-                        "Buscar por:",
-                        ["Código", "Descripción"],
-                        horizontal=True,
-                        key=f"search_option_{guacal_id}"
-                    )
-                
-                # Campo de búsqueda
-                with col2:
-                    search_term = st.text_input(
-                        "Buscar:",
-                        key=f"search_term_{guacal_id}",
-                        placeholder="Escribe para buscar código o descripción"
-                    )
-                
-                # Procesar la base de datos para búsqueda
-                if not st.session_state['sag_database']:
-                    st.warning("No hay códigos disponibles en la base de datos SAG. Por favor, añade datos a la hoja 'BDD SAG'.")
-                    filtered_items = []
-                else:
-                    # Filtrar items según el término de búsqueda
-                    if search_term:
-                        if search_option == "Código":
-                            filtered_items = [item for item in st.session_state['sag_database'] 
-                                            if search_term.lower() in item['codigo'].lower()]
-                        else:  # Búsqueda por descripción
-                            filtered_items = [item for item in st.session_state['sag_database'] 
-                                            if search_term.lower() in item['descripcion'].lower()]
-                    else:
-                        filtered_items = st.session_state['sag_database']
-                
-                # Mostrar los resultados en formato de tabla seleccionable
-                if filtered_items:
-                    # Crear opciones para mostrar en el selectbox
-                    if search_option == "Código":
-                        options = [f"{item['codigo']} - {item['descripcion']}" for item in filtered_items]
-                    else:  # Mostrar dando prioridad a la descripción
-                        options = [f"{item['descripcion']} - {item['codigo']}" for item in filtered_items]
-                    
-                    selected_item = st.selectbox(
-                        "Seleccionar artículo:",
-                        options=options,
-                        key=f"selected_item_{guacal_id}"
-                    )
-                    
-                    # Extraer código del ítem seleccionado
-                    if search_option == "Código":
-                        selected_codigo = selected_item.split(" - ")[0]
-                    else:
-                        selected_codigo = selected_item.split(" - ")[1]
-                    
-                    # Buscar información completa del ítem
-                    item_info = next((item for item in st.session_state['sag_database'] if item['codigo'] == selected_codigo), None)
-                else:
-                    st.warning("No se encontraron coincidencias con tu búsqueda.")
-                    selected_codigo = ""
-                    item_info = None
-                
-                # Mostrar la información completa del ítem seleccionado
-                col1, col2, col3, col4 = st.columns([2, 3, 1, 1])
-                
-                # Mostrar el código
-                with col1:
-                    st.text_input("Código:", value=selected_codigo, disabled=True, key=f"codigo_display_{guacal_id}")
-                
-                # Mostrar la descripción
-                with col2:
-                    descripcion = st.text_input("Descripción:", value=item_info['descripcion'] if item_info else "", disabled=True, key=f"desc_{guacal_id}")
-                
-                # Entrada de cantidad (único campo editable)
-                with col3:
-                    cantidad = st.number_input("Cantidad:", min_value=1, value=1, key=f"cantidad_{guacal_id}")
-                
-                # Mostrar la unidad automáticamente
-                with col4:
-                    unidad = st.text_input("Unidad:", value=item_info['unidad'] if item_info else "", disabled=True, key=f"unidad_{guacal_id}")
-                
-                # Botón para añadir el ítem (fuera de las columnas)
-                if st.button("Añadir ítem", key=f"btn_add_{guacal_id}", type="primary"):
-                    try:
-                        if item_info:
-                            # Crear un nuevo ítem con los datos seleccionados
-                            new_item = {
-                                'codigo': selected_codigo,
-                                'descripcion': item_info['descripcion'],
-                                'cantidad': cantidad,
-                                'unidad': item_info['unidad']
-                            }
-                            
-                            # Añadir el ítem a la lista de items del guacal en session_state
-                            if guacal_id in st.session_state['guacales_items']:
-                                st.session_state['guacales_items'][guacal_id].append(new_item)
-                                # Mostrar mensaje de éxito
-                                st.success(f"Ítem añadido al guacal {i+1}: {item_info['descripcion']} (Cantidad: {cantidad} {item_info['unidad']})")
-                            else:
-                                st.warning(f"No se pudo encontrar el guacal {i+1} en la sesión. Intente reiniciar la página.")
-                    except Exception as e:
-                        st.error(f"Error al añadir ítem: {str(e)}")
-                        
-                        # Limpiar campo de búsqueda para permitir añadir otro ítem
-                        try:
-                            # Verificar si la clave existe antes de intentar modificarla
-                            if f"search_term_{guacal_id}" in st.session_state:
-                                # En lugar de asignar una cadena vacía, removemos la clave del session_state
-                                del st.session_state[f"search_term_{guacal_id}"]
-                        except Exception as e:
-                            st.warning(f"No se pudo limpiar el término de búsqueda: {e}")
-                        
-                        # Forzar rerun para actualizar la interfaz de forma segura
-                        set_session_state('need_rerun', True)
-                    else:
-                        st.warning("No se ha seleccionado un ítem válido. Por favor, busque y seleccione un ítem primero.")
-                
-                st.markdown("</div>", unsafe_allow_html=True)
-                
-                # Mostrar tabla de ítems ya agregados al guacal
-                if guacal_id in st.session_state['guacales_items'] and len(st.session_state['guacales_items'][guacal_id]) > 0:
-                    st.markdown(f"<b>Ítems agregados al guacal {i+1}:</b>", unsafe_allow_html=True)
-                    
-                    # Crear un DataFrame para mostrar los ítems en una tabla
-                    items_data = []
-                    for idx, item in enumerate(st.session_state['guacales_items'][guacal_id]):
-                        items_data.append({
-                            "N°": idx + 1,
-                            "Código": item['codigo'],
-                            "Descripción": item['descripcion'],
-                            "Cantidad": item['cantidad'],
-                            "Unidad": item['unidad']
-                        })
-                    
-                    # Mostrar la tabla de ítems
-                    if items_data:
-                        items_df = pd.DataFrame(items_data)
-                        st.dataframe(items_df, use_container_width=True)
-                else:
-                    st.info(f"No hay ítems agregados al guacal {i+1}. Use el buscador para encontrar y añadir ítems.")
+                # Campo de descripción general del guacal
+                desc_guacal = st.text_area(f"Descripción general del guacal {i+1}", key=f"desc_guacal_{i+1}", placeholder="Describa el contenido del guacal...")
                 
                 # Crear un campo de observaciones adicionales para el guacal
                 obs_guacal = st.text_area(f"Observaciones adicionales del guacal {i+1}", key=f"obs_guacal_{i+1}")
-                
-                # Campos para dimensiones y pesos del guacal
-                st.markdown(f"<b>Dimensiones y pesos del guacal {i+1}:</b>", unsafe_allow_html=True)
-                
-                # Crear 3 columnas para los campos de dimensiones
-                dim_col1, dim_col2, dim_col3 = st.columns(3)
-                
-                with dim_col1:
-                    largo = st.number_input(f"Largo (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"largo_guacal_{i+1}")
-                
-                with dim_col2:
-                    ancho = st.number_input(f"Ancho (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"ancho_guacal_{i+1}")
-                
-                with dim_col3:
-                    alto = st.number_input(f"Alto (cm):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"alto_guacal_{i+1}")
-                
-                # Crear 2 columnas para los pesos
-                peso_col1, peso_col2 = st.columns(2)
-                
-                with peso_col1:
-                    peso_bruto = st.number_input(f"Peso bruto (kg):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"peso_bruto_guacal_{i+1}")
-                
-                with peso_col2:
-                    peso_neto = st.number_input(f"Peso neto (kg):", min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"peso_neto_guacal_{i+1}")
                 
                 # Campo para subir fotos del guacal
                 fotos = st.file_uploader(f"Fotos guacal {i+1}", type=["jpg", "jpeg", "png"], key=f"fotos_paquete_{i+1}", accept_multiple_files=True)
                 
                 # Guardar información completa del guacal
-                desc_items = json.dumps(st.session_state['guacales_items'][guacal_id]) if st.session_state['guacales_items'][guacal_id] else ""
                 paquetes.append({
-                    "desc": desc_items,
+                    "desc": desc_guacal,
                     "obs": obs_guacal,
-                    "fotos": fotos,
-                    "dimensiones": {
-                        "largo": largo,
-                        "ancho": ancho,
-                        "alto": alto
-                    },
-                    "pesos": {
-                        "bruto": peso_bruto,
-                        "neto": peso_neto
-                    }
+                    "fotos": fotos
                 })
             
             # Botón para agregar más guacales (fuera del formulario)
@@ -1107,15 +620,12 @@ def main():
                 submitted = st.form_submit_button("Guardar despacho")
 
             if submitted:
-                if not articulos_presentes:
-                    st.error("No hay artículos para empacar en esta OP.")
-                else:
-                    # Validar que todos los campos requeridos estén completos
-                    error_validacion = False
-                    mensajes_error = []
+                # Validar que todos los campos requeridos estén completos
+                error_validacion = False
+                mensajes_error = []
                 
                 # Validar campos obligatorios (excepto observaciones)
-                if not orden_pedido_val or orden_pedido_val == "No hay órdenes registradas":
+                if not orden_pedido_val or orden_pedido_val == "SELECCIONA":
                     mensajes_error.append("Debe seleccionar una orden de pedido válida")
                     error_validacion = True
                 
@@ -1136,29 +646,28 @@ def main():
                     mensajes_error.append("Debe incluir la firma del encargado de logística")
                     error_validacion = True
                 
-                # Verificar que al menos un guacal tenga items y fotos
+                # Verificar que al menos un guacal tenga descripción y fotos
                 guacales_completos = False
                 for i, paquete in enumerate(paquetes):
-                    guacal_id = f"guacal_{i+1}"
-                    # Verificar si hay items en la sesión para este guacal
-                    has_items = guacal_id in st.session_state['guacales_items'] and len(st.session_state['guacales_items'][guacal_id]) > 0
+                    # Verificar si hay descripción para este guacal
+                    has_descripcion = paquete["desc"] and paquete["desc"].strip()
                     # Verificar si hay fotos para este guacal
                     has_fotos = paquete["fotos"] and len(paquete["fotos"]) > 0
                     
-                    # Si este guacal tiene tanto items como fotos, marcarlo como completo
-                    if has_items and has_fotos:
+                    # Si este guacal tiene tanto descripción como fotos, marcarlo como completo
+                    if has_descripcion and has_fotos:
                         guacales_completos = True
                         break
                 
                 if not guacales_completos:
-                    mensajes_error.append("Al menos un guacal debe tener items detallados y fotos. Asegúrese de agregar al menos un ítem con el botón 'Añadir ítem' y subir al menos una foto.")
+                    mensajes_error.append("Al menos un guacal debe tener descripción y fotos.")
                     error_validacion = True
                 
-                # Verificar que se haya seleccionado al menos un artículo para enviar
+                # Obtener artículos enviados y no enviados
                 enviados = [art for art, v in articulos_seleccion.items() if v]
                 no_enviados = [art for art, v in articulos_seleccion.items() if not v]
                 
-                if not enviados:
+                if articulos_presentes and not enviados:
                     mensajes_error.append("Debe seleccionar al menos un artículo para enviar")
                     error_validacion = True
                 
@@ -1171,8 +680,8 @@ def main():
                     # Sugerencias adicionales para ayudar al usuario
                     st.info("Sugerencias para solucionar los problemas:")
                     st.markdown("""
-                    - Para agregar un ítem al guacal, use el buscador, seleccione el ítem y haga clic en 'Añadir ítem'
-                    - Asegúrese de haber subido al menos una foto para cada guacal
+                    - Agregue una descripción del contenido del guacal
+                    - Asegúrese de haber subido al menos una foto para el guacal
                     - Verifique que ha seleccionado al menos un artículo para enviar
                     - Complete todos los campos obligatorios (encargados y firma)
                     """)
@@ -1217,44 +726,18 @@ def main():
                 
                 # Completar el arreglo con guacales (para mantener la estructura de encabezados)
                 for idx, paquete in enumerate(paquetes, start=1):
-                    guacal_id = f"guacal_{idx}"
-                    
-                    # Preparar el texto descriptivo de los items
-                    items_descripcion = ""
-                    if guacal_id in st.session_state['guacales_items'] and st.session_state['guacales_items'][guacal_id]:
-                        items_lines = []
-                        for item in st.session_state['guacales_items'][guacal_id]:
-                            item_line = f"{item['codigo']} - {item['descripcion']} - {item['cantidad']} {item['unidad']}"
-                            items_lines.append(item_line)
-                        items_descripcion = "\n".join(items_lines)
+                    # Preparar el texto descriptivo del guacal
+                    guacal_descripcion = paquete["desc"] if paquete["desc"] else ""
                     
                     # Añadir observaciones si existen
                     if paquete["obs"] and paquete["obs"].strip():
-                        if items_descripcion:
-                            items_descripcion += f"\n\nObservaciones: {paquete['obs']}"
+                        if guacal_descripcion:
+                            guacal_descripcion += f"\n\nObservaciones: {paquete['obs']}"
                         else:
-                            items_descripcion = f"Observaciones: {paquete['obs']}"
+                            guacal_descripcion = f"Observaciones: {paquete['obs']}"
                     
-                    # Añadir información de dimensiones y pesos
-                    dimensiones_info = f"{paquete['dimensiones']['largo']}×{paquete['dimensiones']['ancho']}×{paquete['dimensiones']['alto']} cm"
-                    peso_bruto = f"{paquete['pesos']['bruto']} kg"
-                    peso_neto = f"{paquete['pesos']['neto']} kg"
-                    
-                    # Preparar solo la descripción con ítems y observaciones
-                    if items_descripcion:
-                        if paquete["obs"] and paquete["obs"].strip():
-                            items_descripcion += f"\n\nObservaciones: {paquete['obs']}"
-                    else:
-                        if paquete["obs"] and paquete["obs"].strip():
-                            items_descripcion = f"Observaciones: {paquete['obs']}"
-                    
-                    # Agregar descripción del guacal (ahora contiene solo los ítems y observaciones)
-                    row.append(items_descripcion)  # Descripción Guacal n
-                    
-                    # Agregar dimensiones y pesos como columnas separadas
-                    row.append(dimensiones_info)  # Dimensiones Guacal n
-                    row.append(peso_bruto)        # Peso Bruto Guacal n
-                    row.append(peso_neto)         # Peso Neto Guacal n
+                    # Agregar descripción del guacal
+                    row.append(guacal_descripcion)  # Descripción Guacal n
                     
                     # Procesar y agregar fotos del guacal
                     enlaces = []
@@ -1281,9 +764,6 @@ def main():
                 remaining_guacales = 7 - len(paquetes)
                 for _ in range(remaining_guacales):
                     row.append("")  # Descripción Guacal vacío
-                    row.append("")  # Dimensiones Guacal vacío
-                    row.append("")  # Peso Bruto Guacal vacío
-                    row.append("")  # Peso Neto Guacal vacío
                     row.append("")  # Fotos Guacal vacío
                 
                 # Escribir fila completa en la hoja
@@ -1303,17 +783,13 @@ def main():
                         for idx, paquete in enumerate(paquetes, start=1):
                             if paquete["desc"]:
                                 guacales_con_contenido += 1
-                        # Formateamos el contenido para el email con HTML
-                                dimensiones = paquete['dimensiones']
-                                pesos = paquete['pesos']
-                                dimensiones_html = f"<div style='margin-top:10px;'><strong>Dimensiones:</strong> {dimensiones['largo']}×{dimensiones['ancho']}×{dimensiones['alto']} cm</div>"
-                                pesos_html = f"<div><strong>Peso bruto:</strong> {pesos['bruto']} kg, <strong>Peso neto:</strong> {pesos['neto']} kg</div>"
+                                # Formateamos el contenido para el email con HTML
+                                obs_html = f"<div style='margin-top:5px;'><em>Observaciones: {paquete['obs']}</em></div>" if paquete.get('obs') else ""
                                 
                                 guacales_texto += f"""<li>
                                     <strong>Guacal {idx}:</strong> 
                                     <div>{paquete['desc']}</div>
-                                    {dimensiones_html}
-                                    {pesos_html}
+                                    {obs_html}
                                 </li>"""
                         
                         mensaje = f"""
@@ -1334,10 +810,10 @@ def main():
                                 
                                 <p><strong>Artículos enviados ({len(enviados)}):</strong></p>
                                 <ul>
-                                    {"".join(f"<li>{art}</li>" for art in enviados)}
+                                    {"".join(f"<li>{art}</li>" for art in enviados) if enviados else "<li>Ninguno</li>"}
                                 </ul>
                                 
-                                 <p><strong>Guacales preparados ({guacales_con_contenido} de {len(paquetes)}):</strong></p>
+                                <p><strong>Guacales preparados ({guacales_con_contenido} de {len(paquetes)}):</strong></p>
                                 <ul>
                                     {guacales_texto}
                                 </ul>
@@ -1994,7 +1470,7 @@ def main():
             )
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla", "No Aplica", "Osvaldo Gil","Julio Cesar"],
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"],
                 key=f"encargado_soldador{key_suffix}"
             )
             disenador = st.selectbox(
@@ -2434,4 +1910,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
