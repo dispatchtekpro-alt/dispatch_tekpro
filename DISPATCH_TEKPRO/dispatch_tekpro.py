@@ -626,7 +626,7 @@ def main():
                 enviar_notificacion = final_notificacion
                 
                 if enviar_notificacion:
-                    st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
+                    st.markdown("<small>Se enviará un correo automático a almacen@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
                 
                 submitted = st.form_submit_button("Guardar despacho")
 
@@ -785,7 +785,7 @@ def main():
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
                     try:
-                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
+                        email_destinatario = "almacen@tekpro.com.co"
                         asunto = f"Lista de Empaque completada - OP: {orden_pedido_val}"
                         
                         # Obtener lista de guacales con descripción
@@ -1494,7 +1494,7 @@ def main():
             # La notificación por correo se incluirá en el formulario como un checkbox
             enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
             if enviar_notificacion:
-                st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
+                st.markdown("<small>Se enviará un correo automático a almacen@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
 
             # Crear columnas para los botones
             col1, col2 = st.columns(2)
@@ -1888,7 +1888,7 @@ def main():
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
                     try:
-                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
+                        email_destinatario = "almacen@tekpro.com.co"
                         asunto = f"Acta de entrega completada - OP: {op}"
                         mensaje = f"""
                         <html>
@@ -1921,3 +1921,4 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
