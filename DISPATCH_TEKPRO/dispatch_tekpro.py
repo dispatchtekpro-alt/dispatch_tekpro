@@ -1481,12 +1481,12 @@ def main():
             )
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"],
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda","Osvaldo Gil",  "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla", "No Aplica"],
                 key=f"encargado_soldador{key_suffix}"
             )
             disenador = st.selectbox(
                 "Diseñador",
-                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"],
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata"],
                 key=f"disenador{key_suffix}"
             )
             fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
@@ -1921,4 +1921,5 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
 
