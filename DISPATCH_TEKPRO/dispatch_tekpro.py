@@ -222,6 +222,7 @@ def authorize_drive_oauth():
         placeholder="https://ejemplo.com/?code=..." 
     )
     
+    # parse URL or allow manual code input
     auth_code = ""
     error_message = None
     
@@ -230,65 +231,67 @@ def authorize_drive_oauth():
             parsed = urllib.parse.urlparse(url_input)
             params = urllib.parse.parse_qs(parsed.query)
             auth_code = params.get("code", [""])[0]
-            
+            st.text(f"redirect_uri usado por Flow: {redirect_uri}")
             if auth_code:
-                st.success("✅ Código detectado correctamente. Haz clic en 'Validar código' para continuar.")
+                st.success("✅ Código detectado automáticamente.")
             else:
-                error_message = "❌ No se encontró el parámetro 'code' en la URL.\n\nVerifica que:\n- Copiaste la URL COMPLETA\n- La URL contiene '?code=...'"
+                error_message = (
+                    "❌ No se encontró el parámetro 'code' en la URL.\n\n" 
+                    "Verifica que:
+- Copiaste la URL completa (incluyendo '?code=...')
+- No eliminaste caracteres al pegar"
+                )
                 st.warning(error_message)
         except Exception as e:
             error_message = f"Error al procesar la URL: {e}"
             st.error(error_message)
+    
+    # Si no se detectó código, permitir la entrada manual
+    if not auth_code:
+        manual_input = st.text_input("O ingresa manualmente el código aquí:", key="manual_code_input")
+        if manual_input and not auth_code:
+            auth_code = manual_input.strip()
+            if auth_code:
+                st.success("✅ Código manual ingresado. Presiona Validar código.")
 
     # Botón para validar el código
     if st.button("✓ Validar código", key="validar_codigo_oauth"):
         if not auth_code:
-            st.error("⚠️ Debes pegar la URL de redirección que contiene el código.")
+            st.error("⚠️ Debes proporcionar un código válido (a través de la URL o manualmente).")
             st.stop()
             return
-            
+
         with st.spinner("Intercambiando código por token..."):
             try:
-                # Intentar intercambiar el código por el token
                 flow.fetch_token(code=auth_code)
                 creds = flow.credentials
-                
-                # Guardar el token
                 st.session_state['drive_oauth_token'] = creds.to_json()
                 st.success("🎉 ¡Autorización exitosa! Refresca la página para continuar.")
                 st.balloons()
-                
-                # Pequeño retraso para que vea el mensaje
                 import time
                 time.sleep(2)
                 st.rerun()
-                
             except Exception as e:
                 st.error("❌ Error al intercambiar el código")
-                
-                # Mostrar detalles del error
                 error_details = str(e)
+                # print raw error
+                st.write("🧾 Error completo:", error_details)
                 if "invalid_grant" in error_details:
                     st.error(
-                        "**Causas posibles:**\n"
-                        "1. El código expiró (tienen ~10 minutos)\n"
-                        "2. El código ya fue usado\n"
-                        "3. El `redirect_uri` no coincide exactamente con Google Cloud Console\n\n"
-                        "**Solución:** Vuelve a hacer clic en el enlace de autorización y repite los pasos rápidamente."
+                        "**Causas frecuentes de invalid_grant:**\n"
+                        "• Código expirado (~10 min)\n"
+                        "• Código ya usado\n"
+                        "• redirect_uri incorrecto"
                     )
+                    st.warning("Vuelve a obtener un nuevo código desde el enlace y pégalo rápidamente.")
                 elif "redirect_uri" in error_details.lower():
                     st.error(
-                        "**Error de redirect_uri**\n"
-                        f"En Google Cloud, verifica que el redirect URI registrado sea: `{redirect_uri}`"
-                    )
-                else:
-                    st.error(f"Detalles: {error_details}")
-                
-                # Intentar mostrar más detalles si están disponibles
+                        "**redirect_uri mal configurado**\n"
+                        f"Debe coincidir EXACTAMENTE con `{redirect_uri}` y con lo registrado en Google Cloud.")
                 if hasattr(e, "response"):
                     try:
-                        with st.expander("Ver detalles técnicos"):
-                            st.code(str(e.response.content))
+                        with st.expander("Detalles técnicos de la respuesta"):
+                            st.text(e.response.content)
                     except Exception:
                         pass
     
