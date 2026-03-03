@@ -237,9 +237,9 @@ def authorize_drive_oauth():
             else:
                 error_message = (
                     "❌ No se encontró el parámetro 'code' en la URL.\n\n" 
-                    "Verifica que:
-- Copiaste la URL completa (incluyendo '?code=...')
-- No eliminaste caracteres al pegar"
+                    "Verifica que:"
+                    "- Copiaste la URL completa (incluyendo '?code=...')"
+                    "- No eliminaste caracteres al pegar"
                 )
                 st.warning(error_message)
         except Exception as e:
