@@ -177,43 +177,121 @@ def get_service_account_creds():
 def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
     from google_auth_oauthlib.flow import Flow
-    redirect_uri = "https://dispatchtekpro.streamlit.app/"
-    flow = Flow.from_client_config(
-        {"web": dict(st.secrets.oauth2)},
-        scopes=SCOPES,
-        redirect_uri=redirect_uri
-    )
     import urllib.parse
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
-    st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
-    st.markdown("""
-    <small>Después de autorizar, copia y pega aquí la URL completa a la que fuiste redirigido.<br>
-    El sistema extraerá el código automáticamente.</small>
-    """, unsafe_allow_html=True)
-    url_input = st.text_input("Pega aquí la URL de redirección:", key="oauth_url_input")
-    auth_code = ""
-    if url_input:
-        parsed = urllib.parse.urlparse(url_input)
-        params = urllib.parse.parse_qs(parsed.query)
-        auth_code = params.get("code", [""])[0]
-        if auth_code:
-            st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
-        else:
-            st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
+    
+    # El redirect URI DEBE coincidir exactamente con el registrado en
+    # Google Cloud Console. Para Streamlit Cloud, usa la versión CON barra final.
+    redirect_uri = st.secrets.get("REDIRECT_URI", "https://dispatchtekpro.streamlit.app/")
+    
+    st.info("ℹ️ **Verifica en Google Cloud Console:**\n"
+            f"El redirect URI debe ser EXACTAMENTE: `{redirect_uri}`\n"
+            f"(procura que coincida precisamente, incluyendo la barra final)")
 
-    # Botón fuera de cualquier formulario
-    validar = st.button("Validar código", key="validar_codigo_oauth")
-    if validar:
-        if auth_code:
+    # Crear flow con manejo de errores
+    try:
+        flow = Flow.from_client_config(
+            {"web": dict(st.secrets.oauth2)},
+            scopes=SCOPES,
+            redirect_uri=redirect_uri
+        )
+    except Exception as e:
+        st.error(f"Error al crear el Flow de autenticación: {e}")
+        st.error("Verifica que `oauth2` esté correctamente configurado en st.secrets")
+        st.stop()
+        return
+    
+    auth_url, _ = flow.authorization_url(
+        prompt='consent', 
+        access_type='offline', 
+        include_granted_scopes='true'
+    )
+    
+    st.markdown(f"## [👉 Haz clic aquí para autorizar con Google Drive]({auth_url})")
+    st.markdown("""
+    ⏱️ **IMPORTANTE:** El código de autorización expira en ~10 minutos.  
+    1. Haz clic en el enlace de arriba
+    2. Autoriza el acceso a Google Drive
+    3. **INMEDIATAMENTE** copia la URL completa a la que fuiste redirigido
+    4. Pégala abajo y valida antes de que expire
+    """, unsafe_allow_html=True)
+    
+    # Input para pegar la URL
+    url_input = st.text_input(
+        "📋 Pega aquí la URL de redirección completa:", 
+        key="oauth_url_input",
+        placeholder="https://ejemplo.com/?code=..." 
+    )
+    
+    auth_code = ""
+    error_message = None
+    
+    if url_input:
+        try:
+            parsed = urllib.parse.urlparse(url_input)
+            params = urllib.parse.parse_qs(parsed.query)
+            auth_code = params.get("code", [""])[0]
+            
+            if auth_code:
+                st.success("✅ Código detectado correctamente. Haz clic en 'Validar código' para continuar.")
+            else:
+                error_message = "❌ No se encontró el parámetro 'code' en la URL.\n\nVerifica que:\n- Copiaste la URL COMPLETA\n- La URL contiene '?code=...'"
+                st.warning(error_message)
+        except Exception as e:
+            error_message = f"Error al procesar la URL: {e}"
+            st.error(error_message)
+
+    # Botón para validar el código
+    if st.button("✓ Validar código", key="validar_codigo_oauth"):
+        if not auth_code:
+            st.error("⚠️ Debes pegar la URL de redirección que contiene el código.")
+            st.stop()
+            return
+            
+        with st.spinner("Intercambiando código por token..."):
             try:
+                # Intentar intercambiar el código por el token
                 flow.fetch_token(code=auth_code)
                 creds = flow.credentials
+                
+                # Guardar el token
                 st.session_state['drive_oauth_token'] = creds.to_json()
-                st.success("¡Autorización exitosa! Puedes continuar con el formulario.")
+                st.success("🎉 ¡Autorización exitosa! Refresca la página para continuar.")
+                st.balloons()
+                
+                # Pequeño retraso para que vea el mensaje
+                import time
+                time.sleep(2)
+                st.rerun()
+                
             except Exception as e:
-                st.error(f"Error al intercambiar el código: {e}")
-        else:
-            st.warning("Debes pegar la URL de redirección que contiene el código.")
+                st.error("❌ Error al intercambiar el código")
+                
+                # Mostrar detalles del error
+                error_details = str(e)
+                if "invalid_grant" in error_details:
+                    st.error(
+                        "**Causas posibles:**\n"
+                        "1. El código expiró (tienen ~10 minutos)\n"
+                        "2. El código ya fue usado\n"
+                        "3. El `redirect_uri` no coincide exactamente con Google Cloud Console\n\n"
+                        "**Solución:** Vuelve a hacer clic en el enlace de autorización y repite los pasos rápidamente."
+                    )
+                elif "redirect_uri" in error_details.lower():
+                    st.error(
+                        "**Error de redirect_uri**\n"
+                        f"En Google Cloud, verifica que el redirect URI registrado sea: `{redirect_uri}`"
+                    )
+                else:
+                    st.error(f"Detalles: {error_details}")
+                
+                # Intentar mostrar más detalles si están disponibles
+                if hasattr(e, "response"):
+                    try:
+                        with st.expander("Ver detalles técnicos"):
+                            st.code(str(e.response.content))
+                    except Exception:
+                        pass
+    
     st.stop()
 
 def get_drive_service_oauth():
@@ -626,7 +704,7 @@ def main():
                 enviar_notificacion = final_notificacion
                 
                 if enviar_notificacion:
-                    st.markdown("<small>Se enviará un correo automático a almacen@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
+                    st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del despacho realizado.</small>", unsafe_allow_html=True)
                 
                 submitted = st.form_submit_button("Guardar despacho")
 
@@ -785,7 +863,7 @@ def main():
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
                     try:
-                        email_destinatario = "almacen@tekpro.com.co"
+                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
                         asunto = f"Lista de Empaque completada - OP: {orden_pedido_val}"
                         
                         # Obtener lista de guacales con descripción
@@ -1481,12 +1559,12 @@ def main():
             )
             encargado_soldador = st.selectbox(
                 "Encargado de soldadura",
-                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda","Osvaldo Gil",  "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla", "No Aplica"],
+                ["", "Leudys Castillo", "Jaime Rincon", "Jaime Ramos", "Gabriel Garcia", "Jefferson Galindez", "Jeison Arboleda", "Octaviano Velasquez","Sebastian Zapata", "Katerine Padilla"],
                 key=f"encargado_soldador{key_suffix}"
             )
             disenador = st.selectbox(
                 "Diseñador",
-                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata"],
+                ["", "Daniel Valbuena", "Juan David Martinez", "Juan Andres Zapata", "Alejandro Diaz"],
                 key=f"disenador{key_suffix}"
             )
             fecha_entrega = st.date_input("Fecha de entrega", value=datetime.date.today(), key="fecha_entrega_acta")
@@ -1494,7 +1572,7 @@ def main():
             # La notificación por correo se incluirá en el formulario como un checkbox
             enviar_notificacion = st.checkbox("Enviar notificación por correo al guardar", value=True)
             if enviar_notificacion:
-                st.markdown("<small>Se enviará un correo automático a almacen@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
+                st.markdown("<small>Se enviará un correo automático a coordinadorinventarios@tekpro.com.co notificando del acta completada.</small>", unsafe_allow_html=True)
 
             # Crear columnas para los botones
             col1, col2 = st.columns(2)
@@ -1888,7 +1966,7 @@ def main():
                 # Envío automático de correo electrónico si el checkbox está seleccionado
                 if enviar_notificacion:
                     try:
-                        email_destinatario = "almacen@tekpro.com.co"
+                        email_destinatario = "coordinadorinventarios@tekpro.com.co"
                         asunto = f"Acta de entrega completada - OP: {op}"
                         mensaje = f"""
                         <html>
@@ -1921,5 +1999,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
-
