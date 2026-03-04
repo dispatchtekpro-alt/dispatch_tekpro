@@ -149,6 +149,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import pandas as pd
 import json
+import requests
 
 
 # Configuración
@@ -176,59 +177,117 @@ def get_service_account_creds():
 # Subir imagen a Drive usando OAuth2 (usuario)
 def authorize_drive_oauth():
     SCOPES = ['https://www.googleapis.com/auth/drive']
-    from google_auth_oauthlib.flow import Flow
-    redirect_uri = "https://dispatchtekpro.streamlit.app/"
-    flow = Flow.from_client_config(
-        {"web": dict(st.secrets.oauth2)},
-        scopes=SCOPES,
-        redirect_uri=redirect_uri
-    )
     import urllib.parse
-    auth_url, _ = flow.authorization_url(prompt='consent', access_type='offline', include_granted_scopes='true')
-    st.markdown(f"[Haz clic aquí para autorizar con Google Drive]({auth_url})")
+    import requests
+    
+    redirect_uri = "https://dispatchtekpro.streamlit.app/"
+    client_id = st.secrets.oauth2.client_id
+    client_secret = st.secrets.oauth2.client_secret
+    auth_uri = st.secrets.oauth2.auth_uri
+    token_uri = st.secrets.oauth2.token_uri
+    
+    # Generar auth URL SIN PKCE (manualmente)
+    scope_str = " ".join(SCOPES)
+    auth_params = {
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'response_type': 'code',
+        'scope': scope_str,
+        'prompt': 'consent',
+        'access_type': 'offline',
+        'include_granted_scopes': 'true'
+    }
+    
+    auth_url = auth_uri + "?" + urllib.parse.urlencode(auth_params)
+    
+    st.markdown(f"[👉 Haz clic aquí para autorizar con Google Drive]({auth_url})")
     st.markdown("""
     <small>Después de autorizar, copia y pega aquí la URL completa a la que fuiste redirigido.<br>
     El sistema extraerá el código automáticamente.</small>
     """, unsafe_allow_html=True)
+    
     url_input = st.text_input("Pega aquí la URL de redirección:", key="oauth_url_input")
     auth_code = ""
+    
     if url_input:
         parsed = urllib.parse.urlparse(url_input)
         params = urllib.parse.parse_qs(parsed.query)
         auth_code = params.get("code", [""])[0]
         if auth_code:
-            st.success("Código detectado automáticamente. Haz clic en 'Validar código' para continuar.")
+            st.success("✅ Código detectado. Presiona 'Validar código'.")
         else:
-            st.warning("No se encontró el parámetro 'code' en la URL. Verifica que pegaste la URL completa.")
+            st.warning("❌ No se encontró 'code' en la URL.")
 
-    # Botón fuera de cualquier formulario
+    # Botón para validar
     validar = st.button("Validar código", key="validar_codigo_oauth")
     if validar:
         if auth_code:
             try:
-                flow.fetch_token(code=auth_code)
-                creds = flow.credentials
-                st.session_state['drive_oauth_token'] = creds.to_json()
-                st.success("¡Autorización exitosa! Puedes continuar con el formulario.")
+                # Intercambiar código por token DIRECTAMENTE sin PKCE
+                token_params = {
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                    'code': auth_code,
+                    'grant_type': 'authorization_code',
+                    'redirect_uri': redirect_uri
+                }
+                
+                response = requests.post(token_uri, data=token_params)
+                response.raise_for_status()
+                token_data = response.json()
+                
+                if 'access_token' in token_data:
+                    # Guardar el token completo
+                    st.session_state['drive_oauth_token'] = json.dumps(token_data)
+                    st.session_state.pop('oauth_url_input', None)
+                    st.success("🎉 ¡Autorización exitosa! Refresca la página.")
+                    import time
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(f"❌ Error: {token_data.get('error_description', 'Desconocido')}")
+                    
+            except requests.exceptions.RequestException as e:
+                error_text = str(e)
+                st.error(f"Error HTTP: {error_text}")
+                if hasattr(e, 'response'):
+                    try:
+                        st.error(f"Respuesta: {e.response.json()}")
+                    except:
+                        st.error(f"Respuesta: {e.response.text}")
             except Exception as e:
-                st.error(f"Error al intercambiar el código: {e}")
+                st.error(f"Error inesperado: {e}")
         else:
-            st.warning("Debes pegar la URL de redirección que contiene el código.")
+            st.warning("⚠️ Debes pegar la URL con el código.")
+    
     st.stop()
 
 def get_drive_service_oauth():
     from google.oauth2.credentials import Credentials as UserCreds
-    import json
     creds = None
     if 'drive_oauth_token' in st.session_state:
-        creds = UserCreds.from_authorized_user_info(json.loads(st.session_state['drive_oauth_token']))
+        token_data = json.loads(st.session_state['drive_oauth_token'])
+        # Crear credenciales desde el token
+        creds = UserCreds(
+            token=token_data.get('access_token'),
+            refresh_token=token_data.get('refresh_token'),
+            id_token=token_data.get('id_token'),
+            token_uri=token_data.get('token_uri'),
+            client_id=st.secrets.oauth2.client_id,
+            client_secret=st.secrets.oauth2.client_secret
+        )
     if creds:
         return build('drive', 'v3', credentials=creds)
     else:
         authorize_drive_oauth()
+        return None
 
 def upload_image_to_drive_oauth(file, filename, folder_id):
     drive_service = get_drive_service_oauth()
+    if not drive_service:
+        st.error("❌ No estás autenticado en Google Drive. Por favor autoriza primero.")
+        return None
+        
     file_metadata = {
         'name': filename,
         'parents': [folder_id]
